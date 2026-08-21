@@ -12,7 +12,1447 @@
 # 
 ```
 
+Prompt 02 — Automation Foundation, Queue Manager & Storage
 
+Kita lanjut dari Phase 1 yang sudah selesai dan sudah di-push ke repository.
+
+Repository:
+zenolambee/content-pilot
+
+Branch:
+main
+
+Phase 1 sebelumnya sudah berhasil:
+
+- TypeScript full-stack
+- monorepo
+- Next.js
+- Fastify
+- PostgreSQL
+- Prisma
+- Redis
+- BullMQ
+- MinIO
+- Core foundation
+- Provider abstraction
+- Storage abstraction
+- PublishingJob
+- PublishingAttempt
+- Scheduler foundation
+- Worker foundation
+- API foundation
+- Web foundation
+- tests
+- lint
+- typecheck
+- build
+- security check
+
+Commit Phase 1:
+d694dcf
+
+Sekarang implementasikan PHASE 1.5 — AUTOMATION FOUNDATION.
+
+TUJUAN PHASE 1.5
+
+Siapkan fondasi Content Pilot agar dapat mengelola banyak video secara otomatis dan berurutan.
+
+Target workflow:
+
+Video / URL sumber
+→ Media Import
+→ Storage
+→ Media Library
+→ Post
+→ Content Queue
+→ Automatic Scheduler
+→ Publishing Jobs
+→ Worker
+→ Platform Provider
+
+Facebook publishing BELUM diimplementasikan pada phase ini.
+
+Downloader platform-specific juga BELUM harus diimplementasikan secara penuh.
+
+Yang dibuat sekarang adalah foundation agar downloader dan provider dapat ditambahkan tanpa membongkar core.
+
+ATURAN UTAMA
+
+Sebelum coding:
+
+1. Baca README.md.
+2. Baca docs/AUDIT.md jika tersedia.
+3. Baca docs/ARCHITECTURE.md.
+4. Baca docs/DATABASE.md.
+5. Baca docs/PLATFORM_MODULES.md.
+6. Baca docs/UI_DESIGN.md.
+7. Baca docs/ROADMAP.md.
+8. Audit hasil Phase 1 yang sekarang ada di repository.
+9. Jangan merusak fitur Phase 1.
+10. Jangan mengubah core architecture secara sembarangan.
+11. Jangan implement Facebook OAuth.
+12. Jangan implement Facebook publishing.
+13. Jangan implement YouTube.
+14. Jangan implement Instagram.
+15. Jangan implement TikTok.
+16. Jangan membuat fake downloader.
+17. Jangan membuat fake publishing success.
+18. Jangan menggunakan username/password automation untuk platform sosial.
+19. Semua fitur baru harus modular.
+20. Jangan membuat giant file.
+21. Jangan menyimpan access token atau secret di queue payload.
+22. Jangan commit secret.
+
+KONSEP UTAMA CONTENT PILOT
+
+Content Pilot bukan hanya uploader.
+
+Content Pilot adalah:
+
+CONTENT IMPORT
++
+MEDIA LIBRARY
++
+CONTENT QUEUE
++
+AUTOMATIC SCHEDULER
++
+PUBLISHING ENGINE
+
+Contoh:
+
+100 video dimasukkan ke queue.
+
+Start:
+01:00
+
+Interval:
+1 jam
+
+Sistem otomatis membuat:
+
+Video 001 → 01:00
+Video 002 → 02:00
+Video 003 → 03:00
+Video 004 → 04:00
+...
+Video 100 → jadwal berikutnya
+
+User tidak perlu menentukan waktu satu per satu.
+
+1. CONTENT QUEUE
+
+Buat konsep Content Queue.
+
+Queue harus dapat berisi banyak Post.
+
+Minimal:
+
+Queue
+QueueItem
+Post
+Media
+
+QueueItem minimal:
+
+- id
+- queueId
+- postId
+- position
+- status
+- scheduledAt
+- createdAt
+- updatedAt
+
+Status minimal:
+
+pending
+scheduled
+processing
+published
+failed
+cancelled
+paused
+
+Position harus memungkinkan reorder.
+
+Contoh:
+
+Queue:
+
+1. Video A
+2. Video B
+3. Video C
+
+User dapat mengubah:
+
+1. Video C
+2. Video A
+3. Video B
+
+Scheduler harus mengikuti urutan terbaru.
+
+2. QUEUE MANAGER
+
+Buat service:
+
+QueueManager
+
+Minimal kemampuan:
+
+- createQueue
+- addItem
+- removeItem
+- reorderItems
+- pauseQueue
+- resumeQueue
+- cancelItem
+- clearQueue
+- getQueue
+- getQueueStatus
+
+Jangan membuat QueueManager Facebook-specific.
+
+3. BULK IMPORT
+
+Content Pilot harus siap menerima banyak media sekaligus.
+
+Contoh:
+
+10 video
+20 video
+100 video
+
+Media dapat berasal dari:
+
+- upload lokal
+- URL
+- downloader/importer
+- storage lain
+
+Phase ini cukup menyediakan generic import pipeline.
+
+Jangan implement downloader Facebook/YouTube/TikTok yang sebenarnya.
+
+4. MEDIA IMPORT
+
+Buat abstraction:
+
+MediaImporter
+
+Konsep:
+
+import(source)
+
+→ MediaImportResult
+
+MediaImportResult dapat berisi:
+
+- media
+- sourceUrl
+- sourcePlatform
+- originalTitle
+- originalCaption
+- hashtags
+- thumbnail
+- metadata
+
+Semua field metadata harus optional karena setiap sumber menyediakan informasi berbeda.
+
+5. SOURCE METADATA
+
+Media harus dapat menyimpan metadata sumber.
+
+Tambahkan jika belum ada:
+
+- sourceUrl
+- sourcePlatform
+- originalTitle
+- originalCaption
+- originalDescription
+- originalAuthor
+- originalThumbnail
+- originalPublishedAt
+- sourceMetadata
+
+Jangan menganggap semua platform menyediakan semua field.
+
+Gunakan nullable/optional.
+
+6. ORIGINAL CAPTION VS POST CAPTION
+
+Ini sangat penting.
+
+Jangan menyimpan caption sumber langsung sebagai caption final.
+
+Gunakan:
+
+originalCaption
+
+dan:
+
+post.caption
+
+Contoh:
+
+Downloader mendapatkan:
+
+originalCaption:
+Video bagus hari ini #travel #indonesia
+
+Post dibuat:
+
+caption:
+Video bagus hari ini #travel #indonesia
+
+Tetapi user tetap dapat mengubah post.caption.
+
+Dengan demikian:
+
+originalCaption = data sumber
+
+post.caption = caption yang akan dipublish
+
+Jangan kehilangan caption asli.
+
+7. HASHTAGS
+
+Simpan hashtag sumber jika tersedia.
+
+Tetapi jangan menganggap hashtag selalu sama untuk semua platform.
+
+Nantinya provider dapat melakukan transformasi.
+
+Contoh:
+
+Original:
+#travel #indonesia #viral
+
+Facebook:
+#travel #indonesia
+
+YouTube:
+travel, indonesia
+
+Phase 1.5 hanya menyiapkan data model/abstraction.
+
+Jangan membuat platform-specific transformation sekarang.
+
+8. STORAGE PROVIDER
+
+Storage harus tetap abstraction.
+
+Target:
+
+StorageManager
+→ S3-compatible
+→ Google Drive
+→ MinIO
+→ Local
+
+Core tidak boleh bergantung langsung pada Google Drive atau MinIO.
+
+Buat interface generik.
+
+Minimal:
+
+- upload
+- createUploadUrl
+- createDownloadUrl
+- getMetadata
+- delete
+- exists
+
+Nama method boleh disesuaikan dengan architecture existing.
+
+9. GOOGLE DRIVE
+
+Google Drive harus didukung sebagai storage provider yang dapat ditambahkan.
+
+Namun pada Phase 1.5:
+
+JANGAN implement OAuth Google Drive production jika belum diperlukan.
+
+Yang harus dibuat:
+
+- provider contract
+- configuration model
+- storage provider registration architecture
+- documentation
+
+Jika implementasi Google Drive connector dilakukan sekarang, harus dibuat modular dan tidak mengikat core.
+
+Jangan membuat credential Google Drive palsu.
+
+10. S3 COMPATIBLE
+
+Storage abstraction harus kompatibel dengan:
+
+- AWS S3
+- Cloudflare R2
+- Backblaze B2
+- Wasabi
+- MinIO
+- provider S3-compatible lainnya
+
+Jangan membuat code khusus AWS saja.
+
+11. MINIO
+
+Tetap gunakan MinIO untuk local development.
+
+Pastikan:
+
+- upload
+- object existence
+- metadata
+- download URL/presigned URL
+- delete
+
+dapat digunakan oleh storage abstraction.
+
+12. STORAGE SELECTION
+
+Desain agar user nantinya dapat memilih storage.
+
+Contoh:
+
+Settings
+→ Storage
+
+Storage provider:
+
+S3
+Google Drive
+MinIO
+Local
+
+Provider yang belum dikonfigurasi harus:
+
+Not configured
+
+Jangan menampilkan seolah-olah connected.
+
+13. AUTOMATIC SCHEDULER
+
+Scheduler harus mendukung:
+
+1. Manual schedule
+2. Interval schedule
+3. Queue-based automatic schedule
+
+14. MANUAL SCHEDULE
+
+User dapat menentukan:
+
+Video 1 → 2026-08-22 01:00
+Video 2 → 2026-08-22 03:00
+Video 3 → 2026-08-22 06:00
+
+Setiap QueueItem memiliki scheduledAt.
+
+15. INTERVAL SCHEDULE
+
+User dapat menentukan:
+
+Start:
+01:00
+
+Interval:
+1 hour
+
+Queue:
+
+Video 1 → 01:00
+Video 2 → 02:00
+Video 3 → 03:00
+Video 4 → 04:00
+
+Interval harus configurable.
+
+Contoh:
+
+15 minutes
+30 minutes
+1 hour
+2 hours
+6 hours
+1 day
+
+Jangan hardcode hanya 1 jam.
+
+16. CUSTOM INTERVAL
+
+Arsitektur harus mendukung interval custom dalam menit.
+
+Contoh:
+
+Interval:
+90 minutes
+
+Maka:
+
+01:00
+02:30
+04:00
+05:30
+
+17. TIMEZONE
+
+Scheduler harus timezone-aware.
+
+Jangan menyimpan waktu schedule secara ambigu.
+
+Gunakan UTC di backend/database jika architecture memilih demikian.
+
+Timezone user disimpan secara eksplisit.
+
+Contoh:
+
+Asia/Jakarta
+
+UI dapat menampilkan:
+
+01:00 WIB
+
+Backend tetap memiliki representasi waktu yang konsisten.
+
+18. AUTO GENERATE SCHEDULE
+
+Buat service:
+
+ScheduleGenerator
+
+Input:
+
+- queue
+- startAt
+- interval
+- timezone
+- scheduling mode
+
+Output:
+
+scheduledAt untuk setiap QueueItem.
+
+Contoh:
+
+Queue memiliki 5 video.
+
+Start:
+01:00
+
+Interval:
+1 hour
+
+Output:
+
+01:00
+02:00
+03:00
+04:00
+05:00
+
+Jangan membuat job publishing langsung ketika generate schedule.
+
+Scheduler hanya menentukan jadwal.
+
+19. RESCHEDULING
+
+Jika queue berubah:
+
+Video baru ditambahkan.
+Video dihapus.
+Video di-reorder.
+
+Sistem harus dapat melakukan reschedule item yang masih pending.
+
+Jangan mengubah job yang sudah published.
+
+Jangan mengubah job yang sedang processing kecuali memang diperlukan.
+
+20. PAUSE / RESUME
+
+Queue harus dapat:
+
+Pause
+
+dan:
+
+Resume.
+
+Jika queue di-pause, item yang masih scheduled/pending tidak boleh diproses sampai queue di-resume.
+
+21. CANCEL
+
+Queue item dapat dibatalkan.
+
+Status:
+
+cancelled
+
+Cancelled item tidak boleh dipublish.
+
+Jika publishing job sudah running, cancellation harus mengikuti state machine yang aman.
+
+22. QUEUE STATUS
+
+Queue harus memiliki ringkasan:
+
+Total
+Pending
+Scheduled
+Processing
+Published
+Failed
+Cancelled
+
+Contoh:
+
+Total: 100
+Published: 20
+Scheduled: 75
+Failed: 3
+Cancelled: 2
+
+Jangan membuat status global yang menghilangkan status setiap item.
+
+23. PUBLISHING JOB INTEGRATION
+
+QueueItem ketika waktunya tiba akan menghasilkan/menjalankan PublishingJob sesuai architecture existing.
+
+Flow:
+
+QueueItem
+→ scheduled
+→ due
+→ PublishingJob
+→ queued
+→ worker
+→ provider
+
+Provider nyata belum dibuat.
+
+Phase ini hanya memastikan integration contract siap.
+
+24. IDEMPOTENCY
+
+Scheduler tidak boleh membuat duplicate publishing job jika scheduler dijalankan dua kali.
+
+Gunakan idempotency key atau unique constraint.
+
+Contoh konsep:
+
+queueItemId + destinationId
+
+atau identifier yang sesuai dengan database architecture.
+
+Pastikan satu QueueItem tidak menghasilkan duplicate publish job karena worker/scheduler restart.
+
+25. RETRY
+
+Gunakan retry system dari Phase 1.
+
+Temporary error:
+
+retry
+
+Permanent error:
+
+failed
+
+Retry harus tercatat sebagai PublishingAttempt.
+
+26. MULTI DESTINATION
+
+Queue architecture harus mendukung:
+
+1 video
+→ Facebook Page A
+→ Facebook Page B
+→ YouTube Channel A
+
+Setiap destination menghasilkan publishing job terpisah.
+
+Jangan membuat queue hanya untuk satu platform.
+
+27. MULTI DESTINATION SCHEDULING
+
+Desain agar nantinya user dapat memilih:
+
+Schedule global
+
+atau:
+
+Schedule per destination.
+
+Contoh:
+
+Facebook Page A:
+01:00
+
+Facebook Page B:
+01:30
+
+YouTube:
+02:00
+
+Phase ini cukup menyediakan architecture/data model.
+
+Jangan implement provider-specific publishing.
+
+28. MEDIA LIBRARY
+
+Buat foundation Media Library.
+
+Minimal kemampuan:
+
+- list media
+- search
+- filter
+- metadata
+- source
+- status
+- storage
+- delete
+- create post
+
+Jangan membuat UI kompleks.
+
+Buat API/service foundation terlebih dahulu.
+
+29. CONTENT COMPOSER
+
+Buat foundation agar Media dapat menjadi Post.
+
+Flow:
+
+Media
+→ Create Post
+→ Post
+
+Post dapat memiliki:
+
+- media
+- caption
+- title
+- description
+- hashtags
+- metadata
+
+Original metadata tetap disimpan terpisah.
+
+30. CAPTION WORKFLOW
+
+Content Composer harus dapat mendukung:
+
+Use original caption
+
+atau:
+
+Custom caption
+
+Contoh:
+
+Original caption:
+Video keren hari ini #travel
+
+User memilih:
+
+Use original caption
+
+Maka:
+
+Post.caption =
+originalCaption
+
+Jika user mengedit:
+
+Post.caption =
+custom text
+
+Original caption tetap tidak berubah.
+
+31. IMPORT URL
+
+Buat API foundation untuk:
+
+POST /api/media/import
+
+Input:
+
+sourceUrl
+
+Optional:
+
+sourcePlatform
+
+Phase ini TIDAK boleh berpura-pura download jika provider belum ada.
+
+Jika provider belum tersedia:
+
+return status:
+
+unsupported
+
+atau:
+
+provider_not_configured
+
+Jangan mengembalikan fake media.
+
+32. IMPORT PROVIDER REGISTRY
+
+Buat:
+
+MediaImporterRegistry
+
+Konsep:
+
+MediaImporterRegistry
+→ FacebookImporter
+→ YouTubeImporter
+→ InstagramImporter
+→ TikTokImporter
+
+Namun Phase 1.5:
+
+Registry boleh kosong.
+
+Jangan membuat fake importer.
+
+Core hanya mengetahui interface.
+
+33. DOWNLOADER ARCHITECTURE
+
+Downloader bukan bagian dari Facebook Publisher.
+
+Pisahkan:
+
+Media Importer
+
+dari:
+
+Platform Publisher.
+
+Contoh:
+
+Facebook Importer
+→ mengambil media dari source
+
+Facebook Publisher
+→ mempublish media ke Facebook
+
+Keduanya berbeda tanggung jawab.
+
+34. SOURCE METADATA PIPELINE
+
+Pipeline:
+
+Source URL
+→ Importer
+→ Media
+→ Original Metadata
+→ Post Composer
+→ Post
+→ Queue
+
+Jangan langsung:
+
+Source URL
+→ Facebook Publisher
+
+35. BULK URL IMPORT
+
+Architecture harus siap menerima:
+
+1 URL
+10 URL
+100 URL
+
+Contoh:
+
+POST /api/media/import/bulk
+
+Input:
+
+sourceUrls[]
+
+Tetapi jangan membuat downloader nyata.
+
+Buat validation dan job model yang siap digunakan.
+
+36. IMPORT JOB
+
+Jika diperlukan, gunakan ImportJob.
+
+Status:
+
+pending
+processing
+completed
+failed
+cancelled
+
+Setiap URL memiliki status sendiri.
+
+Jangan membuat satu URL gagal menyebabkan semua import gagal.
+
+37. IMPORT RETRY
+
+Temporary import failure:
+
+retry
+
+Permanent:
+
+failed
+
+Simpan:
+
+- attempt
+- error
+- next retry
+
+Jangan retry URL invalid tanpa batas.
+
+38. WEB UI
+
+Buat UI foundation untuk:
+
+Dashboard
+Media Library
+Queue
+Scheduler
+
+Prioritaskan Queue Manager.
+
+39. QUEUE UI
+
+Buat halaman:
+
+Queue Manager
+
+Tampilkan:
+
+- video thumbnail
+- filename/title
+- caption preview
+- destination
+- scheduled time
+- status
+- position
+
+Action:
+
+- reorder
+- pause
+- resume
+- cancel
+- schedule
+
+40. BULK SCHEDULING UI
+
+UI harus memiliki:
+
+Schedule Mode:
+
+Manual
+
+atau:
+
+Interval
+
+Jika Interval:
+
+Start time
+Interval
+
+Contoh:
+
+Start:
+01:00
+
+Every:
+1 hour
+
+Kemudian preview:
+
+Video 1 → 01:00
+Video 2 → 02:00
+Video 3 → 03:00
+Video 4 → 04:00
+
+User dapat melihat hasil sebelum menyimpan.
+
+41. STORAGE UI
+
+Buat foundation settings:
+
+Storage Provider
+
+S3
+Google Drive
+MinIO
+Local
+
+Provider yang belum dikonfigurasi harus:
+
+Not configured
+
+42. DASHBOARD
+
+Dashboard foundation dapat menampilkan:
+
+Total Media
+Queue
+Scheduled
+Published
+Failed
+
+Gunakan data nyata dari database.
+
+Jangan membuat angka palsu.
+
+43. RESPONSIVE UI
+
+UI harus:
+
+- mobile friendly
+- desktop friendly
+- responsive
+- tidak terlalu banyak whitespace
+- queue mudah digunakan dari mobile
+- action utama mudah ditemukan
+
+Ikuti docs/UI_DESIGN.md.
+
+44. DATABASE
+
+Update Prisma schema sesuai kebutuhan.
+
+Entity yang mungkin diperlukan:
+
+Queue
+QueueItem
+ImportJob
+Media
+Post
+Schedule
+
+Pertahankan entity Phase 1.
+
+Pastikan migration aman.
+
+Jangan menghapus data existing.
+
+45. DATABASE CONSTRAINTS
+
+Tambahkan constraint yang diperlukan untuk:
+
+- unique idempotency
+- queue position jika sesuai
+- publishing job uniqueness
+- platform connection relation
+- destination relation
+
+Hindari duplicate records akibat worker restart.
+
+46. API
+
+Tambahkan API foundation:
+
+GET /api/media
+POST /api/media/import
+POST /api/media/import/bulk
+
+GET /api/queues
+POST /api/queues
+GET /api/queues/:id
+POST /api/queues/:id/items
+POST /api/queues/:id/reorder
+POST /api/queues/:id/pause
+POST /api/queues/:id/resume
+POST /api/queues/:id/schedule
+
+Sesuaikan route convention yang sudah ada.
+
+Jangan membuat endpoint publishing Facebook.
+
+47. WORKER
+
+Tambahkan worker jobs untuk:
+
+- media import foundation
+- schedule processing
+- queue processing
+
+Provider importer belum nyata.
+
+Jika provider belum tersedia:
+
+status harus jelas:
+
+unsupported
+
+atau:
+
+not_configured
+
+Jangan fake success.
+
+48. SCHEDULER RECOVERY
+
+Scheduler harus aman terhadap restart.
+
+Pastikan:
+
+- scheduled items tetap tersimpan di database
+- Redis restart tidak menghilangkan source of truth
+- scheduler dapat membaca kembali pending/scheduled items
+
+Database adalah source of truth untuk schedule.
+
+49. OBSERVABILITY
+
+Log:
+
+- queue created
+- item added
+- item reordered
+- schedule generated
+- schedule changed
+- import requested
+- import failed
+- job created
+
+Jangan log secret.
+
+50. TESTING
+
+Minimal test:
+
+QueueManager:
+
+- add
+- reorder
+- remove
+- pause
+- resume
+- cancel
+
+ScheduleGenerator:
+
+- hourly
+- custom interval
+- timezone
+- multiple items
+- rescheduling
+
+Idempotency:
+
+- scheduler tidak duplicate job
+
+Media:
+
+- original metadata
+- original caption
+- custom caption
+
+Storage:
+
+- abstraction
+- MinIO provider
+
+Import:
+
+- validation
+- unsupported provider
+- bulk validation
+
+API:
+
+- queue endpoints
+- scheduling endpoint
+- media import endpoint
+
+51. ACCEPTANCE CRITERIA
+
+Phase 1.5 COMPLETE jika:
+
+[ ] Content Queue tersedia
+[ ] Queue reorder tersedia
+[ ] Queue pause/resume tersedia
+[ ] Queue cancel tersedia
+[ ] Bulk media foundation tersedia
+[ ] Media Import abstraction tersedia
+[ ] Original caption tersedia
+[ ] Original metadata tersedia
+[ ] Post caption terpisah dari original caption
+[ ] Media Library foundation tersedia
+[ ] Automatic interval scheduling tersedia
+[ ] Manual scheduling tersedia
+[ ] Custom interval tersedia
+[ ] Timezone-aware scheduling tersedia
+[ ] Schedule preview tersedia
+[ ] Rescheduling tersedia
+[ ] Idempotency tersedia
+[ ] Storage abstraction tetap platform-independent
+[ ] MinIO provider berjalan
+[ ] S3-compatible architecture tersedia
+[ ] Google Drive provider architecture tersedia
+[ ] Tidak ada fake downloader
+[ ] Tidak ada fake publisher
+[ ] Worker berjalan
+[ ] Scheduler recovery tersedia
+[ ] API berjalan
+[ ] Web berjalan
+[ ] Tests PASS
+[ ] Lint PASS
+[ ] Typecheck PASS
+[ ] Build PASS
+[ ] No secrets committed
+[ ] Documentation updated
+
+52. DOCUMENTATION
+
+Update:
+
+README.md
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/UI_DESIGN.md
+docs/PLATFORM_MODULES.md
+docs/ROADMAP.md
+
+Tambahkan jika memang diperlukan:
+
+docs/MEDIA_IMPORT.md
+docs/QUEUE_SCHEDULER.md
+docs/STORAGE.md
+
+Jangan membuat duplicate documentation.
+
+Dokumentasikan:
+
+- Queue Manager
+- Automatic Scheduling
+- Media Import
+- Original Caption
+- Storage Provider
+- Google Drive architecture
+- S3-compatible architecture
+- Import Provider
+- Scheduler recovery
+- Idempotency
+
+53. ROADMAP UPDATE
+
+Phase 1.5:
+
+Automation Foundation
+
+Setelah Phase 1.5:
+
+Phase berikutnya:
+
+Authentication & Platform Connection
+
+Kemudian:
+
+Facebook Provider
+
+Kemudian:
+
+Facebook Reels Publishing
+
+Jangan menganggap downloader Facebook sudah tersedia.
+
+54. SECURITY AUDIT
+
+Sebelum commit periksa:
+
+.env
+.env.local
+credentials
+API keys
+tokens
+passwords
+private keys
+
+Pastikan tidak ada secret.
+
+Queue payload tidak boleh berisi token.
+
+Import URL harus divalidasi.
+
+Jika URL fetching akan digunakan nantinya, dokumentasikan SSRF protection.
+
+55. BUILD & TEST
+
+Jalankan:
+
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+
+Jika ada error, perbaiki.
+
+Jangan menutupi error.
+
+Jangan menghapus test hanya supaya PASS.
+
+56. GIT REVIEW
+
+Setelah semuanya PASS:
+
+git status
+git diff --stat
+git diff
+
+Pastikan perubahan hanya untuk Phase 1.5.
+
+Jangan commit:
+
+- .env
+- credentials
+- API keys
+- tokens
+- logs
+- temporary files
+- build artifacts yang tidak diperlukan
+
+57. COMMIT
+
+Jika semua PASS:
+
+git add .
+
+git commit -m "feat: add automation queue and scheduling foundation"
+
+Gunakan commit message tersebut atau message yang setara dan jujur terhadap perubahan sebenarnya.
+
+58. PUSH LANGSUNG
+
+Setelah commit:
+
+git push origin main
+
+Jangan force push.
+
+Jika push gagal:
+
+- jangan mengklaim berhasil
+- jangan reset commit
+- jangan menghapus perubahan
+- tampilkan error sebenarnya
+
+59. REMOTE VERIFICATION
+
+Setelah push berhasil:
+
+git status
+git branch --show-current
+git log -1 --oneline
+git rev-parse HEAD
+git ls-remote origin HEAD
+
+Pastikan:
+
+local HEAD == remote HEAD
+
+60. FINAL REPORT
+
+Tampilkan:
+
+PHASE 1.5 STATUS:
+COMPLETE / INCOMPLETE
+
+QUEUE:
+PASS / FAIL
+
+SCHEDULER:
+PASS / FAIL
+
+MEDIA IMPORT:
+PASS / FAIL
+
+MEDIA LIBRARY:
+PASS / FAIL
+
+STORAGE:
+PASS / FAIL
+
+MINIO:
+PASS / FAIL
+
+GOOGLE DRIVE ARCHITECTURE:
+PASS / FAIL
+
+API:
+PASS / FAIL
+
+WEB:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+NEXT RECOMMENDED STEP:
+Phase 2 — Authentication & Platform Connection
+
+FINAL STOP CONDITION
+
+Setelah Phase 1.5 selesai dan push berhasil:
+
+STOP.
+
+Jangan mulai Phase 2.
+
+Jangan implement Facebook OAuth.
+
+Jangan implement Facebook publishing.
+
+Jangan implement downloader Facebook.
+
+Jangan implement YouTube.
+
+Jangan implement Instagram.
+
+Jangan implement TikTok.
+
+Tunggu instruksi berikutnya.
 ````
 
 # Prompt 02 — Phase 1 Core Foundation + Build + Push
