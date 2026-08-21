@@ -8,6 +8,666 @@
 
 # 
 ```
+# Prompt 01 — Continue & Correct Repository Audit
+
+Kita lanjutkan Prompt 01.
+
+Saya sudah meninjau hasil sebelumnya dan ada masalah penting:
+
+Repository saat ini masih berisi project lama berbasis Python/NiceGUI dan platform sosial yang berbeda. Project tersebut BUKAN arsitektur final untuk project baru Content Pilot yang sedang kita bangun.
+
+Karena itu, jangan menganggap struktur lama sebagai arsitektur final.
+
+Tujuan kita sekarang adalah menyelesaikan Phase 0 dengan benar sebelum coding fitur apa pun.
+
+## PROJECT BARU
+
+Nama project:
+
+Content Pilot
+
+Tujuan:
+
+Membangun web platform untuk mengelola dan melakukan automatic content publishing ke berbagai platform sosial.
+
+Platform pertama yang akan diimplementasikan adalah Facebook.
+
+Namun arsitektur HARUS siap untuk:
+
+* Facebook
+* YouTube
+* Instagram
+* TikTok
+* X
+* Pinterest
+* LinkedIn
+* platform lain yang nantinya memiliki API publishing resmi yang sesuai
+
+Facebook adalah provider pertama, bukan core system.
+
+## ATURAN UTAMA
+
+Jangan mulai implementation fitur publishing.
+
+Jangan membuat Facebook uploader.
+
+Jangan membuat OAuth Facebook terlebih dahulu.
+
+Jangan membuat queue production terlebih dahulu.
+
+Jangan membuat dashboard production terlebih dahulu.
+
+Selesaikan discovery, architecture, documentation, dan roadmap terlebih dahulu.
+
+## REPOSITORY AUDIT
+
+Audit repository yang benar-benar sedang digunakan.
+
+Periksa:
+
+* seluruh root directory
+* seluruh source code
+* package/dependency
+* konfigurasi
+* database
+* frontend
+* backend
+* test
+* Docker
+* deployment
+* existing UI
+* existing documentation
+
+Pisahkan hasil menjadi:
+
+1. Existing project lama
+2. Existing code yang dapat dipertahankan
+3. Existing code yang tidak relevan
+4. Existing documentation yang perlu dipertahankan
+5. Documentation yang perlu diperbarui
+6. Komponen yang harus dibuat untuk Content Pilot
+7. Risiko migrasi/refactor
+
+Jangan mengklaim architecture baru sudah ada jika file tersebut belum benar-benar dibuat di repository.
+
+## JANGAN MENGHAPUS PROJECT LAMA SECARA SEMBARANGAN
+
+Sebelum menghapus atau mengganti source code lama:
+
+* identifikasi terlebih dahulu
+* jelaskan apa yang tidak relevan
+* tentukan apakah project baru memang akan menggantikan project lama
+* dokumentasikan keputusan
+
+Jangan melakukan destructive migration pada Phase 0.
+
+## TARGET TECH STACK
+
+Gunakan TypeScript full-stack sebagai kandidat utama.
+
+Kandidat architecture:
+
+Frontend:
+Next.js
+
+Backend/API:
+Fastify atau NestJS
+
+Worker:
+BullMQ
+
+Queue:
+Redis
+
+Database:
+PostgreSQL
+
+Object storage:
+S3-compatible storage
+
+Namun ini masih architecture proposal.
+
+Jangan langsung install atau implementasikan semuanya sebelum architecture final disetujui.
+
+Bandingkan Fastify vs NestJS berdasarkan kebutuhan project ini dan pilih yang paling tepat.
+
+Pertimbangkan:
+
+* maintainability
+* modular provider architecture
+* queue/worker
+* OAuth
+* API integration
+* validation
+* testing
+* scalability
+* developer experience
+
+## CORE ARCHITECTURE
+
+Core tidak boleh bergantung pada Facebook.
+
+Core harus menangani konsep generik:
+
+* User
+* Platform
+* PlatformConnection
+* Destination
+* Media
+* Post
+* PublishingJob
+* PublishingAttempt
+* Schedule
+* Queue
+* Scheduler
+* History
+* AuditLog
+* Notification
+* Storage
+
+Platform-specific implementation harus berada di provider/module masing-masing.
+
+Target konsep:
+
+Core
+→ Provider Registry
+→ Platform Provider
+→ Platform-specific implementation
+
+Contoh:
+
+Core
+→ Facebook Provider
+→ YouTube Provider
+→ Instagram Provider
+→ TikTok Provider
+
+## PROVIDER SYSTEM
+
+Desain provider abstraction yang benar-benar extensible.
+
+Jangan memaksakan semua provider memiliki fitur identik.
+
+Gunakan capability-based architecture.
+
+Contoh capability:
+
+* video
+* reels
+* photo
+* text_post
+* link_post
+* short_video
+* scheduling
+* analytics
+
+Provider harus dapat melaporkan capability yang memang didukung.
+
+Jangan membuat capability berdasarkan asumsi.
+
+Capability harus dapat berasal dari:
+
+* kemampuan API
+* implementation provider
+* permission
+* destination type
+
+## FACEBOOK
+
+Facebook adalah provider pertama.
+
+Tetapi sebelum implementation, lakukan research resmi.
+
+Research:
+
+* authentication
+* OAuth
+* Page connection
+* Page discovery
+* destination model
+* video publishing
+* Reels publishing
+* photo publishing
+* post publishing
+* scheduling
+* status checking
+* error handling
+* rate limits
+* permissions
+* app review requirements
+* token expiration
+* token refresh/reconnect
+
+Jika fitur belum dapat diverifikasi:
+
+MARK AS UNKNOWN / NEEDS VERIFICATION
+
+Jangan mengarang endpoint atau permission.
+
+## API RESEARCH
+
+Gunakan dokumentasi resmi sebagai sumber utama.
+
+Prioritas:
+
+1. Meta/Facebook official documentation
+2. YouTube official documentation
+3. Instagram official documentation
+4. TikTok official documentation
+
+Untuk platform lain, research dilakukan setelah provider utama stabil.
+
+Buat capability matrix.
+
+Contoh kolom:
+
+Platform
+Authentication
+Destination
+Video
+Reels
+Photo
+Text Post
+Scheduling
+Analytics
+Required Permissions
+Upload Flow
+Known Limitations
+Verification Status
+
+Jangan menulis fitur sebagai AVAILABLE jika belum diverifikasi.
+
+## MULTI ACCOUNT
+
+Dari awal sistem harus mendukung:
+
+User
+→ multiple PlatformConnection
+→ multiple Destination
+
+Contoh:
+
+User
+→ Facebook Account
+→ Page A
+→ Page B
+→ Page C
+
+Dan nanti:
+
+User
+→ YouTube Account
+→ Channel A
+→ Channel B
+
+Jangan membuat database yang hanya mendukung satu account atau satu Page.
+
+## PUBLISHING JOB
+
+Gunakan satu job per destination.
+
+Contoh:
+
+Video A
+
+→ Facebook Page A = Job 001
+→ Facebook Page B = Job 002
+→ YouTube Channel A = Job 003
+
+Setiap job memiliki status sendiri.
+
+Contoh status:
+
+draft
+queued
+scheduled
+processing
+uploading
+publishing
+published
+failed
+cancelled
+retrying
+
+Jika Facebook berhasil dan YouTube gagal:
+
+Facebook = published
+YouTube = failed
+
+Bukan satu global job yang kehilangan detail platform.
+
+## MEDIA ARCHITECTURE
+
+Media harus platform-independent.
+
+Video hanya disimpan sekali di media/storage layer.
+
+Kemudian dapat digunakan oleh beberapa publishing job.
+
+Jangan membuat:
+
+FacebookVideo
+YouTubeVideo
+InstagramVideo
+
+sebagai storage model utama.
+
+Gunakan media generik lalu provider melakukan transformasi/validation sesuai capability platform.
+
+## QUEUE
+
+Queue harus platform-independent.
+
+Core queue menerima PublishingJob.
+
+Worker mengambil job.
+
+Worker memanggil provider yang sesuai.
+
+Contoh:
+
+PublishingJob
+→ provider = facebook
+→ destination = Page A
+→ publish()
+
+Kemudian:
+
+PublishingJob
+→ provider = youtube
+→ destination = Channel A
+→ publish()
+
+## RETRY
+
+Bedakan temporary error dan permanent error.
+
+Temporary:
+
+* timeout
+* network failure
+* temporary API failure
+* rate limit
+
+Permanent:
+
+* invalid token
+* permission denied
+* unsupported media
+* invalid destination
+
+Simpan:
+
+* attempt count
+* error code
+* error message
+* timestamp
+* next retry
+* provider response metadata jika aman
+
+## SECURITY
+
+Architecture harus memperhatikan:
+
+* OAuth
+* access token
+* refresh token
+* encryption
+* secret management
+* environment variables
+* authorization
+* user isolation
+* file upload validation
+* MIME validation
+* file size limit
+* path traversal
+* SSRF
+* rate limiting
+* audit logs
+
+Jangan commit secrets.
+
+## UI DESIGN
+
+Audit apakah repository saat ini sudah memiliki UI yang relevan untuk Content Pilot.
+
+Jika UI lama tidak sesuai, jangan langsung menganggapnya sebagai UI final.
+
+Dokumentasikan:
+
+Current UI
+→ reusable
+→ needs redesign
+→ obsolete
+
+Untuk Content Pilot, target UI harus clean, modern, responsive, dan nyaman digunakan melalui desktop maupun mobile.
+
+Konsep utama:
+
+Dashboard
+Upload
+Queue
+Scheduled
+Accounts
+Platforms
+History
+Analytics
+Settings
+
+Tetapi jangan implementasikan semua halaman sekarang.
+
+## UI DOCUMENTATION
+
+Buat UI specification agar AI coding nantinya memiliki referensi yang konsisten.
+
+Minimal dokumentasikan:
+
+* layout
+* navigation
+* responsive behavior
+* typography
+* spacing
+* buttons
+* forms
+* cards
+* tables
+* upload interface
+* video preview
+* publishing status
+* queue
+* scheduled posts
+* account connection
+* error state
+* loading state
+* empty state
+
+Jangan membuat UI specification yang bertentangan dengan UI yang benar-benar dipilih untuk project.
+
+## DOCUMENTATION
+
+Buat documentation untuk project baru.
+
+Gunakan struktur yang sederhana.
+
+Minimal:
+
+README.md
+
+docs/ARCHITECTURE.md
+
+docs/UI_DESIGN.md
+
+docs/PLATFORM_MODULES.md
+
+docs/DATABASE.md
+
+docs/ROADMAP.md
+
+docs/research/facebook-api.md
+
+Jika dokumentasi dengan tujuan yang sama sudah ada, update file tersebut.
+
+Jangan membuat duplicate documentation.
+
+## DATABASE DESIGN
+
+Buat ERD/logical model terlebih dahulu.
+
+Minimal entity:
+
+User
+Platform
+PlatformConnection
+Destination
+Media
+Post
+PublishingJob
+PublishingAttempt
+Schedule
+AuditLog
+
+Pastikan model mendukung:
+
+1 user
+→ many platform connections
+→ many destinations
+→ many media
+→ many posts
+→ many publishing jobs
+
+Destination harus generik.
+
+Facebook Page dan YouTube Channel harus dapat direpresentasikan sebagai destination tanpa mengubah core model.
+
+## ROADMAP
+
+Buat roadmap berdasarkan hasil audit aktual.
+
+Phase 0:
+Discovery, Audit, Research, Architecture, Documentation
+
+Phase 1:
+Core Foundation
+
+Phase 2:
+Authentication & Platform Connection
+
+Phase 3:
+Facebook Provider
+
+Phase 4:
+Facebook Publishing Capabilities
+
+Phase 5:
+Queue & Scheduler hardening
+
+Phase 6:
+YouTube Provider
+
+Phase 7:
+Instagram Provider
+
+Phase 8:
+TikTok Provider
+
+Phase 9:
+Advanced Automation
+
+Jangan menganggap urutan ini final jika hasil audit menunjukkan urutan yang lebih baik.
+
+Jelaskan alasan setiap phase.
+
+## IMPORTANT
+
+Pada tahap ini:
+
+DO NOT implement publishing.
+
+DO NOT implement Facebook OAuth.
+
+DO NOT implement YouTube.
+
+DO NOT implement TikTok.
+
+DO NOT create fake API integrations.
+
+DO NOT create fake success states.
+
+DO NOT perform a massive refactor without reporting it.
+
+DO NOT delete existing project files simply to make the repository look clean.
+
+Fokus pada Phase 0.
+
+## OUTPUT
+
+Setelah selesai, berikan laporan:
+
+Repository Status
+
+Existing Stack
+
+Existing Architecture
+
+Existing UI
+
+Existing Database
+
+Existing Code
+
+Reusable Components
+
+Obsolete Components
+
+Target Architecture
+
+Provider Architecture
+
+Database Model
+
+UI Architecture
+
+Facebook API Research
+
+Platform Capability Matrix
+
+Security Considerations
+
+Migration Strategy
+
+Roadmap
+
+Recommended Phase 1
+
+Risks
+
+Open Questions
+
+## REQUIRED FINAL STATUS
+
+Tampilkan:
+
+AUDIT STATUS: COMPLETE
+
+ARCHITECTURE STATUS: READY / NEEDS REVISION
+
+API RESEARCH STATUS: COMPLETE / NEEDS VERIFICATION
+
+DOCUMENTATION STATUS: COMPLETE / INCOMPLETE
+
+ROADMAP STATUS: READY
+
+IMPLEMENTATION STATUS: NOT STARTED
+
+NEXT RECOMMENDED STEP: ...
+
+Jika architecture masih memiliki masalah, jangan menyatakan READY.
+
+Tunjukkan masalahnya dan perbaiki dokumentasi terlebih dahulu.
+
+STOP setelah Phase 0 selesai.
+
+Jangan lanjut coding Phase 1 tanpa instruksi berikutnya.
 
 
 ````
