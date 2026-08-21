@@ -15,10 +15,1203 @@
 
 ````
 
-# 
+# Prompt 02 — Phase 1 Core Foundation + Build + Push
 ```
 
+# PROMPT 02 — PHASE 1 CORE FOUNDATION
 
+Kita lanjut dari hasil Phase 0 yang SUDAH selesai dan SUDAH di-push.
+
+Repository:
+zenolambee/content-pilot
+
+Branch utama:
+main
+
+Phase 0 sudah selesai:
+- audit repository
+- architecture
+- database design
+- provider architecture
+- UI design
+- Facebook API research
+- roadmap
+
+Sekarang MULAI IMPLEMENTATION PHASE 1.
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+1. Baca terlebih dahulu:
+   - README.md
+   - docs/AUDIT.md
+   - docs/ARCHITECTURE.md
+   - docs/DATABASE.md
+   - docs/PLATFORM_MODULES.md
+   - docs/UI_DESIGN.md
+   - docs/ROADMAP.md
+
+2. Jangan mengulang Phase 0.
+
+3. Jangan implement:
+   - Facebook OAuth
+   - Facebook publishing
+   - YouTube
+   - Instagram
+   - TikTok
+   - production publishing
+   - fake provider
+   - fake success state
+
+4. Phase 1 hanya membangun CORE FOUNDATION.
+
+5. Jangan membuat architecture baru yang bertentangan dengan
+   docs/ARCHITECTURE.md.
+
+6. Jika menemukan konflik antara dokumentasi, periksa semuanya,
+   pilih desain yang paling konsisten, lalu update dokumentasi yang
+   memang perlu. Jangan diam-diam mengubah architecture.
+
+7. Jangan membuat giant file.
+
+8. Gunakan modular architecture.
+
+9. Core TIDAK BOLEH import provider Facebook atau provider platform lain.
+
+10. Provider-specific implementation belum dibuat pada Phase 1.
+
+11. Jangan memasukkan secret/API key/token ke repository.
+
+12. Jangan membuat fake API integration.
+
+13. Jangan membuat endpoint yang berpura-pura sudah melakukan publishing.
+
+==================================================
+TARGET STACK PHASE 1
+==================================================
+
+Gunakan stack yang sudah diputuskan di Phase 0:
+
+- TypeScript strict
+- pnpm
+- Turborepo
+- Next.js App Router
+- Fastify
+- PostgreSQL
+- Prisma
+- Redis
+- BullMQ
+- S3-compatible storage
+- MinIO untuk development
+- Zod
+- Pino
+- ESLint
+- Prettier
+
+Jika dependency belum ada, setup dengan versi stable yang kompatibel.
+
+Jangan mengganti Fastify dengan NestJS.
+
+==================================================
+PHASE 1 GOAL
+==================================================
+
+Bangun fondasi teknis platform-agnostic:
+
+1. Monorepo
+2. Shared configuration
+3. Database package
+4. Core domain
+5. Provider contract
+6. Provider registry
+7. Storage abstraction
+8. Media management foundation
+9. API skeleton
+10. Web skeleton
+11. Worker skeleton
+12. Queue foundation
+13. Scheduler foundation
+14. Logging
+15. Error handling
+16. Health endpoints
+17. Basic tests
+18. Lint
+19. Typecheck
+20. Build
+21. Documentation
+22. Git commit
+23. Git push
+24. Remote verification
+
+==================================================
+1. MONOREPO
+==================================================
+
+Buat struktur:
+
+content-pilot/
+
+├── apps/
+│   ├── web/
+│   ├── api/
+│   └── worker/
+│
+├── packages/
+│   ├── core/
+│   ├── db/
+│   └── shared/
+│
+├── docs/
+├── docker-compose.yml
+├── package.json
+├── pnpm-workspace.yaml
+├── turbo.json
+├── tsconfig.json
+├── eslint.config.*
+├── prettier.config.*
+└── .gitignore
+
+Sesuaikan nama file konfigurasi dengan tooling yang digunakan.
+
+Jangan membuat struktur provider Facebook dulu jika belum dibutuhkan.
+
+==================================================
+2. TYPESCRIPT
+==================================================
+
+Gunakan TypeScript strict.
+
+Pastikan:
+
+- noImplicitAny
+- strictNullChecks
+- noImplicitThis
+- strict
+- typed boundaries
+
+Hindari any kecuali benar-benar diperlukan dan diberi alasan.
+
+Gunakan shared types secara benar.
+
+==================================================
+3. SHARED PACKAGE
+==================================================
+
+Buat:
+
+packages/shared/
+
+Minimal:
+
+src/
+├── config/
+├── types/
+├── enums/
+├── schemas/
+├── errors/
+└── index.ts
+
+Config loader menggunakan Zod.
+
+Validasi environment variables.
+
+Jangan membaca process.env secara acak di seluruh project.
+
+Gunakan centralized configuration.
+
+Minimal konfigurasi:
+
+DATABASE_URL
+REDIS_URL
+
+S3_ENDPOINT
+S3_BUCKET
+S3_ACCESS_KEY
+S3_SECRET_KEY
+
+APP_SESSION_SECRET
+TOKEN_ENCRYPTION_KEY
+
+NODE_ENV
+
+Jangan membutuhkan FACEBOOK_APP_ID/SECRET untuk Phase 1 karena
+Facebook belum diimplementasikan.
+
+Jika configuration architecture membutuhkan optional provider
+variables, jangan membuat startup Phase 1 gagal hanya karena
+provider belum aktif.
+
+==================================================
+4. DATABASE PACKAGE
+==================================================
+
+Buat:
+
+packages/db/
+
+Gunakan Prisma.
+
+Database model harus mengikuti docs/DATABASE.md.
+
+Minimal entity:
+
+User
+Platform
+PlatformConnection
+Destination
+Media
+Post
+PostMedia jika diperlukan
+PublishingJob
+PublishingAttempt
+Schedule
+AuditLog
+Notification
+
+Jangan membuat model FacebookVideo,
+YouTubeVideo,
+InstagramVideo.
+
+Gunakan model generik.
+
+==================================================
+5. USER
+==================================================
+
+User minimal harus memiliki:
+
+- id
+- email atau identifier yang sesuai architecture
+- createdAt
+- updatedAt
+
+Jangan implement authentication penuh pada Phase 1.
+
+Tetapi schema harus siap digunakan Phase 2.
+
+==================================================
+6. PLATFORM
+==================================================
+
+Platform adalah katalog platform.
+
+Contoh seed:
+
+facebook
+
+Tetapi:
+
+Jangan implement Facebook API.
+
+Platform hanya menjadi database metadata/provider identifier.
+
+Design agar nanti dapat ditambahkan:
+
+youtube
+instagram
+tiktok
+
+tanpa mengubah core schema.
+
+==================================================
+7. PLATFORM CONNECTION
+==================================================
+
+PlatformConnection harus mendukung:
+
+User
+→ multiple platform connections
+
+Minimal konsep:
+
+- id
+- userId
+- platformId
+- external account identifier
+- display name jika diperlukan
+- encrypted credential/token fields
+- status
+- createdAt
+- updatedAt
+
+Token HARUS dianggap secret.
+
+Phase 1 belum perlu OAuth.
+
+Boleh menggunakan placeholder/null untuk token fields jika
+schema membutuhkan.
+
+Jangan membuat token palsu.
+
+==================================================
+8. DESTINATION
+==================================================
+
+Destination generik.
+
+Contoh:
+
+Facebook Page
+YouTube Channel
+Instagram Account
+
+semuanya direpresentasikan sebagai Destination.
+
+Minimal:
+
+- id
+- platformConnectionId
+- externalId
+- name
+- type
+- metadata jika diperlukan
+- createdAt
+- updatedAt
+
+Jangan hardcode Facebook Page sebagai model khusus.
+
+==================================================
+9. MEDIA
+==================================================
+
+Media platform-independent.
+
+Minimal metadata:
+
+- id
+- original filename
+- mime type
+- size bytes
+- storage key
+- duration
+- width
+- height
+- thumbnail key jika diperlukan
+- status
+- createdAt
+- updatedAt
+
+Storage key harus aman.
+
+Jangan menggunakan filename user sebagai path langsung.
+
+Gunakan UUID/internal ID.
+
+==================================================
+10. POST
+==================================================
+
+Post merepresentasikan content yang akan dipublish.
+
+Minimal:
+
+- id
+- owner/user
+- caption/title/description jika architecture membutuhkannya
+- status
+- createdAt
+- updatedAt
+
+Post dapat menggunakan Media melalui relation.
+
+==================================================
+11. PUBLISHING JOB
+==================================================
+
+Ini sangat penting.
+
+Satu Post dapat memiliki banyak PublishingJob.
+
+Contoh:
+
+Post 001
+
+→ Facebook Page A = Job A
+→ Facebook Page B = Job B
+→ YouTube Channel A = Job C
+
+PublishingJob minimal:
+
+- id
+- postId
+- destinationId
+- capability
+- status
+- idempotencyKey
+- scheduledAt/runAt jika diperlukan
+- createdAt
+- updatedAt
+
+Status:
+
+draft
+queued
+scheduled
+processing
+uploading
+publishing
+published
+failed
+cancelled
+retrying
+
+Jangan membuat satu global publishing status sebagai pengganti
+status per destination.
+
+==================================================
+12. PUBLISHING ATTEMPT
+==================================================
+
+Simpan histori attempt.
+
+Minimal:
+
+- id
+- publishingJobId
+- attemptNumber
+- status
+- errorClass
+- errorCode
+- errorMessage
+- startedAt
+- finishedAt
+- nextRetryAt
+- sanitized metadata
+
+Jangan menyimpan:
+
+Authorization header
+access token
+refresh token
+API secret
+
+==================================================
+13. SCHEDULE
+==================================================
+
+Buat foundation untuk scheduling.
+
+Phase 1 belum harus memiliki recurring scheduler lengkap.
+
+Tetapi model/service harus siap untuk:
+
+- immediate
+- scheduled
+- future recurring extension
+
+Jangan implement platform-specific scheduler.
+
+==================================================
+14. AUDIT LOG
+==================================================
+
+Buat AuditLog append-only.
+
+Minimal:
+
+- actor/user
+- action
+- resource type
+- resource id
+- metadata
+- createdAt
+
+Metadata tidak boleh mengandung secret.
+
+==================================================
+15. NOTIFICATION
+==================================================
+
+Buat foundation Notification.
+
+Contoh status:
+
+- published
+- failed
+- retrying
+
+Phase 1 belum membutuhkan push notification production.
+
+==================================================
+16. CORE PACKAGE
+==================================================
+
+Buat:
+
+packages/core/
+
+src/
+
+├── domain/
+├── provider/
+├── services/
+├── queue/
+├── scheduler/
+├── storage/
+├── errors/
+└── index.ts
+
+Core harus PLATFORM-AGNOSTIC.
+
+==================================================
+17. PROVIDER CONTRACT
+==================================================
+
+Implementasikan kontrak provider berdasarkan
+docs/ARCHITECTURE.md dan docs/PLATFORM_MODULES.md.
+
+Jangan membuat contract yang terlalu Facebook-specific.
+
+Minimal konsep:
+
+PlatformProvider
+
+- platform
+- declaredCapabilities
+- effectiveCapabilities()
+- supports()
+- validateContent()
+- publish()
+- checkProcessingStatus()
+
+Untuk authentication, sediakan contract generic jika architecture
+membutuhkannya:
+
+- buildAuthorizationUrl()
+- exchangeCodeForTokens()
+- refreshTokens()
+- listDestinations()
+
+Tetapi jangan implement OAuth provider nyata.
+
+Types harus generic.
+
+==================================================
+18. CAPABILITY
+==================================================
+
+Gunakan type-safe capability.
+
+Contoh:
+
+video
+short_video
+reels
+photo
+text_post
+link_post
+scheduling
+analytics
+
+Jangan menganggap semua provider memiliki semua capability.
+
+ProviderRegistry dan UI nantinya harus dapat menggunakan capability.
+
+==================================================
+19. PROVIDER REGISTRY
+==================================================
+
+Implement:
+
+ProviderRegistry
+
+Minimal:
+
+register(provider)
+get(platform)
+has(platform)
+list()
+
+Registry tidak boleh meng-import Facebook.
+
+Provider didaftarkan dari bootstrap/application composition layer.
+
+Pastikan dependency:
+
+providers → core
+
+bukan:
+
+core → providers
+
+Phase 1 boleh memiliki registry kosong.
+
+Jangan membuat fake Facebook provider hanya agar registry terlihat
+berisi.
+
+==================================================
+20. STORAGE ABSTRACTION
+==================================================
+
+Buat storage interface generik.
+
+Contoh konsep:
+
+StorageProvider
+
+- createUploadUrl()
+- getDownloadUrl()
+- delete()
+- head()
+
+Implementasi development:
+
+S3-compatible / MinIO.
+
+Jangan mengikat core ke MinIO.
+
+Core hanya mengetahui abstraction.
+
+==================================================
+21. MEDIA UPLOAD FOUNDATION
+==================================================
+
+Buat API foundation untuk upload media.
+
+Alur:
+
+Frontend
+→ API create upload
+→ storage presigned URL
+→ browser upload langsung ke storage
+→ API finalize
+→ metadata/probe
+→ Media record
+
+Jangan upload file besar melalui API jika architecture memilih
+direct-to-storage.
+
+Validasi:
+
+- MIME allowlist
+- file size limit
+- safe storage key
+
+Jika metadata probing membutuhkan library tambahan, gunakan library
+yang stabil dan modular.
+
+Jangan implement platform-specific validation.
+
+==================================================
+22. API
+==================================================
+
+apps/api:
+
+Fastify.
+
+Minimal endpoint:
+
+GET /health
+GET /ready
+
+Boleh menambahkan:
+
+GET /api/health
+
+jika architecture membutuhkan versioning.
+
+Health harus membedakan:
+
+process alive
+dependency ready
+
+Jangan membuat publishing endpoint Phase 1.
+
+API harus memiliki:
+
+- centralized error handler
+- structured logging
+- request correlation jika sesuai
+- Zod validation
+- graceful shutdown
+
+==================================================
+23. WEB
+==================================================
+
+apps/web:
+
+Next.js App Router.
+
+Buat skeleton dashboard sederhana.
+
+Jangan membuat seluruh dashboard production.
+
+Minimal:
+
+- root layout
+- basic navigation/shell
+- health/status page atau dashboard placeholder
+- reusable layout structure
+
+Jangan membuat fake publishing UI.
+
+Jangan menampilkan "Published successfully" jika belum ada backend
+publishing.
+
+UI harus menunjukkan bahwa publishing features belum tersedia.
+
+==================================================
+24. WORKER
+==================================================
+
+apps/worker:
+
+BullMQ worker skeleton.
+
+Buat queue foundation untuk:
+
+publishing
+
+scheduler
+
+Tetapi:
+
+Jangan memanggil Facebook.
+
+Jangan memanggil YouTube.
+
+Jangan publish apa pun.
+
+Worker hanya harus memiliki struktur yang siap digunakan.
+
+==================================================
+25. QUEUE ARCHITECTURE
+==================================================
+
+Queue menerima identifier job, bukan seluruh object besar jika tidak
+diperlukan.
+
+Contoh:
+
+{
+  publishingJobId
+}
+
+Worker kemudian mengambil data dari database.
+
+Jangan memasukkan token ke queue payload.
+
+==================================================
+26. SCHEDULER
+==================================================
+
+Buat scheduler foundation.
+
+Harus siap menangani:
+
+scheduled PublishingJob
+runAt <= now
+
+Tetapi Phase 1 belum harus memiliki production-grade scheduler.
+
+Jika menggunakan delayed BullMQ, tetap desain agar recovery dari Redis
+restart dapat dilakukan pada phase berikutnya.
+
+Jangan membuat scheduler Facebook-specific.
+
+==================================================
+27. ERROR SYSTEM
+==================================================
+
+Buat error taxonomy generik.
+
+Minimal:
+
+ValidationError
+NotFoundError
+UnauthorizedError
+ForbiddenError
+ConflictError
+TemporaryError
+PermanentError
+
+Provider-specific error mapping belum dibuat.
+
+==================================================
+28. LOGGING
+==================================================
+
+Gunakan Pino.
+
+Structured logs.
+
+Minimal context:
+
+- requestId
+- jobId jika ada
+- component
+- event
+
+JANGAN log:
+
+- access token
+- refresh token
+- API key
+- Authorization header
+- secret
+
+==================================================
+29. DOCKER COMPOSE
+==================================================
+
+Buat development infrastructure:
+
+PostgreSQL
+Redis
+MinIO
+
+Gunakan volume agar data development tidak hilang setiap restart.
+
+Jangan memasukkan production secret.
+
+Gunakan development credentials yang jelas sebagai LOCAL DEVELOPMENT
+ONLY jika diperlukan.
+
+Dokumentasikan cara menjalankan.
+
+==================================================
+30. DATABASE MIGRATION
+==================================================
+
+Buat initial Prisma migration.
+
+Run:
+
+pnpm prisma generate
+pnpm prisma migrate dev
+
+atau command yang sesuai dengan architecture.
+
+Seed platform:
+
+facebook
+
+Jangan seed fake account,
+fake token,
+fake Page,
+fake publishing job.
+
+==================================================
+31. TESTING
+==================================================
+
+Minimal test:
+
+Core:
+- ProviderRegistry
+- capability handling
+- error classification
+
+DB:
+- schema/migration validation
+
+API:
+- /health
+- /ready
+
+Storage:
+- abstraction/unit tests jika memungkinkan
+
+Jangan membuat fake publishing test yang menyatakan Facebook sukses.
+
+==================================================
+32. LINT / TYPECHECK / BUILD
+==================================================
+
+Sediakan root scripts:
+
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm test
+
+Pastikan semuanya bekerja.
+
+Jika menggunakan Turbo:
+
+turbo run lint
+turbo run typecheck
+turbo run build
+turbo run test
+
+Sesuaikan scripts dengan package yang dibuat.
+
+==================================================
+33. IMPORT BOUNDARIES
+==================================================
+
+Wajib enforce:
+
+packages/core TIDAK BOLEH import:
+packages/providers/*
+
+Karena provider belum dibuat pada Phase 1, tetap siapkan rule agar
+architecture ini tidak rusak nanti.
+
+Core boleh digunakan oleh provider.
+
+==================================================
+34. SECURITY CHECK
+==================================================
+
+Sebelum commit:
+
+Cari:
+
+- API keys
+- tokens
+- passwords
+- private keys
+- credentials
+- .env files
+
+Pastikan:
+
+.env
+.env.local
+.env.*.local
+
+tidak masuk Git.
+
+Sediakan:
+
+.env.example
+
+tanpa secret nyata.
+
+==================================================
+35. DOCUMENTATION UPDATE
+==================================================
+
+Update documentation agar mencerminkan implementation sebenarnya.
+
+README.md:
+- cara install
+- pnpm
+- Docker
+- database
+- development
+- commands
+- architecture
+- current phase
+- limitations
+
+ARCHITECTURE.md:
+- implementation status
+- monorepo structure
+- core/provider boundary
+- API
+- worker
+- storage
+
+DATABASE.md:
+- actual Prisma model
+- relation
+- migration status
+
+ROADMAP.md:
+- Phase 1 progress
+- acceptance criteria
+
+Jangan mengklaim fitur yang belum dibuat sebagai selesai.
+
+==================================================
+36. ACCEPTANCE CRITERIA PHASE 1
+==================================================
+
+Phase 1 hanya dianggap COMPLETE jika:
+
+[ ] pnpm install berhasil
+[ ] monorepo berhasil
+[ ] TypeScript strict
+[ ] shared package berhasil
+[ ] Prisma schema berhasil
+[ ] migration berhasil
+[ ] database connection berhasil
+[ ] platform seed berhasil
+[ ] core domain berhasil
+[ ] ProviderRegistry berhasil
+[ ] provider boundary enforced
+[ ] storage abstraction berhasil
+[ ] MinIO development setup berhasil
+[ ] API Fastify berjalan
+[ ] /health berjalan
+[ ] /ready berjalan
+[ ] web Next.js berjalan
+[ ] worker berjalan
+[ ] BullMQ foundation berjalan
+[ ] scheduler foundation tersedia
+[ ] logging tersedia
+[ ] error handling tersedia
+[ ] tests tersedia
+[ ] lint PASS
+[ ] typecheck PASS
+[ ] build PASS
+[ ] no secrets committed
+[ ] documentation updated
+
+==================================================
+37. JANGAN LANJUT PHASE 2
+==================================================
+
+Setelah acceptance criteria Phase 1 selesai:
+
+STOP.
+
+Jangan membuat:
+
+- Facebook OAuth
+- Facebook Page connection
+- Facebook publishing
+- YouTube OAuth
+- Instagram provider
+- TikTok provider
+- production scheduler
+- advanced analytics
+
+Itu phase berikutnya.
+
+==================================================
+38. FINAL AUDIT SEBELUM COMMIT
+==================================================
+
+Sebelum commit lakukan:
+
+git status
+
+git diff --stat
+
+git diff
+
+Periksa file baru.
+
+Pastikan tidak ada:
+
+- secret
+- credential
+- API key
+- token
+- password
+- .env production
+- temporary files
+- build artifacts yang tidak perlu
+
+Pastikan hanya perubahan Phase 1 yang masuk.
+
+==================================================
+39. GIT COMMIT
+==================================================
+
+Jika semua acceptance criteria PASS:
+
+git add .
+
+Commit dengan:
+
+feat: implement phase 1 core foundation
+
+Jangan menggunakan commit message palsu.
+
+==================================================
+40. PUSH LANGSUNG
+==================================================
+
+Setelah commit:
+
+git push origin main
+
+Jangan force push.
+
+Jika branch berbeda dari main, gunakan branch aktif yang memang digunakan
+repository dan laporkan branch tersebut.
+
+Jika push gagal:
+
+JANGAN mengklaim berhasil.
+
+Tampilkan error sebenarnya.
+
+Jangan menghapus commit.
+
+Jangan reset perubahan hanya untuk memaksa push.
+
+==================================================
+41. VERIFIKASI REMOTE
+==================================================
+
+Setelah push berhasil:
+
+git status
+
+git branch --show-current
+
+git log -1 --oneline
+
+git rev-parse HEAD
+
+git ls-remote origin HEAD
+
+Pastikan remote HEAD sesuai dengan commit lokal.
+
+==================================================
+42. FINAL REPORT
+==================================================
+
+Tampilkan ringkasan:
+
+PHASE 1 STATUS: COMPLETE / INCOMPLETE
+
+IMPLEMENTED:
+- ...
+- ...
+- ...
+
+TEST:
+- lint: PASS/FAIL
+- typecheck: PASS/FAIL
+- build: PASS/FAIL
+- test: PASS/FAIL
+
+DATABASE:
+- migration: PASS/FAIL
+- seed: PASS/FAIL
+
+SERVICES:
+- API: PASS/FAIL
+- Web: PASS/FAIL
+- Worker: PASS/FAIL
+- Redis: PASS/FAIL
+- PostgreSQL: PASS/FAIL
+- MinIO: PASS/FAIL
+
+SECURITY:
+- secrets checked
+- .env protected
+
+GIT STATUS: CLEAN / NOT CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS / FAILED
+REMOTE VERIFIED: YES / NO
+
+NEXT RECOMMENDED STEP:
+Phase 2 — Authentication & Platform Connection
+
+==================================================
+FINAL RULE
+==================================================
+
+JANGAN lanjut Phase 2.
+
+JANGAN implement Facebook.
+
+JANGAN membuat fake success.
+
+Kerjakan Phase 1 sampai benar-benar build/test dan push berhasil,
+kemudian STOP.
 ````
 
 # 
