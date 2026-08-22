@@ -207,9 +207,99 @@
 
 
 ````
-# 
+# Prompt: Fix Facebook Connection Flow
 ```
+# Prompt — Fix Facebook Connection Flow
 
+Kita lanjutkan project Content Pilot.
+
+JANGAN mengulang atau mengubah sistem login utama karena login web sudah berhasil.
+
+## STATUS SAAT INI
+
+Hasil audit terakhir:
+
+- Web Content Pilot sudah bisa dibuka.
+- Login/register/session sudah berhasil.
+- `/api/auth/login` sudah bekerja.
+- `/api/auth/me` dengan session cookie sudah bekerja.
+- `oauthStatus` Facebook di `/api/platforms` sudah `ready`.
+- Facebook provider sudah terdaftar.
+- `publishingAvailable: true`.
+- Frontend sudah menampilkan Facebook = Ready.
+- Masalah sekarang hanya pada tombol:
+
+`Connect Facebook`
+
+Saat tombol ditekan, frontend menampilkan:
+
+`Unable to start the connection flow.`
+
+Facebook login di website Facebook asli bisa dilakukan dengan normal.
+
+## MASALAH YANG HARUS DISELESAIKAN
+
+Cari penyebab sebenarnya kenapa:
+
+Frontend
+→ Connect Facebook
+→ POST `/api/connections/facebook/connect`
+→ connection flow
+
+tidak berhasil dimulai.
+
+Jangan berasumsi penyebabnya.
+
+Audit kode yang benar-benar ada di repository.
+
+---
+
+# ATURAN PENTING
+
+1. Jangan mengubah sistem `/api/auth/login`.
+2. Jangan mengubah `/api/auth/me` kecuali benar-benar diperlukan dan terbukti menjadi penyebab.
+3. Jangan menghapus authentication/session system.
+4. Jangan membuat fake Facebook connection.
+5. Jangan membuat fake `ready` status.
+6. Jangan menyimpan access token Facebook secara plaintext.
+7. Jangan menggunakan Facebook username/password automation.
+8. Gunakan OAuth resmi Meta/Facebook.
+9. Jangan membuat endpoint dummy hanya supaya tombol terlihat berhasil.
+10. Jangan mengubah architecture provider yang sudah ada tanpa alasan.
+11. Jangan mengubah fitur publishing.
+12. Fokus hanya pada connection flow Facebook.
+13. Jangan menganggap GET dan POST endpoint sama.
+14. Pastikan method HTTP frontend dan backend benar-benar cocok.
+15. Jangan menganggap callback berhasil hanya karena redirect URL terbuka.
+
+---
+
+# 1. AUDIT FRONTEND
+
+Cari komponen/page yang menangani:
+
+`Connect Facebook`
+
+Periksa:
+
+- URL endpoint yang dipanggil
+- HTTP method
+- request body
+- headers
+- credentials mode
+- `credentials: "include"`
+- response handling
+- error handling
+- redirect handling
+- popup/new window jika ada
+- authorization URL handling
+
+Pastikan frontend memanggil endpoint yang benar.
+
+Target konsep:
+
+```text
+POST /api/connections/facebook/connect
 
 ````
 # Prompt: Fix Web Login
