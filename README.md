@@ -217,9 +217,32 @@
 
 
 ````
-# 
+# Prompt — Fix Web Login & Session
 ```
+Audit dan perbaiki masalah login web Content Pilot.
 
+Kondisi:
+- Facebook OAuth sudah READY.
+- META_APP_ID dan META_APP_SECRET sudah terbaca service.
+- /api/platforms = oauthStatus ready.
+- Facebook native login berhasil.
+- https://contentpilot.biz.id berjalan di Next.js port 3001.
+- API berjalan di 4000.
+- Saat membuka https://contentpilot.biz.id/accounts muncul Route not found /accounts.
+
+Tugas:
+1. Audit route login dan accounts di apps/web.
+2. Pastikan frontend menggunakan API https://api.contentpilot.biz.id dengan benar.
+3. Periksa session cookie, credentials: include, CORS, redirect OAuth, dan callback.
+4. Pastikan login web benar-benar membuat session sebelum /accounts diakses.
+5. Periksa apakah route /accounts memang ada. Jika route frontend berbeda, perbaiki redirect ke route yang benar.
+6. Jangan ubah Facebook OAuth provider yang sudah READY.
+7. Jangan ubah project toko-online port 3000.
+8. Jangan membuat fake login atau fake success.
+9. Perbaiki hanya bagian yang diperlukan.
+10. Setelah selesai jalankan build/typecheck yang relevan dan laporkan hasilnya.
+
+Fokus: login web → session → redirect → accounts.
 
 ````
 
