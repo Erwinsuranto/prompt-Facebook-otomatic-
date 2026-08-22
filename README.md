@@ -212,9 +212,33 @@
 
 
 ````
-# 
+# Prompt: Fix Web Login
 ```
+Fix only the Content Pilot web login.
 
+Current issue:
+https://contentpilot.biz.id/accounts shows "Invalid email or password" even though the account credentials should be valid.
+
+Audit the existing authentication flow:
+- /api/auth/login
+- user lookup/database
+- password hashing/verification
+- session cookie
+- /api/auth/me
+- frontend login request
+
+Find the actual cause from the existing code/database. Do NOT change Facebook OAuth or reverse proxy.
+
+Fix the login with the smallest necessary change.
+
+Then run:
+- API typecheck
+- Web typecheck
+- build
+
+Finally verify login -> session cookie -> /api/auth/me.
+
+Do not create fake users or bypass password verification.
 
 ````
 # Prompt — Fix Web Login & Session
