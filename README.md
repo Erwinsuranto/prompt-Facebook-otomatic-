@@ -25,7 +25,20 @@
 # 
 ```
 
+Lanjut verifikasi Facebook Connect.
 
+Endpoint yang benar:
+POST /api/connections/facebook/connect
+
+Audit apps/web dan apps/api untuk memastikan frontend memanggil endpoint ini dengan:
+- POST
+- authenticated session/cookie
+- provider facebook
+
+Jangan ubah kode dulu.
+Cari flow Connect Facebook yang sudah ada dan tentukan cara test yang benar dari browser/frontend.
+
+STOP setelah ditemukan.
 
 ```
 
