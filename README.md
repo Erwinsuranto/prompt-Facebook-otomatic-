@@ -8,9 +8,26 @@
 
 
 
-# 
+# Prompt — Fix Frontend & Reverse Proxy
 ```
+Lanjutkan dari audit terakhir.
 
+Fokus hanya memperbaiki akses frontend Content Pilot.
+
+1. Pastikan frontend Next.js di /root/content-pilot/apps/web berjalan di port 3000.
+2. Jangan ubah API Fastify port 4000.
+3. Pastikan contentpilot.biz.id diarahkan Nginx ke 127.0.0.1:3000.
+4. Pastikan api.contentpilot.biz.id tetap diarahkan ke 127.0.0.1:4000.
+5. Jangan mengubah kode Facebook/OAuth.
+6. Restart service yang diperlukan.
+7. Verifikasi:
+   - curl -I http://127.0.0.1:3000
+   - curl -I https://contentpilot.biz.id
+   - curl http://127.0.0.1:4000/api/platforms
+8. Jika ada error, perbaiki hanya bagian yang diperlukan.
+
+Jangan refactor besar. Jangan membuat fitur baru.
+Setelah selesai tampilkan hasil ketiga verifikasi tersebut.
 
 
 ```
