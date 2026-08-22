@@ -74,7 +74,237 @@
 # 
 ```
 
+# Prompt — Audit & Find Facebook OAuth Callback URL
 
+Jangan melakukan coding atau mengubah file apa pun.
+
+Saya ingin kamu melakukan AUDIT repository `/root/content-pilot` untuk menemukan URL callback Facebook OAuth yang BENAR-BENAR digunakan oleh aplikasi ini.
+
+Masalah:
+Meta/Facebook meminta "Valid OAuth Redirect URI", tetapi kita belum tahu URL publik backend yang harus dimasukkan.
+
+Dari source code yang sudah terlihat, terdapat route:
+
+/api/connections/:platform/callback
+
+dan untuk Facebook kemungkinan:
+
+/api/connections/facebook/callback
+
+Namun JANGAN berasumsi. Cari dan buktikan dari repository dan konfigurasi deployment.
+
+## TUGAS
+
+Audit repository secara menyeluruh untuk menentukan:
+
+1. Backend berjalan di port berapa.
+2. Frontend berjalan di port berapa.
+3. Base URL aplikasi.
+4. Public URL aplikasi.
+5. API base URL.
+6. Environment variable yang digunakan untuk callback.
+7. Apakah ada META_REDIRECT_URI.
+8. Apakah ada WEB_BASE_URL / API_BASE_URL / NEXT_PUBLIC_API_BASE_URL / APP_URL / PUBLIC_URL atau variable sejenis.
+9. Apakah Docker Compose melakukan port mapping.
+10. Apakah Nginx/Apache/Caddy/Traefik digunakan sebagai reverse proxy.
+11. Domain/subdomain apa yang diarahkan ke backend.
+12. Route callback Facebook yang sebenarnya.
+13. Apakah callback menggunakan port 3000, 4000, atau port lain.
+14. Apakah callback URL harus melalui frontend proxy atau langsung ke backend.
+15. Apakah aplikasi sedang dijalankan melalui Docker, PM2, systemd, atau proses lain.
+
+## PENTING
+
+JANGAN melakukan grep besar terhadap:
+
+- node_modules
+- .next
+- dist
+- build
+- coverage
+- cache
+
+Karena hasilnya akan dipenuhi source hasil compile/bundle.
+
+Prioritaskan:
+
+- .env
+- .env.local
+- .env.example
+- docker-compose.yml
+- docker-compose.yaml
+- nginx configuration
+- Caddy configuration
+- package.json
+- README.md
+- apps/
+- packages/
+- source code
+- API routes
+- auth routes
+- deployment configuration
+
+Gunakan `git grep` atau pencarian yang mengecualikan generated files jika memungkinkan.
+
+Cari secara khusus:
+
+META_REDIRECT_URI
+META_APP_ID
+META_APP_SECRET
+WEB_BASE_URL
+API_BASE_URL
+NEXT_PUBLIC_API_BASE_URL
+APP_URL
+PUBLIC_URL
+BASE_URL
+REDIRECT_URI
+facebook
+callback
+connections/:platform/callback
+connections/facebook/callback
+proxy_pass
+server_name
+ports:
+4000
+3000
+80
+443
+
+## JANGAN BERHENTI DI SOURCE CODE
+
+Setelah menemukan route callback, telusuri bagaimana request dari internet sampai ke route tersebut.
+
+Contoh:
+
+Internet
+→ Domain
+→ Nginx / reverse proxy
+→ Frontend/API
+→ /api/connections/facebook/callback
+
+Tentukan URL publik akhirnya.
+
+## PERIKSA KONFIGURASI RUNTIME
+
+Periksa juga:
+
+- environment variable yang sedang digunakan
+- Docker environment
+- process manager
+- listening ports
+- reverse proxy
+- domain configuration yang tersedia di server
+
+Gunakan command yang aman/read-only seperti:
+
+ss -lntp
+docker ps
+docker compose config
+systemctl status nginx
+nginx -T
+pm2 list
+
+Jika command tertentu tidak tersedia, lanjutkan dengan metode lain.
+
+Jangan mengubah konfigurasi.
+
+## VALIDASI
+
+Jika memungkinkan, validasi route secara lokal menggunakan curl.
+
+Contoh:
+
+curl -I http://127.0.0.1:PORT/api/connections/facebook/callback
+
+Jangan menganggap response 404 sebagai route tidak ada sebelum memeriksa method/route implementation.
+
+Jika ada domain publik yang ditemukan, validasi juga URL publik tersebut secara aman.
+
+## HASIL YANG WAJIB DIBERIKAN
+
+Berikan laporan singkat dan jelas:
+
+### 1. CALLBACK ROUTE
+
+Contoh:
+
+Route:
+`/api/connections/facebook/callback`
+
+### 2. BACKEND
+
+Port:
+`XXXX`
+
+### 3. FRONTEND
+
+Port:
+`XXXX`
+
+### 4. PUBLIC DOMAIN
+
+Domain:
+`https://example.com`
+
+### 5. FINAL FACEBOOK CALLBACK URL
+
+Tampilkan satu URL final yang harus dimasukkan ke Meta:
+
+`https://example.com/api/connections/facebook/callback`
+
+Jika belum dapat dipastikan, JANGAN mengarang.
+
+Tulis:
+
+`NOT DETERMINED`
+
+lalu jelaskan informasi apa yang masih kurang.
+
+### 6. META CONFIGURATION
+
+Tentukan secara jelas:
+
+Valid OAuth Redirect URIs:
+`<URL FINAL>`
+
+Jika ada lebih dari satu URL yang memang valid, jelaskan mana yang utama dan mana yang hanya untuk development.
+
+### 7. EVIDENCE
+
+Tampilkan file dan bagian source/configuration yang membuktikan URL tersebut.
+
+Contoh:
+
+`apps/api/src/routes/connections.ts`
+→ callback route
+
+`.env`
+→ WEB_BASE_URL
+
+`docker-compose.yml`
+→ port mapping
+
+`/etc/nginx/sites-enabled/...`
+→ domain dan proxy_pass
+
+### 8. CURRENT PROBLEM
+
+Jelaskan kenapa sebelumnya kita tidak menemukan URL tersebut.
+
+### 9. RECOMMENDATION
+
+Berikan langkah berikutnya saja.
+
+JANGAN mengubah file.
+JANGAN commit.
+JANGAN push Git.
+JANGAN melakukan implementation.
+
+STOP setelah audit selesai.
+
+Tujuan akhir:
+
+Saya ingin mendapatkan SATU URL callback Facebook yang benar dan bisa langsung saya masukkan ke Meta Developer Console → Facebook Login for Business → Settings → Valid OAuth Redirect URIs.
 
 ```
 
