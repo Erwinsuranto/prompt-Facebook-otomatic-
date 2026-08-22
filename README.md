@@ -18,7 +18,28 @@
 # 
 ```
 
+Audit deployment/domain Content Pilot.
 
+Masalah:
+https://contentpilot.biz.id/accounts
+masuk ke API dan menghasilkan:
+Route not found: /accounts
+
+API seharusnya tetap:
+https://api.contentpilot.biz.id
+
+Cari di repository dan konfigurasi deployment:
+1. Di mana frontend Next.js/web dijalankan.
+2. Port frontend.
+3. Domain/host yang seharusnya digunakan frontend.
+4. Kenapa contentpilot.biz.id saat ini diarahkan ke API.
+5. Konfigurasi nginx/Cloudflare/reverse proxy yang menyebabkan ini.
+
+Jangan ubah kode.
+Jangan membuat konfigurasi baru.
+Cari dan laporkan penyebab serta URL frontend yang benar.
+
+STOP setelah ditemukan.
 
 ```
 
