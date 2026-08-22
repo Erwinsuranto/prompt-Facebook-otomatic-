@@ -202,10 +202,205 @@
 
 
 ````
-# 
+# Prompt: Fix Facebook OAuth Domain Configuration
 ```
 
+Perbaiki masalah Facebook OAuth pada project Content Pilot.
 
+Kondisi saat ini:
+
+- Backend API: https://api.contentpilot.biz.id
+- Frontend: https://contentpilot.biz.id
+- Facebook provider: sudah registered
+- oauthStatus: ready
+- POST /api/connections/facebook/connect: HTTP 200
+- Backend sudah menghasilkan authorizationUrl
+- Login/session web sudah berhasil
+- Masalah terjadi ketika authorizationUrl dibuka di Facebook:
+  "Can't load URL"
+  "The domain of this URL isn't included in the app's domains."
+
+JANGAN mengubah architecture besar.
+JANGAN membuat fake OAuth.
+JANGAN menggunakan Facebook username/password automation.
+Gunakan Facebook/Meta OAuth resmi.
+
+TUJUAN:
+
+Buat Facebook OAuth benar-benar dapat membuka dialog Facebook dan kembali ke:
+
+https://contentpilot.biz.id/accounts?connect=success
+
+PERIKSA DAHULU:
+
+1. Baca implementasi Facebook provider.
+2. Cari:
+   - META_APP_ID
+   - META_APP_SECRET
+   - META_REDIRECT_URI
+   - authorizationUrl generation
+   - callback route
+   - WEB_BASE_URL
+3. Pastikan tidak ada redirect URI yang berbeda antara:
+   - environment
+   - backend
+   - frontend
+   - authorization URL
+   - callback handler
+4. Jangan mengarang URL.
+
+DOMAIN YANG BENAR:
+
+Frontend:
+https://contentpilot.biz.id
+
+API:
+https://api.contentpilot.biz.id
+
+Facebook OAuth callback harus menggunakan API callback yang memang sudah digunakan backend.
+
+JANGAN menggunakan:
+- localhost
+- 127.0.0.1
+- http://
+- contentpilot.biz.id untuk callback jika backend callback sebenarnya berada di api.contentpilot.biz.id
+
+Pastikan authorization URL menggunakan redirect_uri yang EXACTLY sama dengan callback backend.
+
+PERIKSA META CONFIGURATION:
+
+Dokumentasikan kepada saya konfigurasi yang harus diisi di Meta Developer App:
+
+App Domains:
+contentpilot.biz.id
+
+Jika Meta meminta domain/subdomain untuk callback, gunakan domain yang sesuai dengan redirect URI yang sebenarnya.
+
+Valid OAuth Redirect URIs:
+gunakan EXACT callback URI yang dipakai oleh backend.
+
+Jangan membuat callback URI baru hanya untuk melewati error.
+
+PENTING:
+
+Redirect URI harus identik secara exact antara:
+
+1. META_REDIRECT_URI
+2. authorization URL
+3. backend callback route
+4. Meta Developer → Facebook Login → Valid OAuth Redirect URIs
+
+Termasuk:
+- https
+- hostname
+- path
+- trailing slash jika ada
+
+Jangan melakukan perubahan kode jika masalah hanya berasal dari Meta Developer configuration.
+
+Jika kode ternyata sudah benar, katakan dengan jelas:
+
+CODE STATUS: CORRECT
+PROBLEM: META APP CONFIGURATION
+
+Kemudian tampilkan konfigurasi Meta yang harus saya masukkan.
+
+SETELAH CONFIGURATION DIPERBAIKI:
+
+Restart hanya jika environment variable memang berubah:
+
+sudo systemctl restart content-pilot-api
+
+Kemudian verifikasi:
+
+curl http://127.0.0.1:4000/api/platforms
+
+Harus menunjukkan:
+
+facebook
+publishingAvailable: true
+publishingStatus: ready
+oauthStatus: ready
+
+Kemudian test:
+
+POST /api/connections/facebook/connect
+
+Pastikan response:
+
+status = ready
+authorizationUrl = Facebook OAuth URL
+
+Jangan menampilkan META_APP_SECRET atau access token ke output/chat.
+
+TEST END-TO-END:
+
+1. Login ke:
+https://contentpilot.biz.id/accounts
+
+2. Pastikan session aktif.
+
+3. Klik:
+Connect Facebook
+
+4. Facebook OAuth harus terbuka tanpa:
+"Can't load URL"
+
+5. Login Facebook.
+
+6. Approve permissions jika diminta.
+
+7. Facebook redirect ke backend callback.
+
+8. Backend menyelesaikan connection.
+
+9. Redirect kembali ke:
+
+https://contentpilot.biz.id/accounts?connect=success
+
+10. Frontend menampilkan Facebook:
+Connected / Ready
+
+11. Pastikan connection tersimpan ke user yang sedang login.
+
+SECURITY:
+
+- Jangan print META_APP_SECRET.
+- Jangan print access token.
+- Jangan commit .env.
+- Jangan membuat fake connection.
+- Jangan membuat fake success.
+- Jangan bypass OAuth.
+- Jangan membuat database connection palsu.
+- Jangan mengubah authentication/session yang sudah berhasil.
+
+SETELAH SELESAI:
+
+Jalankan:
+- API typecheck
+- Web typecheck
+- Web production build
+
+Kemudian laporkan singkat:
+
+1. Root cause
+2. Apakah kode perlu diubah
+3. Konfigurasi Meta yang diperlukan
+4. Redirect URI yang digunakan
+5. Hasil API verification
+6. Hasil OAuth test
+7. Files changed
+8. Build status
+
+Jika masalah masih terjadi, JANGAN menebak.
+
+Tampilkan authorization URL TANPA credential/token sensitif dan periksa:
+- app ID
+- redirect_uri
+- domain
+- callback path
+
+STOP setelah menemukan dan memperbaiki root cause.
 ````
 # Prompt: Fix Facebook Connection Flow
 ```
