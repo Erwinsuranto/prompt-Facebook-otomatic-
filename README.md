@@ -29,10 +29,36 @@
 
 ```
 
-# 
+# Prompt: Audit Route Facebook Connect
 ```
 
+Audit sekarang kenapa endpoint:
 
+GET /api/connections/facebook/connect
+
+menghasilkan 404 Route not found.
+
+Cari route Facebook connection yang BENAR di seluruh repository, jangan berasumsi berdasarkan nama test.
+
+Periksa:
+- route registration
+- controller/handler
+- auth router
+- provider-facebook
+- apps/api
+- worker jika relevan
+
+Cari endpoint yang sebenarnya untuk memulai OAuth Facebook dan jelaskan:
+1. route yang benar
+2. method HTTP yang benar
+3. file yang mendaftarkan route
+4. kenapa /api/connections/facebook/connect tidak ditemukan
+
+Jangan mengubah kode dulu.
+Jangan membuat route baru sebelum audit selesai.
+Jalankan grep/search seluruh repository.
+
+STOP setelah menemukan penyebab dan route yang benar.
 
 ```
 
