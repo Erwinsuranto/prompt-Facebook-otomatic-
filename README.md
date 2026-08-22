@@ -47,7 +47,118 @@
 ```
 
 
+Prompt: Finalize Facebook OAuth Environment Configuration
 
+Lanjutkan dari audit sebelumnya.
+
+JANGAN mengubah source code OAuth.
+JANGAN refactor.
+JANGAN mengubah architecture.
+JANGAN mengubah nginx atau Cloudflare.
+
+Kondisi yang sudah terverifikasi:
+
+API:
+https://api.contentpilot.biz.id
+
+Facebook OAuth callback:
+https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+Callback HTTPS sudah reachable dan route mengembalikan HTTP 302.
+
+Masalah saat ini hanya konfigurasi:
+META_APP_ID dan META_APP_SECRET masih missing.
+
+Sekarang lakukan:
+
+1. Buka /root/contentpilot/.env.
+2. Jangan tampilkan META_APP_SECRET ke output.
+3. Jangan tampilkan credential sensitif.
+4. Verifikasi apakah variable berikut tersedia:
+
+META_APP_ID
+META_APP_SECRET
+META_REDIRECT_URI
+WEB_BASE_URL
+
+5. META_REDIRECT_URI harus:
+
+https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+6. Cari di repository konfigurasi frontend Next.js yang sebenarnya.
+   Tentukan apakah frontend berjalan pada:
+   - https://contentpilot.biz.id
+   - localhost:3000
+   - domain lain
+
+JANGAN menebak.
+
+7. Periksa package.json, apps/web, konfigurasi Next.js, deployment config, dan environment references untuk menentukan WEB_BASE_URL yang benar.
+
+8. Jika frontend memang menggunakan:
+https://contentpilot.biz.id
+
+maka set:
+
+WEB_BASE_URL=https://contentpilot.biz.id
+
+Jika bukan, gunakan URL frontend yang benar berdasarkan hasil audit.
+
+9. Untuk META_APP_ID dan META_APP_SECRET:
+   - jika sudah ada, jangan ubah
+   - jika kosong/missing, jangan mengarang nilainya
+   - cukup laporkan bahwa saya harus memasukkannya secara manual
+
+10. Setelah konfigurasi non-secret selesai, restart service:
+
+systemctl restart content-pilot-api
+
+11. Verifikasi:
+
+curl -s http://127.0.0.1:4000/api/platforms
+
+12. Verifikasi juga:
+
+curl -s https://api.contentpilot.biz.id/api/platforms
+
+13. Pastikan Facebook tidak lagi dilaporkan sebagai configuration error jika META_APP_ID dan META_APP_SECRET sudah tersedia.
+
+14. Jangan mencoba login Facebook melalui callback secara langsung.
+
+15. Jangan melakukan perubahan lain.
+
+OUTPUT:
+
+=== FINAL OAUTH CONFIG ===
+
+API:
+...
+
+FRONTEND:
+...
+
+META_REDIRECT_URI:
+...
+
+META_APP_ID:
+configured / missing
+
+META_APP_SECRET:
+configured / missing
+
+WEB_BASE_URL:
+...
+
+FACEBOOK PROVIDER:
+configured / not configured
+
+API STATUS:
+...
+
+EXACT NEXT ACTION:
+...
+
+STOP.
 ```
 
 # 
