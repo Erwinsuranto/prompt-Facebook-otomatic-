@@ -79,10 +79,1105 @@
 ```
 
 
-# 
+# Phase 4: Real Facebook Integration Test
 ```
 
+Prompt 04 — Real Facebook Integration Test & Reels End-to-End
 
+Lanjutkan Content Pilot dari kondisi repository saat ini.
+
+Phase 0:
+COMPLETE
+
+Phase 1:
+COMPLETE
+
+Phase 1.5:
+COMPLETE
+
+Phase 2:
+COMPLETE
+
+Phase 3:
+IMPLEMENTATION COMPLETE
+
+Sekarang lakukan Phase 4 — REAL FACEBOOK INTEGRATION TEST.
+
+TUJUAN UTAMA
+
+Kita sekarang tidak ingin membuat architecture baru.
+
+Kita ingin membuktikan bahwa implementation Facebook Provider yang sudah dibuat benar-benar dapat melakukan real publishing menggunakan Meta/Facebook API resmi.
+
+Target utama:
+
+1 video Reels
+→ Content Pilot
+→ Media
+→ Storage
+→ Post
+→ Facebook Destination
+→ PublishingJob
+→ Queue
+→ Worker
+→ Facebook Provider
+→ Meta Graph API
+→ Facebook Page Reels
+
+Hanya lakukan test terhadap Page Facebook yang memang dimiliki/dikelola dan sudah diotorisasi oleh credential yang digunakan.
+
+Jangan melakukan spam.
+Jangan membuat banyak test post.
+Gunakan SATU video test.
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+Sebelum melakukan apa pun:
+
+1. Audit implementasi Phase 3.
+2. Baca docs/research/facebook-api.md.
+3. Baca docs/facebook-publishing.md jika tersedia.
+4. Periksa FacebookProvider.
+5. Periksa FacebookApiClient.
+6. Periksa Reels module.
+7. Periksa PlatformConnection.
+8. Periksa Destination.
+9. Periksa Storage.
+10. Periksa PublishingJob.
+11. Periksa PublishingAttempt.
+12. Periksa Queue.
+13. Periksa Worker.
+14. Periksa Scheduler.
+15. Jangan membuat architecture baru jika implementation existing sudah benar.
+16. Jangan menghapus implementation yang sudah ada hanya untuk mengganti pendekatan.
+17. Jangan membuat fake success.
+18. Jangan menganggap published hanya karena API request berhasil dikirim.
+19. Jangan menganggap real integration PASS jika credential tidak tersedia.
+20. Jangan commit credential.
+
+==================================================
+1. META API VERIFICATION
+==================================================
+
+Sebelum real test, verifikasi kembali dokumentasi Meta yang relevan.
+
+Gunakan sumber resmi Meta sebagai sumber utama.
+
+Gunakan juga official Meta Postman collection jika membantu memverifikasi request flow.
+
+Verifikasi aktual:
+
+- current Graph API version
+- Facebook Page publishing
+- Page access token
+- Page discovery
+- Reels publishing
+- upload initialization
+- local video upload
+- hosted video upload jika digunakan
+- upload status
+- publish/finalize
+- caption/description
+- title jika tersedia
+- video_state
+- required permissions
+- token requirements
+- Page requirements
+- media requirements
+- App Review requirements
+- Business Verification requirements jika berlaku
+- development mode limitations
+- production limitations
+
+Jangan memakai API version lama hanya karena contoh lama di internet.
+
+Jika repository menggunakan API version tertentu:
+
+bandingkan dengan version yang saat ini diverifikasi.
+
+Jika perlu update version:
+
+lakukan secara terkontrol.
+
+Jangan mengubah API version tanpa alasan.
+
+==================================================
+2. REELS API FLOW
+==================================================
+
+Pastikan implementasi mengikuti flow resmi Meta yang telah diverifikasi.
+
+Secara konsep:
+
+STEP 1
+
+Initialize Reel upload session.
+
+Mendapatkan:
+
+video_id
+
+dan:
+
+upload_url
+
+atau informasi upload sesuai API version yang diverifikasi.
+
+STEP 2
+
+Upload video.
+
+Jika source berupa local file:
+
+gunakan upload flow resmi.
+
+Jika source berupa hosted URL:
+
+gunakan hosted upload flow resmi jika sesuai.
+
+STEP 3
+
+Jika API menyediakan upload/status endpoint:
+
+cek status upload/processing.
+
+STEP 4
+
+Finalize/publish Reel.
+
+Gunakan:
+
+caption/description dari Post.
+
+Jangan mengambil caption langsung dari source URL.
+
+==================================================
+3. CAPTION / DESCRIPTION
+==================================================
+
+Ini penting.
+
+Pastikan:
+
+Media.originalCaption
+
+berbeda dari:
+
+Post.caption
+
+Contoh:
+
+Original source caption:
+
+Video bagus hari ini #travel #indonesia
+
+User dapat mengubah menjadi:
+
+Post.caption:
+
+Liburan hari ini 🔥
+#travel #indonesia
+
+Facebook harus menerima:
+
+Post.caption
+
+bukan:
+
+Media.originalCaption
+
+Jika Meta endpoint menggunakan parameter bernama description:
+
+map:
+
+Post.caption
+
+→ description
+
+Jangan mengirim originalCaption jika user sudah mengubah caption.
+
+==================================================
+4. TITLE
+==================================================
+
+Jika Facebook Reels API yang diverifikasi mendukung title:
+
+gunakan Post.title jika tersedia.
+
+Jika title tidak diperlukan/tidak didukung:
+
+jangan membuat fake parameter.
+
+Dokumentasikan mapping yang digunakan.
+
+==================================================
+5. MEDIA VALIDATION
+==================================================
+
+Sebelum membuat real publishing job:
+
+validasi video.
+
+Gunakan requirement Meta yang benar-benar telah diverifikasi.
+
+Periksa:
+
+- MIME
+- extension
+- file size
+- duration
+- width
+- height
+- aspect ratio
+- frame rate jika diwajibkan
+- codec jika diwajibkan
+
+Jangan menggunakan angka lama dari dokumentasi yang sudah deprecated.
+
+Jika requirement tidak dapat diverifikasi:
+
+NEEDS VERIFICATION
+
+dan jangan memblokir/menyatakan valid berdasarkan asumsi.
+
+==================================================
+6. TEST VIDEO
+==================================================
+
+Gunakan satu video test yang memenuhi requirement Meta.
+
+Jangan membuat banyak postingan.
+
+Jika tidak ada video test yang sesuai:
+
+jangan memalsukan hasil.
+
+Laporkan:
+
+TEST MEDIA NOT AVAILABLE
+
+==================================================
+7. STORAGE TEST
+==================================================
+
+Pastikan flow:
+
+Media
+→ Storage
+
+berhasil.
+
+Kemudian Facebook Provider dapat mengambil media dari Storage abstraction.
+
+Storage tidak boleh hardcoded ke:
+
+MinIO saja.
+
+Pastikan architecture tetap kompatibel dengan:
+
+- MinIO
+- S3-compatible
+- future Google Drive
+
+==================================================
+8. FACEBOOK CONNECTION
+==================================================
+
+Pastikan Phase 2 connection digunakan.
+
+Jangan membuat OAuth system baru.
+
+Periksa:
+
+PlatformConnection
+
+status:
+
+connected
+
+Destination:
+
+Facebook Page
+
+Pastikan Page benar-benar berasal dari connection user yang sedang login.
+
+Jangan menerima Page ID arbitrary dari frontend.
+
+==================================================
+9. TOKEN SECURITY
+==================================================
+
+Pastikan Page Access Token:
+
+- tidak dikirim ke frontend
+- tidak disimpan di localStorage
+- tidak masuk queue payload
+- tidak masuk Redis payload
+- tidak masuk log
+- tidak masuk error message
+- tidak masuk git
+- tidak masuk screenshot/report
+
+Provider mengambil credential secara aman dari backend.
+
+==================================================
+10. ENVIRONMENT
+==================================================
+
+Periksa:
+
+.env
+
+.env.example
+
+META_APP_ID
+
+META_APP_SECRET
+
+META_REDIRECT_URI
+
+META_GRAPH_API_VERSION
+
+dan variable lain yang memang digunakan oleh implementation existing.
+
+Jangan meminta user menaruh credential di source code.
+
+Jika credential belum tersedia:
+
+STOP real test.
+
+Jangan fake.
+
+Tampilkan:
+
+REAL META INTEGRATION:
+BLOCKED — CREDENTIALS NOT CONFIGURED
+
+==================================================
+11. META APP CONFIGURATION
+==================================================
+
+Jika credential tersedia, pastikan Meta App configuration sesuai kebutuhan.
+
+Periksa:
+
+- App ID
+- App Secret
+- OAuth redirect URI
+- enabled products/login configuration
+- permissions
+- Page access
+- development/production mode
+- app review status jika diperlukan
+
+Jangan mengubah Meta App configuration secara destructive.
+
+Jika ada requirement yang tidak dapat dipenuhi:
+
+dokumentasikan.
+
+==================================================
+12. CONNECTION TEST
+==================================================
+
+Sebelum publish:
+
+test connection.
+
+Pastikan Content Pilot dapat mengetahui:
+
+- connected account
+- Page ID
+- Page name
+- Page access status
+
+Jika connection expired:
+
+jangan lanjut publishing.
+
+Tampilkan:
+
+CONNECTION EXPIRED
+
+Reconnect terlebih dahulu.
+
+==================================================
+13. DESTINATION TEST
+==================================================
+
+Pastikan destination:
+
+- platform = facebook
+- type = page
+- externalId valid
+- connection valid
+- owned by current user
+
+Jangan menggunakan destination yang tidak berasal dari connected account.
+
+==================================================
+14. PUBLISH NOW TEST
+==================================================
+
+Lakukan satu test:
+
+Publish Now
+
+Input:
+
+Platform:
+Facebook
+
+Destination:
+satu Page yang diotorisasi
+
+Content:
+Reels
+
+Media:
+satu test video
+
+Caption:
+gunakan caption test yang aman
+
+Contoh:
+
+Content Pilot integration test — please ignore.
+
+Jangan menggunakan konten spam.
+
+==================================================
+15. END-TO-END FLOW
+==================================================
+
+Pastikan flow benar-benar:
+
+User
+→ Composer
+→ Post
+→ PublishingJob
+→ Queue
+→ Worker
+→ FacebookProvider
+→ Facebook API
+→ upload
+→ process
+→ publish
+→ external ID
+→ database status
+
+Jangan bypass Queue/Worker hanya untuk membuat test lebih mudah.
+
+Jika architecture existing memang memiliki Publish Now shortcut:
+
+pastikan tetap menggunakan PublishingJob dan provider pipeline.
+
+==================================================
+16. JOB STATUS
+==================================================
+
+Catat transition.
+
+Contoh:
+
+queued
+
+→ processing
+
+→ uploading
+
+→ publishing
+
+→ published
+
+atau:
+
+queued
+
+→ processing
+
+→ failed
+
+Jika status provider berbeda:
+
+map secara benar ke state machine existing.
+
+==================================================
+17. REAL SUCCESS CRITERIA
+==================================================
+
+REAL FACEBOOK TEST hanya dianggap PASS jika:
+
+1. API credential valid.
+2. Connection valid.
+3. Destination valid.
+4. Media valid.
+5. Upload berhasil.
+6. Meta menerima/finalize publishing.
+7. Facebook memberikan external identifier atau response success yang dapat diverifikasi.
+8. Database PublishingJob berubah menjadi published.
+9. PublishingAttempt tersimpan.
+10. User dapat melihat status published di Content Pilot.
+11. Reel benar-benar dapat ditemukan pada Facebook Page yang ditargetkan, jika API/status flow memungkinkan verifikasi tersebut.
+
+Jangan menyebut PASS hanya karena:
+
+HTTP 200
+
+atau:
+
+success=true
+
+jika proses sebenarnya belum selesai.
+
+==================================================
+18. PUBLISHING STATUS VERIFICATION
+==================================================
+
+Jika Meta menyediakan status endpoint:
+
+gunakan untuk memverifikasi.
+
+Contoh:
+
+uploading
+processing
+published
+error
+
+Sesuaikan dengan API version yang diverifikasi.
+
+Jika status asynchronous:
+
+worker harus dapat melakukan polling/reconciliation sesuai architecture.
+
+Jangan menganggap request finalize langsung berarti video sudah visible jika API menyatakan masih processing.
+
+==================================================
+19. IDEMPOTENCY TEST
+==================================================
+
+Setelah satu test berhasil:
+
+pastikan retry/restart tidak membuat Reel kedua secara tidak sengaja.
+
+Test secara aman.
+
+Jangan sengaja membuat duplicate public Reel.
+
+Gunakan unit/integration simulation untuk duplicate execution.
+
+Jika perlu:
+
+gunakan existing PublishingJob idempotency key.
+
+==================================================
+20. ERROR TEST
+==================================================
+
+Jangan sengaja membuat banyak failed public posts.
+
+Gunakan mock/provider boundary untuk menguji:
+
+- expired token
+- permission denied
+- timeout
+- rate limit
+- invalid media
+- invalid destination
+
+Pastikan mapping error benar.
+
+==================================================
+21. REAL TEST LIMIT
+==================================================
+
+Hanya:
+
+1 REAL REEL
+
+untuk real Meta integration.
+
+Jangan membuat:
+
+10 posts
+100 posts
+bulk posts
+
+pada real integration test.
+
+Bulk publishing akan diuji setelah single publishing terbukti stabil.
+
+==================================================
+22. QUEUE TEST
+==================================================
+
+Setelah satu real Publish Now berhasil:
+
+uji architecture queue menggunakan test/mock bila diperlukan.
+
+Pastikan queue dapat membuat:
+
+PublishingJob
+
+dan worker dapat memanggil:
+
+FacebookProvider
+
+Jangan membuat banyak real Facebook posts hanya untuk testing queue.
+
+==================================================
+23. SCHEDULER TEST
+==================================================
+
+Jangan membuat scheduled public test jika tidak diperlukan.
+
+Gunakan test/mock untuk memastikan:
+
+QueueItem
+→ scheduledAt
+→ PublishingJob
+→ worker
+
+berfungsi.
+
+Real Facebook test cukup satu.
+
+==================================================
+24. UI VERIFICATION
+==================================================
+
+Periksa UI:
+
+Accounts
+
+Platforms
+
+Media Library
+
+Content Composer
+
+Queue
+
+History
+
+Pastikan setelah real publishing:
+
+History menunjukkan:
+
+Platform:
+Facebook
+
+Destination:
+Page
+
+Content:
+Reels
+
+Status:
+Published
+
+External ID:
+tersedia jika aman ditampilkan
+
+Published At:
+tersedia
+
+Jangan menampilkan access token.
+
+==================================================
+25. ERROR UI
+==================================================
+
+Jika real test gagal:
+
+UI harus memberikan error yang aman.
+
+Contoh:
+
+Facebook connection expired.
+
+Permission required.
+
+Facebook rejected the media.
+
+Temporary Facebook API error.
+
+Reels upload failed.
+
+Jangan menampilkan:
+
+raw access token
+
+raw OAuth code
+
+Meta App Secret
+
+full internal stack trace
+
+==================================================
+26. LOGGING
+==================================================
+
+Log:
+
+- publishing job ID
+- provider
+- destination ID
+- external video ID jika aman
+- status
+- attempt
+- duration
+- sanitized error code
+
+Jangan log:
+
+- access token
+- refresh token
+- App Secret
+- authorization code
+
+==================================================
+27. DOCUMENTATION UPDATE
+==================================================
+
+Update:
+
+docs/research/facebook-api.md
+
+docs/facebook-publishing.md
+
+README.md
+
+docs/ROADMAP.md
+
+Dokumentasikan hasil REAL TEST.
+
+Contoh:
+
+REAL FACEBOOK REELS TEST
+
+Date:
+<actual date>
+
+Result:
+PASS / FAIL / BLOCKED
+
+Provider:
+Facebook
+
+Destination:
+Page test
+
+Media:
+Reels test video
+
+API version:
+<verified version>
+
+Publishing:
+PASS / FAIL
+
+Status verification:
+PASS / FAIL
+
+Notes:
+<actual result>
+
+Jangan menulis PASS jika test sebenarnya skipped.
+
+==================================================
+28. SECURITY CHECK
+==================================================
+
+Sebelum commit:
+
+git diff
+
+Periksa:
+
+.env
+
+.env.example
+
+logs
+
+database dumps
+
+screenshots
+
+test fixtures
+
+queue payload
+
+Redis payload
+
+Pastikan tidak ada:
+
+META_APP_SECRET
+
+Page Access Token
+
+OAuth code
+
+API key
+
+password
+
+credential
+
+==================================================
+29. TEST SUITE
+==================================================
+
+Jalankan:
+
+pnpm lint
+
+pnpm typecheck
+
+pnpm test
+
+pnpm build
+
+Gunakan command repository jika berbeda.
+
+Semua harus PASS kecuali real integration yang memang:
+
+SKIPPED/BLOCKED
+
+karena credential belum tersedia.
+
+Jangan menyebut test suite PASS jika build/test gagal.
+
+==================================================
+30. REAL META RESULT
+==================================================
+
+Jika credential tersedia:
+
+lakukan SATU real Reel test.
+
+Jika credential tidak tersedia:
+
+JANGAN berhenti setelah mengatakan "tidak bisa".
+
+Lakukan semua local verification yang mungkin:
+
+- provider unit tests
+- API client tests
+- media validation
+- queue tests
+- worker tests
+- mocked publishing flow
+- security checks
+- build
+- lint
+- typecheck
+
+Kemudian laporkan:
+
+REAL META INTEGRATION:
+BLOCKED — credentials not configured
+
+==================================================
+31. GIT REVIEW
+==================================================
+
+Setelah selesai:
+
+git status
+
+git diff --stat
+
+git diff
+
+Pastikan perubahan hanya:
+
+- integration verification
+- bug fixes
+- documentation
+- tests
+- configuration example
+
+Jangan commit credentials.
+
+==================================================
+32. COMMIT
+==================================================
+
+Jika ada perubahan:
+
+git add .
+
+git commit -m "test: verify facebook reels integration"
+
+Jika hasil sebenarnya berupa bug fix yang lebih dominan, gunakan commit message yang jujur.
+
+Jangan membuat commit kosong.
+
+==================================================
+33. PUSH LANGSUNG
+==================================================
+
+Setelah commit:
+
+git push origin main
+
+Jangan force push.
+
+Jika tidak ada perubahan:
+
+jangan membuat empty commit.
+
+Jika push gagal:
+
+jangan mengklaim sukses.
+
+==================================================
+34. REMOTE VERIFICATION
+==================================================
+
+Setelah push:
+
+git status
+
+git branch --show-current
+
+git log -1 --oneline
+
+git rev-parse HEAD
+
+git ls-remote origin HEAD
+
+Pastikan:
+
+LOCAL HEAD == REMOTE HEAD
+
+==================================================
+35. FINAL REPORT
+==================================================
+
+Tampilkan secara jelas:
+
+PHASE 4 STATUS:
+COMPLETE / INCOMPLETE / BLOCKED
+
+META API VERIFICATION:
+PASS / FAIL / NEEDS VERIFICATION
+
+META CREDENTIAL:
+CONFIGURED / NOT CONFIGURED
+
+FACEBOOK CONNECTION:
+PASS / FAIL / BLOCKED
+
+PAGE DESTINATION:
+PASS / FAIL / BLOCKED
+
+MEDIA VALIDATION:
+PASS / FAIL
+
+STORAGE:
+PASS / FAIL
+
+PUBLISHING JOB:
+PASS / FAIL
+
+QUEUE:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+FACEBOOK PROVIDER:
+PASS / FAIL
+
+REELS UPLOAD:
+PASS / FAIL / BLOCKED
+
+REELS PUBLISH:
+PASS / FAIL / BLOCKED
+
+STATUS VERIFICATION:
+PASS / FAIL / BLOCKED
+
+DATABASE STATUS:
+PASS / FAIL
+
+UI STATUS:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+REAL META INTEGRATION:
+PASS / SKIPPED / BLOCKED / FAIL
+
+REAL FACEBOOK REEL CREATED:
+YES / NO
+
+EXTERNAL REEL ID:
+<id if safe>
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash or NONE>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / FAILED / NOT NEEDED
+
+REMOTE VERIFIED:
+YES / NO / NOT NEEDED
+
+==================================================
+FINAL STOP CONDITION
+==================================================
+
+Setelah Phase 4 selesai:
+
+STOP.
+
+Jangan implement YouTube.
+
+Jangan implement Instagram.
+
+Jangan implement TikTok.
+
+Jangan membuat downloader.
+
+Jangan membuat bulk Facebook publishing.
+
+Jangan membuat recurring automation baru.
+
+Jangan mulai Phase 5.
+
+Tunggu instruksi berikutnya.
+
+PRIORITAS UTAMA:
+
+Kita ingin membuktikan SATU video Reels benar-benar dapat berjalan dari Content Pilot sampai Facebook Page secara nyata.
+
+Tidak boleh ada fake success.
 ````
 
 
