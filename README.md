@@ -1,10 +1,1318 @@
 # prompt-Facebook-otomatic-
 
+# 
+```
+
+
+````
+
+
 
 
 # 
 ```
 
+
+````
+
+
+
+# 
+```
+
+
+````
+
+
+
+# 
+```
+Prompt 02 — Authentication & Platform Connection
+
+Lanjutkan project Content Pilot dari kondisi repository saat ini.
+
+Phase 0, Phase 1 Core Foundation, dan Phase 1.5 Automation Foundation sudah selesai dan sudah di-push ke repository.
+
+Jangan mengulang pekerjaan yang sudah ada dan jangan merusak Queue, Scheduler, Media Library, Storage Registry, Provider Registry, PublishingJob, atau architecture yang sudah dibuat.
+
+Sekarang kerjakan Phase 2 — Authentication & Platform Connection.
+
+==================================================
+TUJUAN PHASE 2
+==================================================
+
+Tujuan Phase 2 adalah membuat fondasi agar user dapat:
+
+- register
+- login
+- logout
+- menggunakan protected session
+- menghubungkan akun platform
+- melihat connection status
+- mengambil destination/account yang tersedia
+- reconnect
+- disconnect
+- mengelola beberapa platform connection
+- mengelola beberapa destination
+
+Arsitektur HARUS tetap platform-agnostic.
+
+Facebook adalah provider pertama, tetapi core system tidak boleh menjadi Facebook-specific.
+
+Target architecture:
+
+User
+→ PlatformConnection
+→ Destination
+→ PublishingJob
+
+Contoh:
+
+User A
+→ Facebook Connection
+→ Page A
+→ Page B
+→ Page C
+
+User A
+→ YouTube Connection
+→ Channel A
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+Sebelum coding:
+
+1. Audit repository yang sekarang.
+2. Baca README.md.
+3. Baca docs/ARCHITECTURE.md.
+4. Baca docs/DATABASE.md.
+5. Baca docs/PLATFORM_MODULES.md.
+6. Baca docs/ROADMAP.md.
+7. Baca docs/QUEUE_SCHEDULER.md jika tersedia.
+8. Baca docs/MEDIA_IMPORT.md jika tersedia.
+9. Baca docs/STORAGE.md jika tersedia.
+10. Periksa source code existing.
+11. Gunakan abstraction yang sudah ada.
+12. Jangan membuat duplicate architecture.
+13. Jangan merusak Phase 1.
+14. Jangan merusak Phase 1.5.
+
+JANGAN melakukan:
+
+- Facebook publishing
+- Facebook Reels uploader
+- YouTube publishing
+- Instagram publishing
+- TikTok publishing
+- downloader nyata
+- fake API integration
+- fake OAuth success
+- fake connected account
+- browser automation menggunakan username/password
+- penyimpanan token plaintext
+- commit secret
+
+Gunakan API/OAuth resmi platform.
+
+==================================================
+1. APPLICATION AUTHENTICATION
+==================================================
+
+Implementasikan authentication untuk aplikasi Content Pilot.
+
+Minimal:
+
+- register
+- login
+- logout
+- session management
+- protected API
+- protected pages
+- user ownership
+- user isolation
+
+Password:
+
+- tidak boleh plaintext
+- harus di-hash menggunakan metode aman
+- jangan pernah dikembalikan melalui API
+
+Session/cookie harus aman.
+
+Gunakan architecture authentication yang sesuai dengan stack existing.
+
+Jangan mengganti framework authentication tanpa alasan.
+
+==================================================
+2. USER ISOLATION
+==================================================
+
+Setiap data harus memiliki ownership yang jelas.
+
+User A tidak boleh dapat:
+
+- melihat media User B
+- melihat post User B
+- melihat queue User B
+- melihat schedule User B
+- melihat platform connection User B
+- melihat destination User B
+- mengubah publishing job User B
+- menghapus data User B
+
+Semua API harus melakukan authorization berdasarkan authenticated user.
+
+Jangan hanya mengandalkan ID dari request.
+
+==================================================
+3. PLATFORM CONNECTION
+==================================================
+
+Buat atau sempurnakan generic PlatformConnection.
+
+Konsep:
+
+PlatformConnection
+
+Minimal secara konsep:
+
+- id
+- userId
+- platform
+- status
+- externalAccountId
+- externalAccountName
+- credential reference / encrypted credential
+- expiresAt jika diperlukan
+- metadata
+- createdAt
+- updatedAt
+
+Sesuaikan dengan schema existing.
+
+Jangan membuat model yang hanya cocok untuk Facebook.
+
+==================================================
+4. CONNECTION STATUS
+==================================================
+
+Minimal status:
+
+connected
+disconnected
+expired
+error
+pending
+
+Jika provider membutuhkan status tambahan, boleh ditambahkan.
+
+Status harus mencerminkan kondisi nyata.
+
+Jangan menampilkan connected jika credential belum benar-benar tersimpan/tervalidasi.
+
+==================================================
+5. DESTINATION
+==================================================
+
+Destination harus tetap generic.
+
+Contoh:
+
+Facebook Page
+YouTube Channel
+Instagram Account
+TikTok Account
+
+Semua direpresentasikan sebagai:
+
+Destination
+
+Jangan membuat core hanya menggunakan FacebookPage.
+
+Destination minimal memiliki konsep:
+
+- id
+- platformConnectionId
+- externalId
+- name
+- type
+- status
+- metadata
+- createdAt
+- updatedAt
+
+Sesuaikan dengan database architecture existing.
+
+==================================================
+6. MULTI ACCOUNT
+==================================================
+
+Pastikan satu user dapat memiliki banyak platform connection.
+
+Contoh:
+
+User
+→ Facebook Connection 1
+→ Facebook Connection 2
+→ YouTube Connection 1
+→ Instagram Connection 1
+
+Jangan membatasi satu connection per platform kecuali architecture memang memiliki alasan yang jelas.
+
+Jangan membuat hardcoded single-account architecture.
+
+==================================================
+7. MULTI DESTINATION
+==================================================
+
+Satu platform connection dapat memiliki banyak destination jika provider mendukung.
+
+Contoh:
+
+Facebook Connection
+→ Page A
+→ Page B
+→ Page C
+
+YouTube Connection
+→ Channel A
+→ Channel B
+
+Jangan membuat satu connection hanya untuk satu destination.
+
+==================================================
+8. PROVIDER AUTHENTICATION CONTRACT
+==================================================
+
+Authentication platform harus berada di provider layer.
+
+Core tidak boleh mengetahui detail OAuth Facebook.
+
+Buat abstraction yang dapat mendukung:
+
+- authorization URL
+- callback
+- exchange authorization code
+- validate connection
+- refresh/reconnect jika tersedia
+- disconnect
+- retrieve destinations
+
+Nama method boleh disesuaikan dengan architecture existing.
+
+Target:
+
+Core
+→ Provider Registry
+→ Facebook Provider
+→ Facebook Auth
+
+Kemudian nantinya:
+
+Core
+→ YouTube Provider
+→ YouTube Auth
+
+Core
+→ Instagram Provider
+→ Instagram Auth
+
+Core
+→ TikTok Provider
+→ TikTok Auth
+
+==================================================
+9. FACEBOOK PROVIDER
+==================================================
+
+Facebook adalah provider pertama.
+
+Pada Phase 2 implementasikan CONNECTION FOUNDATION saja.
+
+Target flow:
+
+User
+→ Platforms
+→ Connect Facebook
+→ OAuth resmi Meta/Facebook
+→ callback
+→ validate state
+→ exchange authorization code
+→ validate access
+→ retrieve available Pages/destinations
+→ save connection
+→ save destinations
+→ show connected state
+
+Jangan implement publishing.
+
+==================================================
+10. FACEBOOK API RESEARCH
+==================================================
+
+Sebelum implementation Facebook OAuth, lakukan research terhadap dokumentasi resmi Meta terbaru.
+
+Verifikasi:
+
+- OAuth flow
+- authorization URL
+- callback
+- state parameter
+- required permissions
+- Page access/token model
+- Page discovery
+- token expiration
+- token refresh/reconnect
+- current Graph API version
+- app configuration
+- redirect URI requirements
+- rate limits jika relevan
+- App Review requirements
+- permission requirements
+
+Gunakan dokumentasi resmi Meta sebagai sumber utama.
+
+Jangan mengarang permission.
+
+Jangan mengarang endpoint.
+
+Jangan menganggap token flow lama masih berlaku tanpa verifikasi.
+
+Jika sesuatu belum dapat diverifikasi:
+
+MARK AS NEEDS VERIFICATION
+
+Jangan membuat fake implementation.
+
+==================================================
+11. FACEBOOK PAGE DISCOVERY
+==================================================
+
+Setelah OAuth connection berhasil:
+
+Architecture harus siap mengambil Pages yang dapat diakses connection tersebut.
+
+Contoh:
+
+Facebook Connection
+
+→ Page A
+→ Page B
+→ Page C
+
+Simpan sebagai Destination.
+
+Jangan hardcode Page ID.
+
+Jangan meminta user memasukkan Page ID secara manual jika API resmi dapat menyediakan Page discovery.
+
+Jika API/permission tidak memungkinkan:
+
+dokumentasikan keterbatasannya.
+
+==================================================
+12. FACEBOOK CONNECTION MANAGEMENT
+==================================================
+
+User harus dapat:
+
+- connect
+- view connection
+- refresh
+- reconnect
+- disconnect
+
+Saat disconnect:
+
+- jangan menghapus historical PublishingJob
+- jangan menghapus historical records
+- jangan menghapus media
+- jangan menghapus post
+
+Gunakan disconnected/deactivated state jika diperlukan.
+
+==================================================
+13. TOKEN SECURITY
+==================================================
+
+Access token dan refresh token jika ada harus diperlakukan sebagai secret.
+
+Jangan:
+
+- log token
+- return token melalui API
+- expose token ke frontend
+- commit token
+- menyimpan token plaintext jika secure encryption tersedia
+
+Gunakan secure credential storage.
+
+Application secret tetap menggunakan environment variables.
+
+Jika encryption key dibutuhkan:
+
+gunakan environment secret.
+
+Jangan hardcode encryption key.
+
+==================================================
+14. ENVIRONMENT VARIABLES
+==================================================
+
+Tambahkan hanya environment variables yang memang diperlukan.
+
+Contoh konsep:
+
+META_APP_ID
+META_APP_SECRET
+META_REDIRECT_URI
+
+Gunakan naming convention existing jika sudah tersedia.
+
+Update:
+
+.env.example
+
+Jangan update .env dengan credential nyata.
+
+Pastikan:
+
+.env
+
+.env.local
+
+credentials
+
+secrets
+
+tidak masuk Git.
+
+==================================================
+15. OAUTH SECURITY
+==================================================
+
+Implementasikan:
+
+- state validation
+- CSRF protection
+- redirect URI validation
+- authorization code validation
+- secure callback
+- secure cookies
+- session protection
+- user ownership
+
+Jangan menerima callback tanpa state validation.
+
+Jangan menyimpan authorization code setelah tidak diperlukan.
+
+==================================================
+16. API
+==================================================
+
+Sesuaikan dengan API convention existing.
+
+Minimal architecture harus menyediakan endpoint untuk:
+
+GET /api/platforms
+
+GET /api/connections
+
+GET /api/connections/:id
+
+POST /api/connections/:platform/connect
+
+GET /api/connections/:platform/callback
+
+POST /api/connections/:id/refresh
+
+POST /api/connections/:id/disconnect
+
+GET /api/destinations
+
+Jika architecture existing menggunakan route berbeda:
+
+ikuti convention existing.
+
+Semua endpoint harus protected jika membutuhkan user authentication.
+
+==================================================
+17. API ERROR HANDLING
+==================================================
+
+Gunakan error response yang konsisten.
+
+Contoh:
+
+unauthorized
+forbidden
+not_found
+invalid_request
+provider_not_configured
+oauth_failed
+connection_expired
+provider_error
+
+Jangan mengembalikan raw secret atau raw provider credential.
+
+Jangan membocorkan internal error kepada user.
+
+Log detail internal secara aman.
+
+==================================================
+18. PROVIDER REGISTRY
+==================================================
+
+Gunakan Provider Registry existing.
+
+Pastikan Facebook dapat didaftarkan sebagai provider tanpa membuat core Facebook-specific.
+
+Provider dapat memberikan capability seperti:
+
+- authentication
+- destinations
+- media
+- publishing
+
+Untuk Phase 2:
+
+authentication = implemented
+
+destinations = implemented jika API memungkinkan
+
+publishing = NOT IMPLEMENTED
+
+media importer = NOT IMPLEMENTED
+
+Jangan menampilkan capability sebagai aktif jika belum diimplementasikan.
+
+==================================================
+19. UI — PLATFORMS / ACCOUNTS
+==================================================
+
+Buat atau update halaman:
+
+Platforms / Accounts
+
+Jangan membuat duplicate page jika sudah ada.
+
+UI harus menampilkan:
+
+Facebook
+
+Status:
+
+Not Connected
+
+atau:
+
+Connected
+
+Jika connected:
+
+- account name
+- connection status
+- number of destinations
+- reconnect
+- refresh
+- disconnect
+
+Jika provider belum dikonfigurasi:
+
+Not configured
+
+Jangan menampilkan Connected.
+
+==================================================
+20. FACEBOOK UI
+==================================================
+
+Contoh:
+
+Facebook
+
+Connect Facebook
+
+Setelah connected:
+
+Facebook
+Connected
+
+Account:
+<account name>
+
+Pages:
+3 destinations
+
+Actions:
+
+Refresh
+Reconnect
+Disconnect
+
+UI harus menggunakan data nyata dari API.
+
+Jangan membuat fake connected state.
+
+==================================================
+21. DESTINATION UI
+==================================================
+
+Buat UI untuk melihat destination.
+
+Contoh:
+
+Facebook Pages
+
+☑ Page A
+☑ Page B
+☑ Page C
+
+Tampilkan:
+
+- name
+- status
+- platform
+- external ID jika memang diperlukan untuk admin/debug
+- connection source
+
+Jangan expose access token.
+
+==================================================
+22. RESPONSIVE UI
+==================================================
+
+UI harus:
+
+- mobile friendly
+- desktop friendly
+- responsive
+- clean
+- konsisten dengan UI existing
+- tidak terlalu banyak whitespace
+- action utama mudah ditemukan
+
+Ikuti docs/UI_DESIGN.md.
+
+Jangan membuat design system baru jika repository sudah memiliki design system.
+
+==================================================
+23. DATABASE
+==================================================
+
+Update Prisma schema hanya jika diperlukan.
+
+Pastikan schema mendukung:
+
+User
+→ PlatformConnection
+→ Destination
+
+dan tetap kompatibel dengan:
+
+Media
+Post
+Queue
+QueueItem
+Schedule
+PublishingJob
+PublishingAttempt
+Storage
+
+Jangan menghapus data existing.
+
+Gunakan migration yang aman.
+
+==================================================
+24. HISTORICAL DATA
+==================================================
+
+Disconnecting a platform tidak boleh merusak history.
+
+Contoh:
+
+Facebook connection disconnected.
+
+Historical:
+
+PublishingJob
+PublishingAttempt
+Post
+Media
+
+tetap ada.
+
+Destination lama dapat menjadi:
+
+inactive
+
+atau:
+
+disconnected
+
+sesuai architecture.
+
+==================================================
+25. USER OWNERSHIP DATABASE
+==================================================
+
+Pastikan relation dan query service tidak memungkinkan cross-user access.
+
+Contoh:
+
+getConnection(userId, connectionId)
+
+harus memastikan:
+
+connection.userId === userId
+
+Begitu juga:
+
+getDestination(userId, destinationId)
+
+getQueue(userId, queueId)
+
+getPost(userId, postId)
+
+getMedia(userId, mediaId)
+
+Gunakan service/repository pattern yang konsisten.
+
+==================================================
+26. TESTING — AUTH
+==================================================
+
+Tambahkan test:
+
+- register
+- duplicate email
+- login success
+- login failure
+- logout
+- protected route
+- unauthenticated access
+- password hashing
+- user isolation
+
+==================================================
+27. TESTING — CONNECTION
+==================================================
+
+Tambahkan test:
+
+- create connection
+- retrieve connection
+- connection ownership
+- destination ownership
+- disconnect
+- refresh state
+- expired state
+- invalid provider
+- provider not configured
+
+==================================================
+28. TESTING — OAUTH
+==================================================
+
+Test:
+
+- state generation
+- state validation
+- invalid state
+- missing callback code
+- provider error callback
+- invalid callback
+- authorization failure
+
+Jika external Meta API tidak dapat dipanggil dalam unit test:
+
+gunakan mocked provider boundary.
+
+Jangan mock seluruh business logic.
+
+==================================================
+29. TESTING — FACEBOOK
+==================================================
+
+Test provider contract:
+
+- authorization URL generation
+- callback parsing
+- token exchange boundary
+- destination mapping
+- connection state mapping
+
+Jangan membuat fake API response yang membuat production integration terlihat sudah selesai.
+
+Test mock hanya untuk unit/integration testing.
+
+==================================================
+30. WORKER COMPATIBILITY
+==================================================
+
+Pastikan perubahan authentication/platform connection tidak merusak worker.
+
+Worker tetap dapat:
+
+- membaca PublishingJob
+- membaca Destination
+- mengetahui provider
+- memanggil provider layer
+
+Namun publishing Facebook belum diimplementasikan.
+
+Jika PublishingJob diarahkan ke provider yang belum memiliki publishing capability:
+
+status harus:
+
+not_configured
+
+atau:
+
+unsupported
+
+bukan published.
+
+==================================================
+31. QUEUE COMPATIBILITY
+==================================================
+
+Queue dan scheduler dari Phase 1.5 harus tetap bekerja.
+
+Jangan mengubah behavior existing tanpa alasan.
+
+Pastikan QueueItem tetap dapat mengacu pada Post/Destination.
+
+Scheduler tetap menggunakan database sebagai source of truth.
+
+==================================================
+32. STORAGE COMPATIBILITY
+==================================================
+
+Jangan mencampurkan:
+
+Platform credential storage
+
+dengan:
+
+Media storage.
+
+Media tetap menggunakan Storage Registry:
+
+- S3-compatible
+- MinIO
+- Google Drive architecture
+- Local jika tersedia
+
+Platform token/credential memiliki secure credential handling sendiri.
+
+==================================================
+33. MEDIA IMPORT COMPATIBILITY
+==================================================
+
+Jangan membuat downloader nyata pada Phase 2.
+
+Media Import abstraction dari Phase 1.5 harus tetap kompatibel.
+
+Nantinya:
+
+Source URL
+→ Importer
+→ Media
+→ original metadata
+→ Post
+→ Queue
+→ Scheduler
+→ PublishingJob
+→ Destination
+
+Phase 2 hanya connection/authentication.
+
+==================================================
+34. SECURITY AUDIT
+==================================================
+
+Sebelum commit:
+
+Periksa:
+
+.env
+.env.local
+.env.example
+credentials
+tokens
+API keys
+passwords
+private keys
+OAuth secrets
+
+Pastikan:
+
+- tidak ada secret committed
+- token tidak masuk logs
+- token tidak masuk queue payload
+- token tidak masuk frontend
+- OAuth state aman
+- protected API benar
+- user isolation benar
+
+Jika menemukan security issue:
+
+perbaiki sebelum commit.
+
+==================================================
+35. DOCUMENTATION
+==================================================
+
+Update:
+
+README.md
+
+docs/ARCHITECTURE.md
+
+docs/DATABASE.md
+
+docs/PLATFORM_MODULES.md
+
+docs/ROADMAP.md
+
+Tambahkan jika benar-benar diperlukan:
+
+docs/AUTHENTICATION.md
+
+Jangan membuat duplicate documentation.
+
+Dokumentasikan:
+
+- application authentication
+- session model
+- user isolation
+- PlatformConnection
+- Destination
+- provider authentication contract
+- Facebook OAuth architecture
+- Facebook Page discovery
+- token security
+- reconnect/disconnect
+- current limitations
+- required environment variables
+
+==================================================
+36. FACEBOOK RESEARCH DOCUMENT
+==================================================
+
+Jika belum ada:
+
+docs/research/facebook-api.md
+
+Buat/update dokumen ini.
+
+Catat:
+
+- API version yang diverifikasi
+- OAuth flow
+- permissions
+- Page access model
+- Page discovery
+- token handling
+- redirect URI
+- App Review
+- limitations
+- verification status
+
+Setiap item harus diberi status:
+
+VERIFIED
+
+atau:
+
+NEEDS VERIFICATION
+
+Jangan mengklaim sesuatu VERIFIED tanpa sumber resmi.
+
+==================================================
+37. ROADMAP UPDATE
+==================================================
+
+Update roadmap.
+
+Status:
+
+Phase 0:
+COMPLETE
+
+Phase 1:
+COMPLETE
+
+Phase 1.5:
+COMPLETE
+
+Phase 2:
+Authentication & Platform Connection
+CURRENT
+
+Phase berikutnya:
+
+Phase 3:
+Facebook Provider / Facebook Publishing Capability
+
+Tetapi jangan mulai Phase 3.
+
+==================================================
+38. BUILD & TEST
+==================================================
+
+Setelah implementation:
+
+Jalankan:
+
+pnpm lint
+
+pnpm typecheck
+
+pnpm test
+
+pnpm build
+
+Jika project menggunakan command berbeda:
+
+gunakan command existing yang benar.
+
+Jika ada error:
+
+perbaiki.
+
+Jangan menghapus test hanya agar PASS.
+
+Jangan menutupi error.
+
+==================================================
+39. DATABASE MIGRATION CHECK
+==================================================
+
+Pastikan:
+
+- migration berhasil
+- schema valid
+- existing data tidak hilang
+- Prisma generate berhasil
+- application dapat start
+- worker dapat start
+
+Jika database production belum tersedia:
+
+gunakan local/test database untuk verification.
+
+==================================================
+40. API VERIFICATION
+==================================================
+
+Test:
+
+- register
+- login
+- protected API
+- connections list
+- destinations list
+- provider configuration state
+
+Jika Meta credentials belum tersedia:
+
+Jangan membuat fake connected account.
+
+Tampilkan:
+
+Facebook OAuth:
+NEEDS CONFIGURATION
+
+atau:
+
+Facebook OAuth:
+READY
+
+berdasarkan kondisi environment sebenarnya.
+
+==================================================
+41. GIT REVIEW
+==================================================
+
+Setelah semua PASS:
+
+git status
+
+git diff --stat
+
+git diff
+
+Periksa seluruh perubahan.
+
+Pastikan hanya perubahan yang berkaitan dengan Phase 2.
+
+Jangan commit:
+
+- .env
+- access token
+- refresh token
+- OAuth secret
+- API key
+- credentials
+- logs
+- temporary files
+
+==================================================
+42. COMMIT
+==================================================
+
+Jika semua PASS:
+
+git add .
+
+git commit -m "feat: add authentication and platform connections"
+
+Jika commit message perlu disesuaikan karena perubahan sebenarnya berbeda, gunakan message yang tetap jujur dan jelas.
+
+Jangan membuat commit kosong.
+
+==================================================
+43. PUSH LANGSUNG
+==================================================
+
+Setelah commit:
+
+git push origin main
+
+Jangan force push.
+
+Jika push gagal:
+
+- jangan mengklaim berhasil
+- jangan menghapus perubahan
+- jangan reset commit secara sembarangan
+- tampilkan error sebenarnya
+
+==================================================
+44. REMOTE VERIFICATION
+==================================================
+
+Setelah push berhasil:
+
+git status
+
+git branch --show-current
+
+git log -1 --oneline
+
+git rev-parse HEAD
+
+git ls-remote origin HEAD
+
+Pastikan:
+
+local HEAD == remote HEAD
+
+==================================================
+45. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+PHASE 2 STATUS:
+COMPLETE / INCOMPLETE
+
+APPLICATION AUTH:
+PASS / FAIL
+
+USER ISOLATION:
+PASS / FAIL
+
+PLATFORM CONNECTION:
+PASS / FAIL
+
+FACEBOOK OAUTH:
+COMPLETE / NEEDS CONFIGURATION / NEEDS VERIFICATION
+
+FACEBOOK DESTINATION:
+COMPLETE / NEEDS VERIFICATION
+
+TOKEN SECURITY:
+PASS / FAIL
+
+DATABASE:
+PASS / FAIL
+
+API:
+PASS / FAIL
+
+WEB:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+QUEUE COMPATIBILITY:
+PASS / FAIL
+
+STORAGE COMPATIBILITY:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+NEXT RECOMMENDED STEP:
+Phase 3 — Facebook Provider / Publishing Capability
+
+==================================================
+FINAL STOP CONDITION
+==================================================
+
+Setelah Phase 2 selesai dan push berhasil:
+
+STOP.
+
+Jangan mulai Phase 3.
+
+Jangan implement Facebook Reels publishing.
+
+Jangan implement Facebook video publishing.
+
+Jangan implement YouTube.
+
+Jangan implement Instagram.
+
+Jangan implement TikTok.
+
+Jangan implement downloader.
+
+Tunggu instruksi berikutnya.
 
 ````
 
