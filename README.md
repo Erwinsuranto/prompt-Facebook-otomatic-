@@ -64,11 +64,135 @@
 
 ```
 
-# 
+# Prompt — Audit & Perbaiki API + HTTPS Callback
 ```
 
 
+Audit dan perbaiki masalah koneksi Content Pilot secara menyeluruh.
 
+Kondisi saat ini:
+
+Domain:
+https://api.contentpilot.biz.id
+
+DNS:
+api.contentpilot.biz.id -> 104.207.89.204
+
+Expected API:
+127.0.0.1:4000
+
+Expected Facebook OAuth callback:
+https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+Hasil pengecekan:
+
+curl http://127.0.0.1:4000/api/connections/facebook/callback
+=> Failed to connect to 127.0.0.1 port 4000: Connection refused
+
+curl https://api.contentpilot.biz.id/api/connections/facebook/callback
+=> Failed to connect to api.contentpilot.biz.id port 443: Connection refused
+
+JANGAN langsung menebak penyebab dan jangan hanya memberi instruksi manual.
+LAKUKAN AUDIT LANGSUNG TERHADAP REPOSITORY DAN SERVER.
+
+Periksa:
+
+1. package.json dan scripts
+2. struktur apps/api dan apps/web
+3. entry point backend
+4. port yang sebenarnya digunakan backend
+5. environment variables
+6. .env dan .env.example
+7. apakah API memang seharusnya berjalan di port 4000
+8. proses Node yang sedang berjalan
+9. Docker/docker-compose jika digunakan
+10. systemd/PM2 jika digunakan
+11. firewall
+12. apakah port 4000 sedang listen
+13. reverse proxy yang tersedia (Nginx/Caddy/Traefik)
+14. konfigurasi HTTPS
+15. konfigurasi Cloudflare yang relevan
+16. route /api/connections/facebook/callback
+17. konfigurasi META_REDIRECT_URI
+18. WEB_BASE_URL
+19. NEXT_PUBLIC_API_BASE_URL
+20. seluruh konfigurasi callback Facebook
+
+Jalankan pemeriksaan yang diperlukan, misalnya:
+
+ss -lntp
+ps aux | grep -E 'node|npm|pnpm|next|tsx'
+systemctl --type=service --state=running
+docker ps
+pm2 list
+curl http://127.0.0.1:4000
+curl http://127.0.0.1:4000/api/connections/facebook/callback
+curl -I https://api.contentpilot.biz.id
+
+Gunakan command yang memang sesuai dengan stack repository. Jangan mengubah sesuatu hanya untuk mencoba-coba.
+
+TUJUAN AKHIR:
+
+API harus berjalan pada port internal yang benar.
+
+Domain:
+
+https://api.contentpilot.biz.id
+
+harus dapat diteruskan ke API melalui HTTPS.
+
+Callback:
+
+https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+harus dapat diakses dari internet.
+
+Jika backend ternyata menggunakan port berbeda, jangan memaksakan port 4000. Tentukan port sebenarnya dari source code/configuration lalu sesuaikan reverse proxy dan environment secara konsisten.
+
+Jika reverse proxy belum ada, buat konfigurasi yang paling sesuai dengan server yang sudah digunakan. Jangan memasang beberapa reverse proxy sekaligus.
+
+Jika SSL belum tersedia, konfigurasi HTTPS dengan cara yang sesuai untuk domain Cloudflare dan server.
+
+PERHATIAN:
+
+- Jangan mengubah Facebook OAuth flow secara besar-besaran.
+- Jangan membuat fake callback.
+- Jangan membuat fake API response.
+- Jangan menghapus source code existing.
+- Jangan mengganti architecture project.
+- Jangan melakukan refactor besar yang tidak diperlukan.
+- Jangan commit secret.
+- Jangan menampilkan nilai META_APP_SECRET atau credential.
+- Jangan menganggap masalah selesai hanya karena konfigurasi file terlihat benar.
+
+Setelah perbaikan:
+
+1. pastikan backend benar-benar running
+2. pastikan port backend listening
+3. test endpoint lokal
+4. test domain HTTPS
+5. test callback endpoint
+6. periksa response HTTP/status code
+7. periksa log jika gagal
+8. jalankan typecheck/lint/build yang relevan jika perubahan code dilakukan
+
+Untuk callback endpoint, response 400/401/405 bisa tetap menunjukkan bahwa server dan route sudah reachable. Yang penting jangan mendapatkan connection refused/timeout.
+
+Terakhir laporkan secara nyata:
+
+SERVER API: RUNNING / NOT RUNNING
+API PORT: <actual port>
+LOCAL API: PASS / FAIL
+HTTPS: PASS / FAIL
+DOMAIN: PASS / FAIL
+FACEBOOK CALLBACK: PASS / FAIL
+REVERSE PROXY: <actual>
+SSL: PASS / FAIL
+ROOT CAUSE: <penyebab sebenarnya>
+FILES CHANGED: <daftar>
+TESTS: <hasil>
+
+Jangan mengatakan PASS jika belum benar-benar dites.
 ```
 
 # 
