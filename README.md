@@ -36,9 +36,53 @@
 
 ```
 
-# 
+# Prompt — Audit Meta Environment Configuration
 ```
+Audit konfigurasi Meta/Facebook OAuth pada project /root/content-pilot.
 
+JANGAN mengubah kode atau menghapus file terlebih dahulu.
+
+Masalah saat ini:
+- GET /api/platforms berhasil HTTP 200
+- Facebook providerRegistered=true
+- oauthProviderRegistered=true
+- oauthStatus="needs_configuration"
+- META_APP_ID dan META_APP_SECRET tidak ditemukan oleh grep di /root/content-pilot/.env
+- Service berjalan sebagai systemd service: content-pilot-api
+
+Cari penyebab sebenarnya secara menyeluruh.
+
+Periksa:
+1. /root/content-pilot/.env
+2. .env.example
+3. seluruh source code untuk META_APP_ID dan META_APP_SECRET
+4. konfigurasi dotenv/env loader
+5. systemd unit content-pilot-api
+6. EnvironmentFile pada systemd jika ada
+7. WorkingDirectory service
+8. environment yang benar-benar diterima process Node.js
+9. apakah service menggunakan file .env yang berbeda
+10. apakah nama variable yang digunakan source code berbeda
+11. apakah ada prefix/scope/config object yang menyebabkan variable tidak terbaca
+12. apakah service perlu restart setelah environment berubah
+
+Gunakan perintah audit yang aman dan JANGAN pernah menampilkan nilai META_APP_SECRET secara plaintext.
+
+Tampilkan:
+- lokasi konfigurasi yang sebenarnya digunakan
+- nama variable yang sebenarnya dibaca aplikasi
+- apakah META_APP_ID terdeteksi
+- apakah META_APP_SECRET terdeteksi
+- dari mana systemd/service mendapatkan environment
+- penyebab oauthStatus masih needs_configuration
+- langkah perbaikan paling tepat
+
+PENTING:
+- Jangan meminta saya mengirim App Secret ke chat.
+- Jangan commit secret.
+- Jangan mengubah source code kecuali setelah akar masalah konfigurasi ditemukan.
+- Jangan mengarang hasil.
+- Setelah menemukan penyebab, berhenti dan laporkan perbaikannya terlebih dahulu.
 
 
 ```
