@@ -87,9 +87,1514 @@
 
 
 
-# 
+# Prompt 3 — Facebook Provider & Publishing Capability
 ```
+Prompt 03 — Facebook Provider & Publishing Capability
 
+Lanjutkan project Content Pilot dari repository dan kondisi terakhir yang sudah ada.
+
+Phase 0:
+COMPLETE
+
+Phase 1:
+COMPLETE
+
+Phase 1.5:
+COMPLETE
+
+Phase 2:
+COMPLETE
+
+Phase 3:
+SEKARANG DIKERJAKAN
+
+Tujuan Phase 3 adalah mengimplementasikan Facebook sebagai provider publishing nyata menggunakan API resmi Meta/Facebook.
+
+==================================================
+ATURAN UTAMA
+==================================================
+
+Sebelum coding:
+
+1. Audit repository saat ini.
+2. Baca dokumentasi architecture existing.
+3. Baca docs/research/facebook-api.md.
+4. Periksa hasil implementasi Phase 2.
+5. Periksa PlatformConnection.
+6. Periksa Destination.
+7. Periksa ProviderRegistry.
+8. Periksa PublishingJob.
+9. Periksa PublishingAttempt.
+10. Periksa Queue.
+11. Periksa Scheduler.
+12. Periksa Media Library.
+13. Periksa Storage Registry.
+14. Periksa UI Accounts/Platforms.
+15. Jangan membuat ulang fitur yang sudah ada.
+16. Jangan merusak Phase 1, Phase 1.5, atau Phase 2.
+
+Facebook harus tetap menjadi provider/module.
+
+Core system TIDAK BOLEH menjadi Facebook-specific.
+
+==================================================
+TUJUAN PHASE 3
+==================================================
+
+Implementasikan kemampuan Facebook Page publishing yang nyata.
+
+Prioritas:
+
+1. Facebook Page text post
+2. Facebook Page photo post
+3. Facebook Page video
+4. Facebook Page Reels
+5. Publishing status
+6. Error handling
+7. Retry
+8. Queue integration
+9. Scheduler integration
+10. Publishing history
+
+Jangan langsung membuat semua fitur tambahan jika API atau permission belum terverifikasi.
+
+Prioritaskan Reels karena itu merupakan salah satu tujuan utama Content Pilot.
+
+==================================================
+WAJIB RESEARCH META TERLEBIH DAHULU
+==================================================
+
+Sebelum menulis production code, lakukan research terhadap dokumentasi resmi Meta terbaru.
+
+Gunakan sumber resmi Meta sebagai sumber utama.
+
+Verifikasi secara aktual:
+
+- current Graph API version
+- Facebook Login / OAuth flow
+- Page access token
+- Page access token generation
+- Page discovery
+- Page permissions
+- Page tasks/roles yang diperlukan
+- Page publishing permissions
+- text post endpoint
+- photo publishing endpoint
+- video publishing endpoint
+- Reels publishing endpoint
+- resumable upload
+- upload host
+- video requirements
+- Reels requirements
+- caption/description fields
+- scheduled publishing
+- publish status
+- upload status
+- error codes
+- rate limits
+- App Review
+- Business Verification
+- development mode restrictions
+- production restrictions
+- token expiration/reconnect
+
+Jangan mengandalkan blog pihak ketiga sebagai sumber final.
+
+Jika dokumentasi resmi Meta tidak dapat diakses:
+
+JANGAN MENGARANG.
+
+Tandai:
+
+NEEDS VERIFICATION
+
+dan dokumentasikan bagian tersebut.
+
+==================================================
+FACEBOOK PROVIDER ARCHITECTURE
+==================================================
+
+Gunakan ProviderRegistry existing.
+
+Target:
+
+Core
+→ ProviderRegistry
+→ FacebookProvider
+
+FacebookProvider dapat memiliki module:
+
+facebook/
+├── auth/
+├── pages/
+├── posts/
+├── photos/
+├── videos/
+├── reels/
+├── api/
+└── facebook.provider
+
+Tetapi ikuti struktur repository existing jika struktur modular yang berbeda sudah digunakan.
+
+Jangan membuat satu file raksasa.
+
+Pisahkan:
+
+API client
+
+authentication
+
+destination
+
+media validation
+
+upload
+
+publishing
+
+status
+
+error mapping
+
+==================================================
+FACEBOOK API CLIENT
+==================================================
+
+Buat Facebook API client abstraction.
+
+Contoh konsep:
+
+FacebookApiClient
+
+Kemampuan:
+
+- request
+- get
+- post
+- upload
+- handle response
+- normalize errors
+
+Jangan membuat setiap service langsung melakukan fetch ke Graph API secara acak.
+
+Semua komunikasi Facebook harus melewati provider/API client layer.
+
+==================================================
+TOKEN HANDLING
+==================================================
+
+Publishing menggunakan credential yang tersimpan pada PlatformConnection.
+
+Jangan:
+
+- mengirim token ke frontend
+- menyimpan token di PublishingJob payload
+- memasukkan token ke Redis payload
+- memasukkan token ke log
+- memasukkan token ke error message
+- commit token
+
+Provider harus mengambil credential secara aman dari backend.
+
+Jika credential expired:
+
+return connection_expired
+
+bukan:
+
+failed permanen tanpa informasi.
+
+User harus diarahkan untuk reconnect.
+
+==================================================
+DESTINATION
+==================================================
+
+Facebook publishing hanya boleh dilakukan terhadap Destination yang valid dan terhubung.
+
+Destination:
+
+Facebook Page
+
+Harus memiliki:
+
+- platform
+- externalId/pageId
+- connection
+- status
+- metadata
+
+Jangan menerima arbitrary Page ID dari frontend tanpa validasi ownership.
+
+PublishingJob harus memastikan Destination memang milik authenticated user.
+
+==================================================
+CAPABILITY SYSTEM
+==================================================
+
+Facebook provider harus mendeklarasikan capability.
+
+Contoh:
+
+Facebook:
+
+text_post
+photo
+video
+reels
+
+Jika suatu capability belum tersedia atau belum terverifikasi:
+
+disabled
+
+atau:
+
+not_configured
+
+Jangan menampilkan fitur sebagai aktif jika belum benar-benar diimplementasikan.
+
+==================================================
+POST MODEL
+==================================================
+
+Gunakan Post existing.
+
+Pastikan Post dapat menyimpan:
+
+- caption
+- title jika diperlukan
+- description jika diperlukan
+- media
+- destination
+- publishing metadata
+
+Original source caption tetap berbeda dari Post.caption.
+
+Contoh:
+
+Media.originalCaption:
+
+Video asli dari sumber
+
+Post.caption:
+
+Caption final Facebook
+
+User dapat mengubah caption sebelum publish.
+
+==================================================
+CAPTION
+==================================================
+
+Facebook provider harus menerima caption final dari Post.
+
+Jangan mengambil caption langsung dari source URL saat publishing.
+
+Flow:
+
+Original source
+→ originalCaption
+
+User
+→ edit caption
+
+Post.caption
+→ Facebook Provider
+
+Facebook Provider
+→ publish
+
+==================================================
+TEXT POST
+==================================================
+
+Implementasikan Facebook Page text publishing jika endpoint dan permission resmi sudah diverifikasi.
+
+Flow:
+
+Post
+→ PublishingJob
+→ FacebookProvider
+→ Facebook Page
+→ publish
+
+Simpan external post ID.
+
+Status:
+
+queued
+processing
+publishing
+published
+
+Jika gagal:
+
+failed
+
+==================================================
+PHOTO POST
+==================================================
+
+Implementasikan Facebook Page photo publishing jika API resmi sudah diverifikasi.
+
+Media berasal dari Media/Storage layer.
+
+Jangan membuat storage Facebook-specific.
+
+Provider harus menerima media reference dan mendapatkan media dari Storage abstraction.
+
+Jika API memerlukan public URL:
+
+gunakan secure/presigned URL sesuai architecture.
+
+Jangan membuat URL permanen yang membocorkan private media.
+
+==================================================
+VIDEO POST
+==================================================
+
+Implementasikan Facebook Page video publishing jika API resmi sudah diverifikasi.
+
+Pastikan provider mendukung:
+
+- media validation
+- upload
+- upload progress jika architecture mendukung
+- publish
+- status
+- error
+
+Video besar harus menggunakan flow resmi yang sesuai.
+
+Jangan mengirim video besar melalui request API biasa jika Meta mensyaratkan resumable upload.
+
+==================================================
+FACEBOOK REELS
+==================================================
+
+Ini adalah fitur prioritas Phase 3.
+
+Implementasikan Facebook Page Reels publishing menggunakan API resmi Meta yang telah diverifikasi.
+
+Jangan menggunakan browser automation.
+
+Jangan menggunakan Facebook web scraping.
+
+Jangan menggunakan username/password.
+
+Jangan menggunakan endpoint unofficial.
+
+==================================================
+REELS FLOW
+==================================================
+
+Setelah dokumentasi resmi diverifikasi, implementasikan flow sesuai API saat ini.
+
+Architecture harus mendukung konsep:
+
+1. initialize upload
+2. obtain upload information
+3. upload media
+4. finalize/publish
+5. monitor status jika diperlukan
+
+Jika API resmi saat ini memiliki flow yang berbeda:
+
+ikuti flow resmi tersebut.
+
+Jangan mengikuti prompt lama jika dokumentasi terbaru Meta berbeda.
+
+==================================================
+REELS MEDIA VALIDATION
+==================================================
+
+Validasi media sebelum membuat publishing job berjalan.
+
+Minimal architecture harus dapat memeriksa:
+
+- MIME type
+- file size
+- duration
+- width
+- height
+- aspect ratio
+
+Jangan hardcode requirement yang belum diverifikasi.
+
+Gunakan requirement resmi Meta.
+
+Jika Meta memiliki requirement berbeda antara upload dan publishing:
+
+ikuti requirement aktual.
+
+Error harus jelas:
+
+unsupported_media
+
+invalid_duration
+
+invalid_aspect_ratio
+
+invalid_format
+
+file_too_large
+
+atau error code yang sesuai.
+
+==================================================
+UPLOAD STORAGE
+==================================================
+
+Media source:
+
+Media Library
+→ Storage Provider
+→ Facebook upload
+
+Storage provider dapat:
+
+- MinIO
+- S3-compatible
+- Google Drive architecture
+- Local
+
+Jangan membuat Facebook provider bergantung langsung pada MinIO.
+
+Provider hanya menggunakan Storage abstraction.
+
+==================================================
+PUBLIC MEDIA URL
+==================================================
+
+Jika Facebook API membutuhkan public URL:
+
+buat mechanism yang aman.
+
+Pertimbangkan:
+
+presigned URL
+
+temporary URL
+
+upload endpoint
+
+atau mekanisme resmi Meta yang sesuai.
+
+Jangan membuat seluruh Media Library public.
+
+Jangan expose private files secara permanen.
+
+==================================================
+PUBLISHING JOB
+==================================================
+
+Gunakan PublishingJob existing.
+
+Jangan membuat Facebook-specific publishing job table jika tidak diperlukan.
+
+Contoh:
+
+PublishingJob:
+
+provider:
+facebook
+
+destination:
+page A
+
+post:
+post A
+
+contentType:
+reels
+
+==================================================
+JOB STATE MACHINE
+==================================================
+
+Gunakan state existing.
+
+Minimal:
+
+queued
+processing
+uploading
+publishing
+published
+failed
+retrying
+cancelled
+
+Gunakan status yang sudah ada jika repository memiliki enum/state machine.
+
+Jangan membuat dua state machine yang berbeda.
+
+==================================================
+PUBLISHING ATTEMPT
+==================================================
+
+Setiap attempt harus dicatat.
+
+Simpan:
+
+- attempt number
+- startedAt
+- completedAt
+- status
+- provider
+- externalId jika tersedia
+- errorCode
+- sanitized errorMessage
+
+Jangan menyimpan token.
+
+Jangan menyimpan secret.
+
+==================================================
+IDEMPOTENCY
+==================================================
+
+Publishing tidak boleh duplicate ketika:
+
+- worker restart
+- scheduler restart
+- Redis restart
+- API retry
+- network timeout
+- request timeout
+
+Gunakan idempotency mechanism existing.
+
+Jika Facebook API memberikan external upload/video ID:
+
+simpan ID tersebut sehingga process dapat dilanjutkan/reconciled.
+
+Jangan membuat duplicate Reel hanya karena worker tidak menerima response akibat timeout.
+
+==================================================
+RETRY
+==================================================
+
+Bedakan:
+
+Temporary:
+
+- timeout
+- network failure
+- transient API error
+- rate limit
+- temporary server error
+
+→ retry
+
+Permanent:
+
+- invalid token
+- permission denied
+- invalid Page
+- unsupported media
+- invalid parameters
+- policy rejection
+
+→ failed
+
+Jangan retry permanent error tanpa perubahan.
+
+Gunakan exponential backoff jika worker architecture sudah mendukung.
+
+==================================================
+RATE LIMIT
+==================================================
+
+Jangan membuat angka rate limit berdasarkan asumsi.
+
+Research Meta documentation.
+
+Jika rate limit belum dapat diverifikasi:
+
+NEEDS VERIFICATION
+
+Namun architecture harus mendukung:
+
+- provider rate limiter
+- retry-after
+- backoff
+- concurrency limit
+
+Facebook provider tidak boleh membanjiri API.
+
+==================================================
+QUEUE INTEGRATION
+==================================================
+
+Pastikan Queue Manager existing dapat menjalankan Facebook publishing.
+
+Flow:
+
+Queue
+→ QueueItem
+→ Schedule
+→ PublishingJob
+→ Worker
+→ FacebookProvider
+→ Facebook API
+
+Jangan membuat scheduler khusus Facebook.
+
+==================================================
+SCHEDULER INTEGRATION
+==================================================
+
+Contoh:
+
+Queue:
+
+Video 001
+Video 002
+Video 003
+
+Start:
+
+01:00
+
+Interval:
+
+1 hour
+
+Scheduler:
+
+01:00 → Facebook Page A → Reel 001
+02:00 → Facebook Page A → Reel 002
+03:00 → Facebook Page A → Reel 003
+
+Scheduler hanya menentukan waktu.
+
+Facebook provider melakukan publishing.
+
+==================================================
+MULTI PAGE
+==================================================
+
+Satu Post dapat ditargetkan ke beberapa Page.
+
+Contoh:
+
+Video A
+
+→ Page A
+→ Page B
+→ Page C
+
+Buat publishing job terpisah.
+
+Jika:
+
+Page A = published
+
+Page B = failed
+
+Page C = published
+
+History harus tetap menunjukkan status masing-masing.
+
+==================================================
+CROSSPOSTING
+==================================================
+
+Pastikan media tidak di-upload ulang ke storage hanya karena memiliki beberapa destination.
+
+Media hanya satu.
+
+PublishingJob berbeda.
+
+Contoh:
+
+Media 001
+
+→ Job Facebook Page A
+→ Job Facebook Page B
+→ Job Facebook Page C
+
+Provider dapat melakukan upload sesuai requirement Facebook.
+
+Jangan menduplikasi Media record.
+
+==================================================
+PUBLISH NOW
+==================================================
+
+UI harus mendukung:
+
+Publish Now
+
+Flow:
+
+User pilih:
+
+Media
+Caption
+Facebook Page
+Content Type
+
+Klik:
+
+Publish
+
+→ create PublishingJob
+→ queue
+→ worker
+→ Facebook
+
+Jangan melakukan synchronous long-running upload dari frontend request.
+
+==================================================
+SCHEDULE
+==================================================
+
+UI harus mendukung:
+
+Schedule
+
+Contoh:
+
+Tanggal:
+22 August 2026
+
+Waktu:
+21:00
+
+Timezone:
+Asia/Jakarta
+
+Post masuk scheduler.
+
+Jangan membuat frontend timer.
+
+Backend scheduler adalah source of truth.
+
+==================================================
+QUEUE MANAGER
+==================================================
+
+Pastikan user dapat melihat:
+
+Video
+Caption
+Destination
+Content Type
+Scheduled Time
+Status
+
+Contoh:
+
+Video 001
+Facebook Page A
+Reel
+21:00
+Scheduled
+
+Video 002
+Facebook Page A
+Reel
+22:00
+Published
+
+==================================================
+CONTENT TYPE
+==================================================
+
+Gunakan generic content type.
+
+Contoh:
+
+text
+photo
+video
+reels
+
+Jangan:
+
+facebook_reel
+
+sebagai core content model.
+
+Facebook provider dapat memetakan:
+
+reels
+
+→ Facebook Reels API
+
+==================================================
+UI CONTENT COMPOSER
+==================================================
+
+Update composer existing agar Facebook dapat dipilih.
+
+Contoh:
+
+Platform:
+
+Facebook
+
+Destination:
+
+Page A
+
+Content type:
+
+Reels
+
+Media:
+
+Video.mp4
+
+Caption:
+
+[....................]
+
+Schedule:
+
+Publish Now
+
+atau:
+
+Schedule
+
+==================================================
+REELS VALIDATION UI
+==================================================
+
+Sebelum submit:
+
+tampilkan validation.
+
+Contoh:
+
+✓ Video format supported
+✓ Duration supported
+✓ Aspect ratio supported
+✓ File size supported
+
+Jika gagal:
+
+✗ Video duration tidak sesuai
+
+Jangan menampilkan PASS jika backend belum memvalidasi.
+
+==================================================
+UPLOAD PROGRESS
+==================================================
+
+Jika provider/API mendukung progress:
+
+tampilkan:
+
+Preparing
+Uploading
+Publishing
+Published
+
+Jika progress percentage tidak tersedia:
+
+jangan mengarang angka.
+
+Gunakan status:
+
+Uploading
+
+bukan:
+
+Uploading 73%
+
+==================================================
+PUBLISHING HISTORY
+==================================================
+
+History harus menampilkan:
+
+- content
+- platform
+- destination
+- content type
+- scheduled time
+- published time
+- status
+- error
+- external ID jika aman
+
+Contoh:
+
+Video 001
+Facebook
+Page A
+Reels
+Published
+22 Aug 2026 21:03
+
+==================================================
+ERROR UI
+==================================================
+
+Jika error:
+
+Jangan menampilkan raw Graph API response yang dapat mengandung token atau informasi sensitif.
+
+Tampilkan error yang aman.
+
+Contoh:
+
+Facebook connection expired.
+Reconnect Facebook.
+
+Permission required.
+Reconnect or update Meta App permissions.
+
+Unsupported video format.
+
+Temporary Facebook API error.
+Retrying...
+
+==================================================
+FACEBOOK CONNECTION
+==================================================
+
+Gunakan PlatformConnection dari Phase 2.
+
+Jangan membuat OAuth system baru.
+
+Jika token expired:
+
+connection status:
+
+expired
+
+User:
+
+Reconnect
+
+Setelah reconnect:
+
+refresh destination.
+
+==================================================
+DESTINATION REFRESH
+==================================================
+
+User dapat:
+
+Refresh Pages
+
+Provider mengambil Pages terbaru.
+
+Jika Page sudah tidak tersedia:
+
+mark inactive.
+
+Jangan langsung menghapus historical data.
+
+==================================================
+APP CONFIGURATION
+==================================================
+
+Update:
+
+.env.example
+
+Jika diperlukan:
+
+META_APP_ID
+META_APP_SECRET
+META_REDIRECT_URI
+META_GRAPH_API_VERSION
+
+Gunakan naming convention existing.
+
+Jangan commit secret.
+
+Jangan hardcode version jika architecture sudah memiliki centralized API version configuration.
+
+Jika version harus ditentukan berdasarkan official Meta docs:
+
+gunakan version yang telah diverifikasi.
+
+==================================================
+DOCUMENTATION
+==================================================
+
+Update:
+
+README.md
+
+docs/ARCHITECTURE.md
+
+docs/PLATFORM_MODULES.md
+
+docs/DATABASE.md
+
+docs/ROADMAP.md
+
+docs/research/facebook-api.md
+
+Jika diperlukan:
+
+docs/facebook-publishing.md
+
+Dokumentasikan:
+
+- Facebook provider
+- Page publishing
+- photo
+- video
+- Reels
+- authentication
+- Page token
+- upload flow
+- media requirements
+- permissions
+- status
+- retry
+- rate limit
+- known limitations
+- App Review
+- development mode
+- production requirements
+
+==================================================
+CAPABILITY MATRIX
+==================================================
+
+Update capability matrix.
+
+Facebook:
+
+Text Post
+Photo
+Video
+Reels
+
+Untuk masing-masing:
+
+Implemented
+Verified
+Permission
+Endpoint
+Media Requirements
+Scheduling
+Status Tracking
+Known Limitations
+
+Jangan menandai Implemented jika code belum selesai.
+
+==================================================
+TESTING
+==================================================
+
+Buat unit/integration test untuk:
+
+FacebookProvider
+
+FacebookApiClient
+
+Destination mapping
+
+Page validation
+
+Caption mapping
+
+Media validation
+
+Reels validation
+
+PublishingJob creation
+
+PublishingAttempt
+
+Error mapping
+
+Retry classification
+
+Idempotency
+
+Queue integration
+
+Scheduler integration
+
+Multi-page publishing
+
+Connection expired
+
+Permission denied
+
+Unsupported media
+
+Rate limit
+
+Timeout
+
+==================================================
+MOCK BOUNDARY
+==================================================
+
+Untuk test:
+
+Mock Facebook API pada boundary.
+
+Jangan mock FacebookProvider business logic.
+
+Test business logic sebenarnya.
+
+Production code harus menggunakan API resmi.
+
+==================================================
+NO FAKE SUCCESS
+==================================================
+
+Jika META credentials belum tersedia:
+
+Jangan membuat fake successful publishing.
+
+Jika Meta App belum dikonfigurasi:
+
+status:
+
+NOT CONFIGURED
+
+Jika permission belum tersedia:
+
+status:
+
+PERMISSION REQUIRED
+
+Jika API behavior belum dapat diverifikasi:
+
+status:
+
+NEEDS VERIFICATION
+
+Jangan mengubah menjadi published hanya agar test terlihat bagus.
+
+==================================================
+REAL INTEGRATION TEST
+==================================================
+
+Jika environment memiliki Meta credentials dan Page yang memang terhubung:
+
+boleh lakukan real API verification terhadap Page yang memang dimiliki/diotorisasi.
+
+Namun:
+
+- jangan publish ke Page orang lain
+- jangan spam
+- jangan melakukan bulk test
+- jangan membuat banyak postingan percobaan
+- gunakan satu test content yang aman
+- jangan commit credentials
+
+Jika credentials tidak tersedia:
+
+skip real integration test dengan alasan yang jelas.
+
+Jangan menyebut integration test PASS jika sebenarnya skipped.
+
+==================================================
+SECURITY AUDIT
+==================================================
+
+Sebelum commit:
+
+Periksa:
+
+.env
+.env.local
+tokens
+API keys
+Meta App Secret
+Page Access Token
+OAuth credentials
+logs
+Redis payload
+queue payload
+database dumps
+
+Pastikan:
+
+- tidak ada secret committed
+- token tidak masuk frontend
+- token tidak masuk queue payload
+- token tidak masuk logs
+- token tidak masuk error response
+- Page ID ownership tervalidasi
+- user isolation tetap aktif
+
+==================================================
+BUILD & TEST
+==================================================
+
+Jalankan command existing.
+
+Minimal:
+
+pnpm lint
+
+pnpm typecheck
+
+pnpm test
+
+pnpm build
+
+Jika project memiliki command tambahan:
+
+jalankan juga.
+
+Jika ada error:
+
+perbaiki.
+
+Jangan menghapus test hanya agar PASS.
+
+==================================================
+UI VERIFICATION
+==================================================
+
+Periksa UI secara nyata.
+
+Pastikan:
+
+- Accounts tetap bekerja
+- Platforms tetap bekerja
+- Media Library tetap bekerja
+- Queue tetap bekerja
+- Scheduler tetap bekerja
+- Content Composer dapat memilih Facebook
+- Destination dapat dipilih
+- Content type dapat dipilih
+- Reels validation tersedia
+- status publishing terlihat
+- error state terlihat
+- mobile responsive
+
+Jangan membuat UI mock.
+
+==================================================
+DATABASE MIGRATION
+==================================================
+
+Jika schema perlu diubah:
+
+buat migration.
+
+Jangan menghapus data existing.
+
+Pastikan:
+
+Prisma schema valid.
+
+Migration berhasil.
+
+Application dapat start.
+
+Worker dapat start.
+
+==================================================
+GIT REVIEW
+==================================================
+
+Sebelum commit:
+
+git status
+
+git diff --stat
+
+git diff
+
+Review semua perubahan.
+
+Pastikan tidak ada:
+
+.env
+
+credentials
+
+tokens
+
+API keys
+
+logs
+
+temporary files
+
+build artifacts yang tidak diperlukan
+
+==================================================
+COMMIT
+==================================================
+
+Jika seluruh Phase 3 selesai:
+
+git add .
+
+git commit -m "feat: add facebook publishing provider"
+
+Jika perubahan sebenarnya lebih spesifik, gunakan commit message yang jujur.
+
+Jangan membuat commit kosong.
+
+==================================================
+PUSH LANGSUNG
+==================================================
+
+Setelah commit:
+
+git push origin main
+
+Jangan force push.
+
+Jika push gagal:
+
+- jangan mengklaim sukses
+- jangan menghapus commit
+- jangan reset perubahan secara sembarangan
+- tampilkan error sebenarnya
+
+==================================================
+REMOTE VERIFICATION
+==================================================
+
+Setelah push:
+
+git status
+
+git branch --show-current
+
+git log -1 --oneline
+
+git rev-parse HEAD
+
+git ls-remote origin HEAD
+
+Pastikan:
+
+LOCAL HEAD == REMOTE HEAD
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan:
+
+PHASE 3 STATUS:
+COMPLETE / INCOMPLETE
+
+META API RESEARCH:
+COMPLETE / NEEDS VERIFICATION
+
+FACEBOOK PROVIDER:
+PASS / FAIL
+
+FACEBOOK CONNECTION:
+PASS / FAIL
+
+PAGE DESTINATION:
+PASS / FAIL
+
+TEXT POST:
+PASS / FAIL / NOT IMPLEMENTED
+
+PHOTO:
+PASS / FAIL / NOT IMPLEMENTED
+
+VIDEO:
+PASS / FAIL / NOT IMPLEMENTED
+
+REELS:
+PASS / FAIL / NOT IMPLEMENTED
+
+MEDIA VALIDATION:
+PASS / FAIL
+
+CAPTION:
+PASS / FAIL
+
+QUEUE:
+PASS / FAIL
+
+SCHEDULER:
+PASS / FAIL
+
+RETRY:
+PASS / FAIL
+
+IDEMPOTENCY:
+PASS / FAIL
+
+MULTI PAGE:
+PASS / FAIL
+
+PUBLISHING HISTORY:
+PASS / FAIL
+
+UI:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+REAL META INTEGRATION:
+PASS / SKIPPED / FAIL
+
+Jika REAL META INTEGRATION = SKIPPED:
+jelaskan alasannya.
+
+==================================================
+FINAL STOP CONDITION
+==================================================
+
+Setelah Phase 3 selesai dan push berhasil:
+
+STOP.
+
+Jangan mulai Phase 4.
+
+Jangan implement YouTube.
+
+Jangan implement Instagram.
+
+Jangan implement TikTok.
+
+Jangan implement downloader.
+
+Jangan implement cross-platform downloader.
+
+Jangan memperluas scope tanpa instruksi.
+
+Tunggu instruksi berikutnya.
 
 ````
 
