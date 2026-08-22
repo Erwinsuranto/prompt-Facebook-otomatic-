@@ -53,7 +53,105 @@
 # 
 ```
 
+Prompt: Audit Final OAuth Configuration
 
+Lanjutkan audit konfigurasi OAuth Facebook saja.
+
+JANGAN mengubah source code OAuth.
+JANGAN melakukan refactor.
+JANGAN mengubah nginx atau Cloudflare.
+
+Kondisi yang sudah diketahui:
+
+API:
+https://api.contentpilot.biz.id
+
+Callback:
+https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+Callback HTTPS sudah berhasil dan mengembalikan HTTP 302.
+Jadi infrastructure, DNS, Cloudflare, SSL, nginx, dan callback route sudah dapat diakses.
+
+Sekarang cari dan verifikasi dari repository:
+
+1. File .env yang benar-benar digunakan oleh service.
+2. Nama variable yang dibutuhkan:
+   META_APP_ID
+   META_APP_SECRET
+   META_REDIRECT_URI
+   WEB_BASE_URL
+
+3. Jangan tampilkan nilai META_APP_SECRET.
+4. Jangan tampilkan access token atau credential sensitif.
+5. Tampilkan hanya:
+   configured / missing / placeholder.
+
+6. Cari dari source code apakah WEB_BASE_URL digunakan untuk:
+   - redirect setelah OAuth
+   - frontend URL
+   - /accounts
+   - cookie
+   - CORS
+   - callback flow
+
+7. Tentukan URL FRONTEND yang sebenarnya berdasarkan repository.
+   Jangan menebak.
+
+8. Pastikan:
+   META_REDIRECT_URI =
+   https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+9. Pastikan META_REDIRECT_URI tidak ditimpa oleh fallback/default lain.
+
+10. Cari endpoint yang digunakan frontend untuk memulai Facebook OAuth.
+
+11. Tampilkan URL entry point OAuth tersebut.
+
+12. Periksa apakah konfigurasi saat ini menyebabkan:
+   oauthStatus=needs_configuration
+   atau
+   connect=invalid
+
+13. Jangan meminta saya memasukkan secret ke chat.
+   Jika META_APP_ID atau META_APP_SECRET memang kosong, cukup laporkan bahwa variable tersebut missing.
+
+14. Jangan melakukan perubahan file.
+
+Output:
+
+=== OAUTH CONFIG AUDIT ===
+
+ENV FILE:
+<path>
+
+META_APP_ID:
+configured / missing / placeholder
+
+META_APP_SECRET:
+configured / missing / placeholder
+
+META_REDIRECT_URI:
+<value jika aman>
+
+WEB_BASE_URL:
+<value>
+
+FRONTEND URL:
+<URL yang ditemukan dari repository>
+
+OAUTH ENTRY POINT:
+<endpoint>
+
+CALLBACK:
+<endpoint>
+
+CONFIGURATION STATUS:
+READY / NEEDS CONFIGURATION
+
+EXACT ACTION REQUIRED:
+<jelaskan hanya tindakan yang perlu dilakukan>
+
+STOP setelah audit.
 
 ```
 
