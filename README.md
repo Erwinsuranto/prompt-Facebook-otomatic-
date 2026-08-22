@@ -59,7 +59,98 @@
 
 # 
 ```
+Prompt: Audit Facebook OAuth Flow
 
+Lakukan audit khusus terhadap Facebook OAuth flow di repository /root/content-pilot.
+
+JANGAN langsung melakukan refactor besar dan JANGAN mengubah Cloudflare/nginx.
+
+Kondisi yang sudah diverifikasi:
+
+- Domain: https://api.contentpilot.biz.id
+- HTTPS berhasil melalui Cloudflare
+- /api/connections/facebook/callback dapat diakses
+- Callback mengembalikan HTTP 302 ke:
+  https://api.contentpilot.biz.id/accounts?connect=invalid
+- Ini terjadi ketika callback dipanggil langsung tanpa parameter OAuth.
+
+Sekarang cari dari source code:
+
+1. Route yang memulai Facebook OAuth.
+2. URL endpoint yang harus dibuka user untuk memulai OAuth.
+3. Route callback Facebook.
+4. Parameter query yang diharapkan callback:
+   - code
+   - state
+   - error
+   - error_reason
+   - error_description
+5. Bagaimana state dibuat dan divalidasi.
+6. Bagaimana redirect_uri dibuat.
+7. Pastikan redirect_uri yang digunakan authorization request SAMA PERSIS dengan:
+
+https://api.contentpilot.biz.id/api/connections/facebook/callback
+
+8. Periksa META_REDIRECT_URI dari .env dan seluruh fallback/default yang mungkin menimpa nilainya.
+9. Periksa META_APP_ID dan META_APP_SECRET hanya untuk keberadaan/configuration; JANGAN tampilkan secret.
+10. Periksa apakah frontend memanggil endpoint OAuth yang benar.
+11. Cari kemungkinan route mismatch seperti:
+    /api/connections/facebook/auth
+    /api/auth/facebook
+    /api/connections/facebook/connect
+    atau route lain yang sebenarnya digunakan repository.
+12. Periksa apakah authorization URL Facebook dibangun menggunakan graph version yang benar sesuai implementation saat ini.
+13. Jangan mengarang endpoint atau permission.
+14. Jika ada masalah, tunjukkan file dan line yang bermasalah.
+15. Jalankan typecheck/test yang relevan setelah perubahan jika memang perlu.
+
+PENTING:
+
+Jangan menganggap callback URL rusak hanya karena membuka callback secara langsung menghasilkan connect=invalid.
+
+Itu bisa merupakan behavior yang benar karena callback membutuhkan OAuth code/state.
+
+Tujuan audit ini adalah menemukan ENTRY POINT OAuth yang benar dan memastikan seluruh flow:
+
+START → Facebook → CALLBACK → TOKEN EXCHANGE → CONNECTION
+
+berfungsi.
+
+Jangan melakukan implementation besar.
+
+Output:
+
+OAUTH ENTRY POINT:
+<endpoint sebenarnya>
+
+CALLBACK:
+<endpoint>
+
+REDIRECT URI:
+<nilai yang benar>
+
+STATE:
+<status>
+
+TOKEN EXCHANGE:
+<status>
+
+FRONTEND FLOW:
+<status>
+
+META CONFIG:
+<status tanpa membocorkan secret>
+
+PROBLEMS FOUND:
+<daftar>
+
+FILES INVOLVED:
+<daftar>
+
+RECOMMENDED FIX:
+<jelas>
+
+Setelah audit selesai, STOP.
 
 
 ```
