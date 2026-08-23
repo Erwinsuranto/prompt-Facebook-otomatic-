@@ -142,10 +142,487 @@
 
 
 ````
-# 
+# Prompt — Implement UI Mengikuti Design Reference
 ```
 
+# CONTENT PILOT — IMPLEMENT UI FROM DESIGN REFERENCE
 
+Saya sudah menyediakan gambar referensi desain UI di repository.
+
+WAJIB baca dan lihat seluruh gambar di:
+
+docs/design-reference/
+
+Gambar di folder tersebut adalah DESIGN REFERENCE UTAMA untuk UI Content Pilot.
+
+==================================================
+ATURAN UTAMA
+==================================================
+
+Sebelum mengubah kode UI:
+
+1. List seluruh file di:
+   docs/design-reference/
+
+2. Buka dan lihat setiap gambar desain yang relevan.
+
+3. Pelajari visual design secara langsung.
+
+4. Audit UI existing.
+
+5. Bandingkan UI existing dengan design reference.
+
+6. Implementasikan UI agar mengikuti design reference.
+
+JANGAN hanya membaca nama file atau README.
+JANGAN hanya mengandalkan deskripsi prompt.
+WAJIB melihat gambar sebenarnya.
+
+==================================================
+YANG HARUS DIIKUTI DARI GAMBAR
+==================================================
+
+Gunakan gambar sebagai acuan untuk:
+
+- layout
+- sidebar
+- navigation
+- header
+- typography
+- font sizing
+- spacing
+- card layout
+- border
+- border radius
+- button
+- input
+- status badge
+- icon placement
+- colors
+- visual hierarchy
+- empty state
+- loading state
+- error state
+- content width
+- grid
+- responsive behavior
+- mobile layout
+- desktop layout
+
+Tujuannya bukan membuat UI yang "mirip secara umum".
+
+Tujuannya adalah membuat UI project mengikuti design reference sedekat mungkin secara visual, sambil tetap mempertahankan functionality existing.
+
+==================================================
+JANGAN COPY GAMBAR
+==================================================
+
+Gambar hanya sebagai reference.
+
+JANGAN:
+
+- menggunakan screenshot sebagai background
+- memasukkan screenshot sebagai UI
+- membuat halaman berupa gambar
+- membuat mockup statis
+- mengganti UI dengan image
+
+Implementasikan design menggunakan:
+
+- React/Next.js component existing
+- CSS existing
+- design tokens
+- reusable components
+- icon library yang sudah digunakan project
+
+==================================================
+PENTING — FUNCTIONALITY HARUS TETAP
+==================================================
+
+UI redesign TIDAK BOLEH merusak functionality yang sudah bekerja.
+
+Pertahankan:
+
+- authentication
+- Accounts
+- Facebook OAuth
+- Facebook connection
+- destination discovery
+- reconnect
+- disconnect
+- token handling
+- upload
+- media handling
+- publishing
+- API integration
+- queue
+- scheduler
+- history
+- status
+- existing API endpoints
+
+Jangan mengubah backend hanya demi menyesuaikan tampilan.
+
+Jika UI membutuhkan data yang belum tersedia:
+
+gunakan empty state.
+
+JANGAN membuat fake data atau fake success.
+
+==================================================
+CONTENT PILOT DESIGN SYSTEM
+==================================================
+
+Ikuti visual language dari gambar reference.
+
+Target:
+
+- modern SaaS
+- premium
+- clean
+- professional
+- dark UI
+- compact tetapi tidak padat
+- jelas secara visual
+- nyaman digunakan di mobile
+- nyaman digunakan di desktop
+
+Jangan menambahkan design style baru yang bertentangan dengan reference.
+
+Jika terdapat perbedaan antara UI existing dan gambar reference:
+
+prioritaskan gambar reference untuk visual,
+tetapi prioritaskan functionality existing untuk behavior.
+
+==================================================
+COMPONENT REUSE
+==================================================
+
+Sebelum membuat component baru:
+
+audit component existing.
+
+Jika component sudah tersedia dan dapat digunakan:
+
+REUSE.
+
+Jangan membuat duplicate:
+
+- Button
+- Card
+- Badge
+- StatusBadge
+- Input
+- Modal
+- Navigation
+- PlatformCard
+- DestinationCard
+- EmptyState
+- LoadingState
+
+Jika component existing perlu diperbaiki:
+
+perbaiki component tersebut daripada membuat duplicate.
+
+==================================================
+PAGE YANG HARUS DIPERBAIKI
+==================================================
+
+Ikuti gambar reference untuk memperbaiki UI:
+
+1. Dashboard
+2. Accounts
+3. Platforms
+4. Upload
+5. Media Library
+6. Queue Manager
+7. Scheduler
+8. History
+9. Status
+10. Facebook destination/account UI
+
+Jika beberapa page belum tersedia atau belum menjadi scope:
+
+jangan membuat functionality palsu.
+
+==================================================
+ACCOUNTS UI
+==================================================
+
+Accounts harus terlihat seperti design reference.
+
+Tampilkan informasi yang benar-benar berasal dari backend:
+
+- platform
+- account
+- connection status
+- destinations
+- scopes/capabilities jika tersedia
+- actions
+
+Actions existing harus tetap bekerja:
+
+- Connect
+- Reconnect
+- Refresh
+- Disconnect
+- View destinations
+- Connect another
+
+Jika API unavailable:
+
+buat error state yang rapi.
+
+Contoh:
+
+API unavailable
+
+Unable to connect to the Content Pilot API.
+
+[Retry]
+
+Jangan hanya menampilkan error teknis mentah.
+
+==================================================
+FACEBOOK UI
+==================================================
+
+Facebook adalah provider yang sudah bekerja.
+
+Jangan merusak implementation Facebook.
+
+UI Facebook harus mengikuti gambar reference.
+
+Pertahankan:
+
+- connection
+- destination
+- page
+- publishing capability
+- upload
+- publishing flow
+
+Jika publishing benar-benar tersedia:
+
+tampilkan status berdasarkan data backend.
+
+Jangan hardcode:
+
+"Connected"
+
+jika sebenarnya backend mengatakan disconnected.
+
+==================================================
+RESPONSIVE DESIGN
+==================================================
+
+WAJIB mengikuti gambar reference pada mobile dan desktop.
+
+Test minimal:
+
+360px
+390px
+430px
+768px
+1024px
+desktop
+
+Pastikan:
+
+- tidak ada horizontal overflow
+- tidak ada text overlap
+- tidak ada button terpotong
+- card tidak keluar layar
+- grid collapse dengan benar
+- navigation tetap usable
+- touch target nyaman
+- spacing tetap proporsional
+
+Mobile bukan sekadar desktop yang diperkecil.
+
+Implementasikan responsive layout yang benar.
+
+==================================================
+LOADING / EMPTY / ERROR
+==================================================
+
+Ikuti visual style dari design reference.
+
+Loading:
+
+gunakan skeleton jika memungkinkan.
+
+Empty:
+
+gunakan icon + title + description + CTA.
+
+Error:
+
+gunakan status indicator + message + retry.
+
+Jangan menampilkan:
+
+Loading...
+
+sebagai satu-satunya loading UI jika design reference menunjukkan skeleton.
+
+==================================================
+VISUAL QA
+==================================================
+
+Setelah implementation:
+
+bandingkan hasil UI dengan:
+
+docs/design-reference/
+
+Lakukan visual review.
+
+Cari:
+
+- layout mismatch
+- spacing mismatch
+- typography mismatch
+- color mismatch
+- card mismatch
+- button mismatch
+- responsive mismatch
+- alignment mismatch
+
+Perbaiki mismatch yang signifikan.
+
+Jangan berhenti hanya karena build berhasil.
+
+Build PASS ≠ UI sudah selesai.
+
+==================================================
+BACKEND REGRESSION
+==================================================
+
+Setelah UI selesai, jalankan test yang tersedia.
+
+Minimal:
+
+typecheck
+lint
+tests
+build
+
+Pastikan Facebook regression tetap PASS.
+
+Jangan menghapus test hanya karena test gagal setelah redesign.
+
+Jika ada failure:
+
+investigasi dan perbaiki.
+
+==================================================
+GIT SAFETY
+==================================================
+
+Sebelum commit:
+
+git status
+git diff
+
+Pastikan tidak ada:
+
+.env
+API key
+OAuth token
+password
+secret
+
+Pastikan gambar reference memang berada di:
+
+docs/design-reference/
+
+Jangan menghapus gambar reference.
+
+==================================================
+COMMIT
+==================================================
+
+Jika semua verification PASS:
+
+commit perubahan dengan:
+
+feat(web): implement ui from design reference
+
+Push ke branch aktif.
+
+Setelah push:
+
+verifikasi remote.
+
+Laporkan:
+
+UI STATUS: PASS
+DESKTOP: PASS
+MOBILE: PASS
+FACEBOOK REGRESSION: PASS
+TYPECHECK: PASS
+LINT: PASS
+TEST: PASS
+BUILD: PASS
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah UI selesai, verification PASS, dan push berhasil:
+
+STOP.
+
+Jangan:
+
+- menambah provider baru
+- mengubah Facebook backend
+- membuat YouTube
+- membuat Instagram
+- membuat TikTok
+- melakukan refactor besar
+- mengubah architecture core
+
+Fokus task ini HANYA:
+
+"Implement UI Content Pilot berdasarkan gambar di docs/design-reference/."
+
+Jika gambar reference menunjukkan sesuatu yang belum ada di UI, implementasikan bagian UI tersebut hanya jika functionality backend yang diperlukan memang sudah tersedia.
+
+Jika belum tersedia, buat UI state yang jujur seperti:
+
+Coming Soon
+Unavailable
+Not connected
+
+Jangan membuat fake functionality.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Berikan ringkasan:
+
+1. Gambar reference yang digunakan
+2. Page yang diperbaiki
+3. Component yang dibuat/reused
+4. Responsive changes
+5. Facebook regression result
+6. Typecheck
+7. Lint
+8. Tests
+9. Build
+10. Git commit
+11. Push status
+
+STOP setelah laporan.
 ````
 # Prompt: Buat Folder Design Reference
 ```
