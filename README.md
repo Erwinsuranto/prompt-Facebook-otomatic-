@@ -152,10 +152,91 @@
 
 
 ````
-# 
+# Prompt berikutnya — Fix Production API URL
 ```
 
+Prompt: Fix Production API Base URL
 
+Audit dan perbaiki masalah pada frontend Content Pilot.
+
+Saat production dibuka melalui:
+https://contentpilot.biz.id
+
+halaman /accounts menampilkan:
+"API unreachable"
+"Couldn't reach the API at http://localhost:4000"
+
+Padahal hasil server verification:
+- API /health = 200
+- API /ready = 200
+- web = 200
+- /accounts = 200
+- /platforms = 200
+- /upload = 200
+- latest build active = YES
+
+Tugas:
+
+1. Cari semua penggunaan hardcoded:
+   http://localhost:4000
+   localhost:4000
+   atau API URL development yang dipakai frontend.
+
+2. Audit bagaimana frontend menentukan API base URL.
+
+3. Buat konfigurasi yang benar untuk development dan production.
+   Production JANGAN mengarah ke localhost.
+
+4. Jika architecture memungkinkan same-origin API, gunakan mekanisme production yang paling aman dan konsisten dengan routing/nginx yang sudah ada.
+
+5. Jangan mengubah Facebook provider, OAuth, token, publishing flow, database, worker, queue, atau scheduler.
+
+6. Jangan membuat fake API response.
+
+7. Jangan mengubah credential atau .env production tanpa alasan.
+
+8. Pastikan /accounts dapat mengambil status API dan data Facebook melalui endpoint production.
+
+9. Pastikan development tetap dapat menggunakan localhost jika memang diperlukan.
+
+10. Setelah perubahan:
+   - typecheck
+   - lint
+   - build
+   - test terkait frontend/API
+   - jalankan production verification
+
+11. Restart service jika diperlukan agar build terbaru aktif.
+
+12. Verifikasi melalui public URL:
+   /accounts
+   /platforms
+   /upload
+
+13. Pastikan browser production TIDAK lagi mencoba http://localhost:4000.
+
+14. Jangan melakukan git reset atau force push.
+
+15. Commit perubahan jika semua verification PASS dan push ke branch aktif.
+
+Laporkan:
+
+API URL AUDIT: PASS
+LOCALHOST REFERENCES REMOVED FROM PRODUCTION: YES/NO
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+BUILD: PASS/FAIL
+TESTS: PASS/FAIL
+PRODUCTION API: PASS/FAIL
+ACCOUNTS: PASS/FAIL
+PLATFORMS: PASS/FAIL
+UPLOAD: PASS/FAIL
+SERVER RESTART: SUCCESS/NOT NEEDED/FAILED
+GIT STATUS: CLEAN/DIRTY
+COMMIT: <hash>
+PUSH: SUCCESS/FAILED
+
+STOP setelah selesai.
 ````
 # Prompt: Restart & Verify Production
 ```
