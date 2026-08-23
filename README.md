@@ -199,7 +199,128 @@
 ````
 # 
 ```
+Prompt: Verify Facebook Connection & Destination Persistence
 
+Lanjutkan dari kondisi project saat ini.
+
+Facebook OAuth sudah berhasil dan UI menunjukkan:
+
+- Facebook OAuth ready
+- Facebook account connected
+- Destination ditemukan
+- Destination: Yourdreels (page)
+- Destination status: active
+- Scope sudah tersedia
+
+JANGAN membuat fitur publishing baru dulu.
+
+Tugas sekarang hanya melakukan verifikasi dan hardening connection layer.
+
+1. Audit implementasi Facebook connection yang sudah ada.
+
+Pastikan:
+- OAuth callback benar
+- access token tidak disimpan plaintext di source code
+- PlatformConnection tersimpan dengan benar
+- Facebook account identity tersimpan
+- Page/Destination tersimpan dengan benar
+- destination provider = facebook
+- destination type = page
+- destination external ID tersimpan
+- connection dan destination memiliki relasi yang benar
+- data tidak tertukar antar user
+
+2. Audit endpoint:
+
+- login/session
+- /api/auth/me
+- /api/connections/facebook/connect
+- /api/connections/facebook/callback
+- endpoint destination discovery
+- endpoint connection status
+- endpoint reconnect
+- endpoint disconnect
+
+Pastikan semua endpoint menggunakan session/user yang benar.
+
+3. Audit persistence.
+
+Lakukan test:
+
+Connect Facebook
+→ OAuth callback
+→ save connection
+→ discover Page
+→ save destination
+→ refresh browser
+→ login/session tetap valid
+→ Accounts tetap menunjukkan Connected
+→ Platforms tetap menunjukkan destination Active.
+
+Jangan membuat fake/mock success.
+
+4. Test multi-user isolation.
+
+Pastikan user A tidak dapat melihat:
+- connection user B
+- Facebook Page user B
+- token user B
+- destination user B.
+
+5. Test reconnect.
+
+Pastikan reconnect tidak membuat duplicate PlatformConnection atau duplicate Destination jika connection yang sama sudah ada.
+
+6. Test disconnect.
+
+Pastikan disconnect:
+- mencabut/menghapus connection sesuai desain keamanan
+- destination terkait ditangani dengan benar
+- UI berubah menjadi disconnected
+- tidak meninggalkan token aktif yang tidak semestinya.
+
+7. Audit database/schema.
+
+Jika schema sudah ada, jangan mengganti arsitektur tanpa alasan.
+
+Jika ada masalah, perbaiki hanya masalah yang diperlukan untuk connection persistence.
+
+8. Jangan implement:
+- Facebook publishing
+- Reels uploader
+- video publishing
+- queue production
+- scheduler production
+- YouTube
+- Instagram
+- TikTok.
+
+9. Jalankan:
+- API typecheck
+- Web typecheck
+- lint jika tersedia
+- test yang relevan
+- production build jika aman
+
+10. Setelah selesai, berikan laporan:
+
+FACEBOOK CONNECTION: PASS/FAIL
+OAUTH CALLBACK: PASS/FAIL
+SESSION: PASS/FAIL
+CONNECTION PERSISTENCE: PASS/FAIL
+DESTINATION PERSISTENCE: PASS/FAIL
+MULTI-USER ISOLATION: PASS/FAIL
+RECONNECT: PASS/FAIL
+DISCONNECT: PASS/FAIL
+SECURITY: PASS/FAIL
+TYPECHECK: PASS/FAIL
+BUILD: PASS/FAIL
+
+Jika semua PASS:
+
+CONNECTION LAYER STATUS: READY
+
+Jangan lanjut ke publishing sampai saya memberikan instruksi berikutnya.
 
 ````
 # Prompt: Fix Facebook OAuth Domain Configuration
