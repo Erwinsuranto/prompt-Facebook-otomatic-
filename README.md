@@ -177,10 +177,835 @@
 
 
 ````
-# 
+# Prompt — Facebook Final UI Polish
 ```
 
+# Prompt — Facebook Finalization: UI/UX Polish & Verification
 
+Kita BELUM melanjutkan ke YouTube.
+
+Fokus sekarang hanya menyelesaikan dan mempercantik bagian FACEBOOK sampai benar-benar siap digunakan.
+
+==================================================
+STATUS PROJECT SAAT INI
+==================================================
+
+Facebook provider sudah melalui beberapa phase dan hasil terakhir:
+
+- Facebook OAuth: PASS
+- OAuth callback: PASS
+- Session persistence: PASS
+- Connection persistence: PASS
+- Destination persistence: PASS
+- Multi-user isolation: PASS
+- Reconnect: PASS
+- Disconnect: PASS
+- Facebook provider tests: PASS
+- Typecheck: PASS
+- Web build: PASS
+- Regression Phase 4: PASS
+- Queue/scheduler/idempotency: PASS
+- Git clean
+- Commit dan push terakhir berhasil
+
+Facebook connection sudah berhasil digunakan dan destination/Page sudah ditemukan.
+
+Jangan mengulang implementasi backend yang sudah PASS.
+
+==================================================
+TUJUAN SEKARANG
+==================================================
+
+Selesaikan Facebook sebagai provider pertama dengan fokus:
+
+1. UI/UX
+2. Connection management
+3. Destination management
+4. Publishing UI
+5. Loading/error/empty states
+6. Mobile responsiveness
+7. Desktop responsiveness
+8. Visual consistency
+9. Final regression
+10. Documentation
+
+JANGAN mulai:
+
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+
+==================================================
+1. AUDIT UI EXISTING
+==================================================
+
+Sebelum mengubah UI:
+
+Audit seluruh UI Facebook yang sekarang.
+
+Periksa:
+
+- Accounts
+- Platforms
+- Facebook connection card
+- OAuth flow
+- Destination list
+- Reconnect
+- Disconnect
+- Connect another
+- Refresh
+- Publishing UI
+- Upload UI
+- History
+- Queue
+- Scheduled posts
+- Error states
+- Loading states
+- Empty states
+
+Jangan membuat halaman duplicate.
+
+Jangan membuat design system kedua.
+
+Gunakan component/design system existing jika sudah tersedia.
+
+==================================================
+2. FACEBOOK ACCOUNTS UI
+==================================================
+
+Perbaiki halaman Accounts agar terlihat modern dan profesional.
+
+Target:
+
+Facebook
+Connected
+
+Account:
+Nino Kuye
+
+Status:
+Connected
+
+Destinations:
+1 Page
+
+Actions:
+
+[View destinations]
+[Refresh]
+[Reconnect]
+[Connect another]
+[Disconnect]
+
+Gunakan hierarchy visual yang jelas.
+
+Status connected harus mudah terlihat.
+
+Jangan membuat card terlalu tinggi.
+
+Hindari whitespace yang berlebihan.
+
+Desktop dan mobile harus sama-sama nyaman.
+
+==================================================
+3. DESTINATION UI
+==================================================
+
+Buat daftar Page Facebook lebih informatif.
+
+Contoh:
+
+Facebook Pages
+
+┌──────────────────────────────┐
+│ Yourreels                    │
+│ Facebook Page                │
+│ ● Connected                  │
+│                              │
+│ [Select]                     │
+└──────────────────────────────┘
+
+Jika terdapat banyak Page:
+
+- gunakan list/grid yang rapi
+- tampilkan nama
+- tipe destination
+- status
+- external identifier jika memang diperlukan
+- selected state
+
+Jangan tampilkan token.
+
+Jangan tampilkan credential.
+
+==================================================
+4. CONNECTION STATUS
+==================================================
+
+Gunakan status yang jelas:
+
+Connected
+Connecting
+Needs Reconnect
+Disconnected
+Error
+
+Gunakan visual yang konsisten dengan design system.
+
+Jangan hanya mengandalkan warna.
+
+Status harus tetap dapat dipahami tanpa warna.
+
+==================================================
+5. CONNECT FACEBOOK FLOW
+==================================================
+
+Perbaiki flow:
+
+Connect Facebook
+↓
+Starting connection
+↓
+Redirect ke Facebook
+↓
+OAuth callback
+↓
+Discover destinations
+↓
+Connected
+
+Tampilkan loading state yang jelas.
+
+Jika gagal:
+
+Connection failed
+
+[Try again]
+
+Jangan menampilkan:
+
+"Connection successful"
+
+jika callback sebenarnya gagal.
+
+==================================================
+6. ERROR MESSAGE
+==================================================
+
+Error harus:
+
+- singkat
+- mudah dipahami
+- tidak menampilkan stack trace
+- tidak menampilkan token
+- tidak menampilkan internal URL
+- tidak menampilkan credential
+
+Contoh:
+
+"Unable to connect Facebook. Please try again."
+
+Jika backend memberikan error yang aman dan actionable:
+
+"Facebook authorization expired. Please reconnect."
+
+==================================================
+7. SUCCESS MESSAGE
+==================================================
+
+Success notification harus lebih natural.
+
+Contoh:
+
+"Facebook connected successfully."
+
+"Your Facebook Pages are ready."
+
+"Facebook connection refreshed."
+
+Hindari pesan teknis seperti:
+
+"Destinations were discovered and saved."
+
+Jika detail teknis memang penting, tampilkan sebagai secondary information.
+
+==================================================
+8. PUBLISHING UI
+==================================================
+
+Sekarang audit UI publishing Facebook.
+
+Target flow:
+
+Upload
+↓
+Preview
+↓
+Caption
+↓
+Select Facebook
+↓
+Select Page
+↓
+Publish now / Schedule
+↓
+Review
+↓
+Publish
+
+UI harus jelas bahwa:
+
+Facebook Page = destination.
+
+Contoh:
+
+Platform
+
+Facebook ✓
+
+Destination
+
+Yourreels
+Facebook Page
+
+Schedule
+
+[Publish now]
+[Schedule]
+
+[Publish]
+
+==================================================
+9. FACEBOOK CONTENT TYPES
+==================================================
+
+Tampilkan hanya capability Facebook yang BENAR-BENAR sudah tersedia.
+
+Contoh:
+
+Reels
+Video
+Photo
+Text Post
+
+Jangan menampilkan fitur sebagai available jika backend belum selesai.
+
+Jika capability belum tersedia:
+
+Coming soon
+
+atau jangan tampilkan.
+
+Jangan membuat fake UI.
+
+==================================================
+10. LIVE PUBLISHING
+==================================================
+
+PENTING:
+
+Jika live publishing Facebook masih membutuhkan:
+
+- App Review
+- permission
+- production credential
+- verified app
+- additional Meta approval
+
+maka jangan memalsukan keberhasilan.
+
+UI harus membedakan:
+
+READY
+vs
+BLOCKED
+
+Contoh:
+
+Publishing
+Ready for testing
+
+atau:
+
+Live publishing requires Meta approval.
+
+Jangan pernah membuat mock publish terlihat sebagai publish nyata.
+
+==================================================
+11. PUBLISH REVIEW
+==================================================
+
+Sebelum publish, tampilkan review card:
+
+Content
+[thumbnail]
+
+Platform
+Facebook
+
+Destination
+Yourreels
+
+Caption
+...
+
+Publish
+Now / Scheduled
+
+[Cancel]
+[Publish]
+
+Tujuannya agar user tidak salah memilih Page.
+
+==================================================
+12. QUEUE UI
+==================================================
+
+Jika Facebook publishing sudah menggunakan queue:
+
+Tampilkan status:
+
+Queued
+Processing
+Uploading
+Publishing
+Published
+Failed
+Retrying
+Cancelled
+
+Gunakan progress/status yang mudah dipahami.
+
+Jangan menampilkan detail internal queue kecuali pada halaman detail.
+
+==================================================
+13. HISTORY UI
+==================================================
+
+Facebook history harus terlihat profesional.
+
+Contoh:
+
+Yourreels
+Facebook
+
+Reels
+Published
+
+23 Aug 2026
+14:20
+
+Thumbnail | Caption | Status
+
+Filter:
+
+All
+Published
+Failed
+Scheduled
+
+Jika gagal:
+
+[View error]
+
+Jangan menampilkan raw API response sebagai UI utama.
+
+==================================================
+14. MOBILE UI
+==================================================
+
+WAJIB test pada mobile width.
+
+Perhatikan screenshot sebelumnya:
+
+UI saat ini terlalu panjang pada beberapa bagian.
+
+Perbaiki:
+
+- spacing
+- card height
+- button layout
+- typography
+- navigation
+- form width
+- alert width
+- destination cards
+- bottom navigation jika ada
+
+Button harus mudah ditekan.
+
+Jangan membuat horizontal overflow.
+
+==================================================
+15. DESKTOP UI
+==================================================
+
+Desktop harus menggunakan ruang secara efisien.
+
+Jangan membuat content terlalu lebar.
+
+Gunakan:
+
+- max-width
+- responsive grid
+- consistent cards
+- proper spacing
+
+Accounts dan Platforms tidak boleh terlihat seperti halaman mentah/debug.
+
+==================================================
+16. DESIGN SYSTEM
+==================================================
+
+Gunakan design system existing jika sudah ada.
+
+Rapikan konsistensi:
+
+- heading
+- body text
+- muted text
+- button
+- card
+- border
+- radius
+- alert
+- badge
+- status
+- input
+- select
+- modal
+
+Jangan mengubah seluruh warna project tanpa alasan.
+
+Prioritaskan clean, modern, professional.
+
+==================================================
+17. LOADING STATE
+==================================================
+
+Semua async action harus memiliki loading state:
+
+Connect
+Reconnect
+Refresh
+Disconnect
+Load destinations
+Publish
+Schedule
+
+Button harus disabled ketika request sedang berjalan untuk mencegah duplicate request.
+
+==================================================
+18. EMPTY STATE
+==================================================
+
+Jika Facebook belum memiliki destination:
+
+Facebook Pages
+
+No Facebook Pages found.
+
+[Reconnect Facebook]
+
+Jika belum connect:
+
+Facebook isn't connected.
+
+[Connect Facebook]
+
+Jangan tampilkan blank page.
+
+==================================================
+19. CONFIRMATION
+==================================================
+
+Untuk action berbahaya:
+
+Disconnect Facebook
+
+tampilkan confirmation.
+
+Contoh:
+
+Disconnect Facebook?
+
+This will remove the current Facebook connection and its destinations from this account.
+
+[Cancel]
+[Disconnect]
+
+Jangan langsung disconnect karena salah klik.
+
+==================================================
+20. ACCESSIBILITY
+==================================================
+
+Audit:
+
+- button labels
+- keyboard navigation
+- focus state
+- form labels
+- aria attributes jika diperlukan
+- contrast
+- readable font sizes
+- touch target
+
+Jangan mengorbankan accessibility demi tampilan.
+
+==================================================
+21. SECURITY UI
+==================================================
+
+Pastikan UI tidak pernah menampilkan:
+
+- access token
+- refresh token
+- OAuth code
+- client secret
+- Authorization header
+- internal credential
+
+Jika ada debug output di frontend, hapus.
+
+==================================================
+22. BACKEND REGRESSION
+==================================================
+
+Jangan mengubah backend Facebook yang sudah PASS kecuali benar-benar diperlukan untuk memperbaiki UI integration.
+
+Setelah perubahan:
+
+- API typecheck
+- Web typecheck
+- lint
+- tests
+- production build
+
+WAJIB regression:
+
+Facebook OAuth
+Facebook callback
+Session
+Connection
+Destination
+Reconnect
+Disconnect
+Multi-user isolation
+
+==================================================
+23. TESTING
+==================================================
+
+Tambahkan/perbaiki UI tests untuk:
+
+- connected state
+- disconnected state
+- loading state
+- error state
+- empty state
+- destination selection
+- reconnect
+- disconnect confirmation
+- publish review
+- mobile layout jika test framework mendukung
+
+Jangan membuat test palsu.
+
+==================================================
+24. VISUAL REVIEW
+==================================================
+
+Setelah implementation:
+
+Jalankan production build.
+
+Buka UI sebenarnya.
+
+Periksa secara manual:
+
+Accounts
+Platforms
+Facebook connection
+Destinations
+Publishing
+History
+
+Periksa mobile dan desktop.
+
+Perbaiki visual issue yang ditemukan.
+
+Jangan berhenti hanya karena typecheck PASS.
+
+==================================================
+25. DOCUMENTATION
+==================================================
+
+Update dokumentasi existing.
+
+Jangan membuat README baru.
+
+Dokumentasikan:
+
+- Facebook provider status
+- connection flow
+- destination model
+- current capabilities
+- known limitations
+- live publishing status
+- UI flow
+
+Jika live publishing masih blocked karena Meta approval:
+
+tulis jelas sebagai limitation.
+
+==================================================
+26. GIT
+==================================================
+
+Sebelum commit:
+
+git status
+git diff
+
+Pastikan:
+
+- tidak ada secret
+- tidak ada token
+- tidak ada .env
+- tidak ada debug credential
+- tidak ada perubahan YouTube/Instagram/TikTok
+
+Commit:
+
+feat: finalize facebook ui and ux
+
+Push ke branch aktif.
+
+Jangan force push.
+
+Verifikasi remote.
+
+==================================================
+27. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+FACEBOOK FINALIZATION
+
+OAuth:
+PASS/FAIL
+
+Connection:
+PASS/FAIL
+
+Destination:
+PASS/FAIL
+
+Reconnect:
+PASS/FAIL
+
+Disconnect:
+PASS/FAIL
+
+Multi-user isolation:
+PASS/FAIL
+
+Publishing UI:
+PASS/FAIL
+
+History UI:
+PASS/FAIL
+
+Queue UI:
+PASS/FAIL
+
+Mobile UI:
+PASS/FAIL
+
+Desktop UI:
+PASS/FAIL
+
+Loading states:
+PASS/FAIL
+
+Error states:
+PASS/FAIL
+
+Empty states:
+PASS/FAIL
+
+Accessibility:
+PASS/FAIL
+
+Security:
+PASS/FAIL
+
+API Typecheck:
+PASS/FAIL
+
+Web Typecheck:
+PASS/FAIL
+
+Tests:
+PASS/FAIL
+
+Production Build:
+PASS/FAIL
+
+LIVE FACEBOOK PUBLISH:
+PASS / BLOCKED
+
+Jika LIVE FACEBOOK PUBLISH masih membutuhkan Meta App Review/permission/credential:
+tulis BLOCKED dan alasan sebenarnya.
+
+GIT STATUS:
+CLEAN/DIRTY
+
+COMMIT:
+<hash>
+
+PUSH:
+SUCCESS/FAILED
+
+REMOTE VERIFIED:
+YES/NO
+
+FILES CHANGED:
+<list>
+
+==================================================
+STOP CONDITION
+==================================================
+
+Facebook harus menjadi fokus terakhir sebelum platform berikutnya.
+
+Setelah UI Facebook selesai dan semua regression PASS:
+
+STOP.
+
+Jangan mulai:
+
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+
+Tunggu instruksi berikutnya.
+
+Jangan menyatakan Facebook "fully complete" jika live publishing masih BLOCKED.
+
+Status yang benar jika backend + UI siap tetapi Meta approval belum ada:
+
+FACEBOOK PROVIDER: COMPLETE
+FACEBOOK UI/UX: COMPLETE
+LIVE PUBLISHING: BLOCKED — EXTERNAL META REQUIREMENT
 ````
 # Prompt 5 — Queue, Scheduler & Publishing Reliability
 ```
