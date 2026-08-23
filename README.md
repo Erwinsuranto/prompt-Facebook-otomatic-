@@ -162,10 +162,510 @@
 
 
 ````
+# Prompt: Facebook UI Final Polish
 # 
 ```
 
+# Prompt — Facebook UI Final Polish
 
+Project: Content Pilot
+
+STATUS SAAT INI:
+- Facebook OAuth: PASS
+- Facebook connection: PASS
+- Facebook destination/Page discovery: PASS
+- Facebook token/Graph API access: PASS
+- Facebook media upload: PASS
+- Facebook publishing flow: PASS
+- Live Facebook publish test: PASS
+- UI upload/preview: PASS
+- API typecheck: PASS
+- Web typecheck: PASS
+- Lint: PASS
+- Build: PASS
+
+JANGAN mengubah atau merusak logic Facebook yang sudah PASS.
+
+Fokus pekerjaan kali ini HANYA pada UI/UX polish dan kualitas frontend.
+
+==================================================
+1. AUDIT UI EXISTING
+==================================================
+
+Audit halaman yang berhubungan dengan:
+
+- Accounts
+- Platforms
+- Facebook connection
+- Facebook Pages / Destinations
+- Upload
+- Video preview
+- Publishing
+- Status
+- History
+
+Gunakan UI yang sudah ada.
+
+JANGAN membuat halaman duplicate.
+
+JANGAN membuat design system baru jika existing design system sudah cukup.
+
+==================================================
+2. TARGET DESIGN
+==================================================
+
+Buat UI terlihat seperti produk SaaS modern/profesional.
+
+Prinsip:
+
+- clean
+- modern
+- premium
+- minimal
+- responsive
+- mobile-first
+- desktop-friendly
+- konsisten
+- mudah dipahami
+- tidak terlalu banyak whitespace
+- tidak terlalu banyak border
+- hierarchy informasi jelas
+
+Pertahankan tema dark yang sudah digunakan Content Pilot.
+
+Gunakan accent biru yang sudah ada secara konsisten.
+
+Jangan mengganti branding secara drastis.
+
+==================================================
+3. ACCOUNTS UI
+==================================================
+
+Perbaiki halaman Accounts.
+
+Card Facebook harus memiliki hierarchy yang jelas:
+
+Facebook
+Connected
+
+Account
+Nino Kuye
+
+Status
+Connected
+
+Destinations
+1 Page
+
+Scopes
+...
+
+Actions:
+- View Pages
+- Refresh
+- Reconnect
+- Connect another
+- Disconnect
+
+Gunakan badge status yang konsisten:
+
+● Connected
+● Ready
+● Warning
+● Error
+
+Jangan menggunakan text status yang terlihat seperti debug output.
+
+Jika loading:
+
+gunakan skeleton loader.
+
+Jika belum ada account:
+
+gunakan empty state yang jelas.
+
+Jika error:
+
+gunakan alert yang mudah dipahami user.
+
+==================================================
+4. FACEBOOK PAGES UI
+==================================================
+
+Bagian destination Facebook harus terlihat seperti daftar Page profesional.
+
+Contoh:
+
+Facebook Pages
+
+┌──────────────────────────────┐
+│ Yourreels                    │
+│ Facebook Page                │
+│ ● Active                     │
+│                              │
+│ [View] [Refresh]             │
+└──────────────────────────────┘
+
+Jika banyak Page:
+
+gunakan grid/list yang responsive.
+
+Mobile:
+1 column
+
+Desktop:
+2–3 columns sesuai lebar container.
+
+Jangan membuat horizontal overflow.
+
+==================================================
+5. UPLOAD UI
+==================================================
+
+Perbaiki upload interface.
+
+Target flow:
+
+Upload Content
+
+[ Drag & Drop / Select Video ]
+
+Setelah video dipilih:
+
+[ Video Preview ]
+
+Filename
+Size
+Duration
+Resolution
+
+Caption
+[ textarea ]
+
+Facebook Page
+[ Select Page ]
+
+Publishing
+
+(•) Publish now
+( ) Schedule
+
+[ Publish to Facebook ]
+
+Button harus jelas dan mudah ditekan di mobile.
+
+Jika belum memilih Page:
+
+Publish button disabled.
+
+Jika upload sedang berlangsung:
+
+tampilkan progress/loading.
+
+Jika publishing:
+
+tampilkan state:
+
+Uploading
+Publishing
+Published
+Failed
+
+Jangan menampilkan fake success.
+
+==================================================
+6. VIDEO PREVIEW
+==================================================
+
+Video preview harus:
+
+- responsive
+- tidak keluar container
+- tidak menyebabkan horizontal overflow
+- aspect ratio tetap baik
+- nyaman di mobile
+- tidak terlalu besar di desktop
+
+Gunakan container yang rapi.
+
+Jangan mengubah backend upload/media logic.
+
+==================================================
+7. PUBLISHING STATUS
+==================================================
+
+Buat status publishing mudah dibaca.
+
+Gunakan:
+
+Queued
+Uploading
+Publishing
+Published
+Failed
+Retrying
+Cancelled
+
+Setiap status menggunakan visual badge/icon yang konsisten.
+
+Jangan menggunakan warna berlebihan.
+
+Error message harus user-friendly.
+
+Contoh:
+
+BAD:
+"Graph API error code 190"
+
+GOOD:
+"Facebook connection expired. Please reconnect your account."
+
+Technical error tetap boleh tersedia di detail/log jika memang diperlukan.
+
+==================================================
+8. MOBILE RESPONSIVE
+==================================================
+
+Prioritaskan breakpoint sekitar:
+
+360px
+390px
+430px
+768px
+1024px
+desktop
+
+Test terutama:
+
+360px
+390px
+768px
+desktop
+
+Pastikan:
+
+- tidak ada horizontal overflow
+- button tidak terpotong
+- card tidak melebar keluar viewport
+- text tidak bertabrakan
+- badge tidak overflow
+- form nyaman disentuh
+- navigation tetap usable
+- video preview responsive
+- grid berubah menjadi 1 column di mobile
+
+==================================================
+9. DESKTOP UI
+==================================================
+
+Desktop jangan terlihat seperti mobile yang diperbesar.
+
+Gunakan:
+
+- max-width content container
+- spacing yang proporsional
+- grid
+- card layout
+- clear page hierarchy
+
+Content jangan terlalu melebar.
+
+==================================================
+10. LOADING / EMPTY / ERROR STATE
+==================================================
+
+Semua halaman Facebook-related harus memiliki:
+
+Loading state
+Empty state
+Error state
+Success state
+
+Jangan menampilkan halaman kosong saat data sedang dimuat.
+
+Gunakan skeleton jika sesuai.
+
+==================================================
+11. ACCESSIBILITY
+==================================================
+
+Periksa:
+
+- button memiliki label jelas
+- form memiliki label
+- focus state
+- keyboard navigation
+- contrast
+- disabled state
+- aria-label jika diperlukan
+
+Jangan mengorbankan accessibility demi visual.
+
+==================================================
+12. COMPONENT QUALITY
+==================================================
+
+Gunakan component yang reusable.
+
+Jangan membuat:
+
+- duplicate button
+- duplicate card
+- duplicate badge
+- duplicate alert
+- duplicate loading component
+
+Jika sudah ada component yang cocok, gunakan kembali.
+
+Jangan membuat giant component.
+
+==================================================
+13. FACEBOOK LOGIC PROTECTION
+==================================================
+
+SANGAT PENTING:
+
+Jangan mengubah:
+
+- OAuth implementation
+- callback
+- token handling
+- Facebook provider
+- Graph API logic
+- upload implementation
+- publishing worker
+- queue
+- scheduler
+- database schema
+
+kecuali perubahan benar-benar diperlukan untuk memperbaiki bug UI.
+
+Jika menemukan masalah backend saat audit:
+
+JANGAN langsung memperbaikinya.
+
+Catat saja:
+
+BACKEND ISSUE FOUND:
+...
+
+Tetapi fokus tetap UI.
+
+==================================================
+14. TESTING
+==================================================
+
+Setelah perubahan:
+
+1. pnpm/npm API typecheck sesuai project
+2. web typecheck
+3. lint
+4. build
+5. existing frontend tests
+6. Facebook regression tests yang relevan
+
+Jangan menghapus test.
+
+Jangan menurunkan assertion.
+
+Jangan membuat fake test.
+
+==================================================
+15. VISUAL REVIEW
+==================================================
+
+Setelah build berhasil, review hasil UI pada:
+
+- mobile 360px
+- mobile 390px
+- mobile 430px
+- desktop
+
+Periksa secara khusus:
+
+- spacing
+- typography
+- button
+- card
+- badge
+- upload area
+- video preview
+- Page selector
+- publishing status
+- navigation
+- overflow
+
+==================================================
+16. GIT
+==================================================
+
+Sebelum commit:
+
+git status
+git diff
+
+Pastikan tidak ada:
+
+- token
+- password
+- API key
+- .env
+- secret
+- file debug
+
+Commit hanya perubahan UI.
+
+Contoh:
+
+feat: polish facebook publishing ui
+
+Push ke branch yang sedang digunakan.
+
+Jangan force push.
+
+==================================================
+17. FINAL REPORT
+==================================================
+
+Laporkan:
+
+UI CHANGES:
+- ...
+
+MOBILE:
+PASS/FAIL
+
+DESKTOP:
+PASS/FAIL
+
+FACEBOOK REGRESSION:
+PASS/FAIL
+
+TYPECHECK:
+PASS/FAIL
+
+LINT:
+PASS/FAIL
+
+BUILD:
+PASS/FAIL
+
+GIT STATUS:
+CLEAN/DIRTY
+
+COMMIT:
+<hash>
+
+PUSH:
+SUCCESS/FAILED
+
+IMPORTANT:
+Jika semua PASS, jangan lanjut ke YouTube/Instagram/TikTok.
+
+STOP setelah UI Facebook selesai.
+
+NEXT PHASE:
+Tunggu instruksi berikutnya.
 ````
 # Prompt: Phase 6 — Facebook Upload & Publishing UI
 ```
