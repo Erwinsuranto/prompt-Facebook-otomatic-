@@ -182,9 +182,748 @@
 
 
 ````
-# 
+# Prompt 5 — Queue, Scheduler & Publishing Reliability
 ```
+# Prompt 5 — Phase 5: Publishing Queue, Scheduler & Reliability Hardening
 
+Kita lanjutkan project Content Pilot setelah Phase 4 selesai.
+
+STATUS TERAKHIR:
+- Facebook connection: PASS
+- OAuth callback: PASS
+- Session persistence: PASS
+- Connection persistence: PASS
+- Destination persistence: PASS
+- Multi-user isolation: PASS
+- Reconnect: PASS
+- Disconnect: PASS
+- Security checks: PASS
+- Typecheck: PASS
+- Tests: PASS
+- Production build: PASS
+- Facebook destination sudah tersimpan dan aktif
+- Phase 4 sudah committed dan pushed
+- Git terakhir clean
+- LIVE Facebook publishing masih BLOCKED karena membutuhkan credential/App Review/permission live yang valid
+
+PENTING:
+LIVE FACEBOOK PUBLISHING YANG BLOCKED BUKAN BUG YANG HARUS DIPAKSA MENJADI PASS.
+
+Jangan membuat fake credential.
+Jangan mock live publish sebagai PASS.
+Jangan bypass Facebook permission.
+Jangan menyentuh credential Meta.
+Jangan mengubah hasil live test menjadi PASS palsu.
+
+Sekarang fokus ke PHASE 5.
+
+==================================================
+TUJUAN PHASE 5
+==================================================
+
+Hardening publishing infrastructure agar siap menangani:
+
+- publish now
+- scheduled publishing
+- queue
+- retry
+- cancellation
+- idempotency
+- concurrent jobs
+- failed jobs
+- provider errors
+- rate limiting
+- job status
+- publishing history
+
+Architecture HARUS tetap platform-independent.
+
+Facebook hanya salah satu provider.
+
+Jangan membuat queue yang hardcoded untuk Facebook.
+
+==================================================
+ATURAN UTAMA
+==================================================
+
+Sebelum coding:
+
+1. Audit implementasi queue/scheduler yang SUDAH ADA.
+2. Audit database model yang SUDAH ADA.
+3. Audit publishing job yang SUDAH ADA.
+4. Audit provider interface yang SUDAH ADA.
+5. Audit Facebook provider yang SUDAH ADA.
+6. Jangan membuat duplicate system.
+7. Jangan mengganti architecture yang sudah benar.
+8. Jangan melakukan massive refactor tanpa alasan.
+9. Jangan mengubah provider lain.
+10. Jangan menyentuh YouTube/Instagram/TikTok/X/Pinterest/LinkedIn.
+11. Jangan mengaktifkan LIVE Facebook test.
+12. Jangan membuat fake publishing.
+13. Jangan menggunakan browser automation untuk Facebook.
+14. Gunakan implementation yang sudah ada sebagai baseline.
+
+==================================================
+1. PUBLISHING JOB MODEL
+==================================================
+
+Pastikan publishing job memiliki konsep yang jelas.
+
+Minimal:
+
+- id
+- post/content reference
+- platform/provider
+- destination
+- status
+- scheduledAt
+- startedAt
+- completedAt
+- attemptCount
+- lastError
+- nextRetryAt
+- providerJobId/reference jika tersedia
+- createdAt
+- updatedAt
+
+Sesuaikan dengan schema existing.
+
+Jangan membuat field duplicate jika sudah tersedia.
+
+==================================================
+2. STATUS MACHINE
+==================================================
+
+Audit dan rapikan state machine.
+
+Gunakan status yang sesuai dengan implementasi existing, misalnya:
+
+draft
+queued
+scheduled
+processing
+uploading
+publishing
+published
+failed
+retrying
+cancelled
+
+Jangan membuat transisi status yang tidak valid.
+
+Contoh:
+
+scheduled
+→ queued
+→ processing
+→ uploading
+→ publishing
+→ published
+
+Jika error sementara:
+
+publishing
+→ retrying
+→ queued/processing
+
+Jika error permanent:
+
+publishing
+→ failed
+
+Jika user membatalkan sebelum processing:
+
+scheduled/queued
+→ cancelled
+
+Jangan izinkan:
+
+published → queued
+
+atau transisi tidak masuk akal lainnya.
+
+==================================================
+3. IDEMPOTENCY
+==================================================
+
+Pastikan satu publishing job tidak dapat diproses dua kali secara tidak sengaja.
+
+Contoh:
+
+Worker A mengambil Job 001
+Worker B mencoba mengambil Job 001
+
+Hanya satu worker yang boleh mendapatkan lock/ownership.
+
+Gunakan mekanisme yang sesuai dengan stack existing:
+
+- database lock
+- atomic update
+- queue job lock
+- Redis lock
+- provider idempotency jika tersedia
+
+Jangan menambahkan Redis hanya jika repository belum membutuhkannya.
+
+Pilih solusi berdasarkan architecture existing.
+
+==================================================
+4. CONCURRENCY
+==================================================
+
+Audit concurrency.
+
+Pastikan worker tidak menjalankan job yang sama dua kali.
+
+Pertimbangkan:
+
+- per-user concurrency
+- per-provider concurrency
+- per-destination concurrency
+- global worker concurrency
+
+Jangan over-engineer.
+
+Implement minimum yang aman berdasarkan repository sekarang.
+
+==================================================
+5. RETRY SYSTEM
+==================================================
+
+Implement/rapikan retry policy.
+
+Temporary errors:
+
+- timeout
+- network error
+- temporary provider error
+- HTTP 429
+- transient 5xx
+
+→ retry.
+
+Permanent errors:
+
+- invalid token
+- permission denied
+- invalid destination
+- unsupported media
+- invalid request
+
+→ failed tanpa infinite retry.
+
+Gunakan exponential backoff jika sesuai.
+
+Contoh:
+
+attempt 1 → 30 sec
+attempt 2 → 1 min
+attempt 3 → 5 min
+
+Tetapi sesuaikan dengan existing architecture.
+
+Jangan hardcode retry jika konfigurasi sudah tersedia.
+
+Simpan:
+
+- attempt count
+- error code
+- error message
+- timestamp
+- next retry
+
+Jangan menyimpan access token atau secret ke error log.
+
+==================================================
+6. RATE LIMITING
+==================================================
+
+Audit apakah provider-specific rate limit handling sudah ada.
+
+Jika belum, buat abstraction yang dapat digunakan provider.
+
+Contoh konsep:
+
+Provider
+→ rate limit policy
+→ queue delay
+→ retry
+
+Jangan membuat Facebook-specific code di core queue.
+
+Core hanya mengetahui:
+
+provider key
+destination
+job
+
+Provider dapat menentukan policy-nya.
+
+==================================================
+7. SCHEDULER
+==================================================
+
+Audit scheduler existing.
+
+Pastikan scheduled job:
+
+1. tersimpan di database
+2. memiliki waktu eksekusi
+3. tidak diproses sebelum waktunya
+4. masuk queue saat waktunya tiba
+5. tidak dibuat duplicate
+6. tetap aman setelah worker restart
+
+Scheduler harus idempotent.
+
+Contoh:
+
+Schedule 20:00
+
+Scheduler restart pada 20:01.
+
+Job tetap dapat ditemukan dan diproses.
+
+Jangan membuat duplicate job.
+
+==================================================
+8. PUBLISH NOW
+==================================================
+
+Pastikan flow:
+
+User memilih Publish Now
+→ create publishing job
+→ queued
+→ worker mengambil job
+→ provider publish
+→ status diperbarui
+→ history tersimpan
+
+Jangan membuat frontend langsung memanggil provider untuk publishing jika architecture project menggunakan backend worker.
+
+==================================================
+9. SCHEDULED PUBLISH
+==================================================
+
+Flow:
+
+User memilih Schedule
+→ validasi tanggal/waktu
+→ create scheduled job
+→ status scheduled
+→ scheduler menunggu
+→ queue
+→ worker
+→ provider
+→ published/failed
+
+Validasi:
+
+- waktu tidak boleh invalid
+- timezone harus jelas
+- jangan menjalankan schedule dua kali
+- cancellation harus bekerja sebelum job diproses
+
+==================================================
+10. CANCELLATION
+==================================================
+
+Implement cancellation dengan aman.
+
+Jika:
+
+scheduled
+atau
+queued
+
+→ boleh cancelled.
+
+Jika:
+
+processing
+uploading
+publishing
+
+→ hanya boleh cancelled jika provider/worker benar-benar mendukung cancellation.
+
+Jangan menampilkan cancellation sukses jika job sebenarnya masih berjalan.
+
+==================================================
+11. ERROR NORMALIZATION
+==================================================
+
+Provider error harus dinormalisasi.
+
+Core tidak boleh bergantung pada format error Facebook.
+
+Contoh generic:
+
+ProviderError:
+
+- code
+- category
+- retryable
+- message
+- provider
+- providerRequestId jika aman
+- metadata aman
+
+Category:
+
+AUTH
+PERMISSION
+RATE_LIMIT
+NETWORK
+VALIDATION
+MEDIA
+DESTINATION
+PROVIDER
+UNKNOWN
+
+Facebook provider menerjemahkan error Facebook ke format generic.
+
+==================================================
+12. HISTORY
+==================================================
+
+Pastikan setiap publishing job memiliki history/attempt information.
+
+Contoh:
+
+Job 001
+
+Attempt 1
+→ failed
+→ timeout
+
+Attempt 2
+→ failed
+→ rate limit
+
+Attempt 3
+→ published
+
+Dashboard dapat menunjukkan:
+
+Status: Published
+Attempts: 3
+
+Jangan menghapus attempt lama ketika retry.
+
+==================================================
+13. LOGGING
+==================================================
+
+Audit logging.
+
+Log harus membantu debugging:
+
+- job ID
+- provider
+- destination ID
+- status transition
+- attempt
+- error category
+- duration
+
+Jangan log:
+
+- access token
+- refresh token
+- password
+- API secret
+- cookies
+- authorization header
+
+==================================================
+14. UI
+==================================================
+
+Jangan membuat dashboard baru.
+
+Gunakan UI existing.
+
+Tambahkan hanya jika memang diperlukan:
+
+Queue
+Scheduled
+Publishing status
+Retry information
+Cancel action
+Error state
+
+UI harus menunjukkan status sebenarnya.
+
+Contoh:
+
+QUEUED
+PROCESSING
+PUBLISHED
+FAILED
+RETRYING
+CANCELLED
+
+Jangan menggunakan:
+
+"Success"
+
+jika backend sebenarnya belum berhasil.
+
+==================================================
+15. API
+==================================================
+
+Audit API endpoint existing.
+
+Jika perlu endpoint baru, gunakan struktur yang konsisten dengan project.
+
+Contoh konsep:
+
+POST /api/posts
+POST /api/posts/:id/publish
+POST /api/posts/:id/schedule
+POST /api/publishing-jobs/:id/cancel
+GET /api/publishing-jobs
+GET /api/publishing-jobs/:id
+GET /api/publishing-jobs/:id/attempts
+
+JANGAN otomatis membuat endpoint tersebut jika endpoint equivalent sudah ada.
+
+Ikuti architecture existing.
+
+==================================================
+16. DATABASE
+==================================================
+
+Jika schema perlu berubah:
+
+- buat migration
+- jangan menghapus data existing
+- jangan reset database
+- jangan menggunakan destructive migration
+- pastikan migration dapat dijalankan ulang dengan aman
+
+Sebelum migration:
+
+audit schema existing.
+
+==================================================
+17. TESTING
+==================================================
+
+Buat/rapikan test untuk:
+
+1. create job
+2. queue job
+3. scheduled job
+4. worker processing
+5. successful completion
+6. temporary failure
+7. retry
+8. permanent failure
+9. cancellation
+10. duplicate worker prevention
+11. idempotency
+12. scheduler restart scenario
+13. multi-user isolation
+14. provider error normalization
+
+Gunakan mock provider/unit test.
+
+JANGAN menjalankan LIVE Facebook publishing.
+
+Facebook integration/live credential test tetap BLOCKED jika credential/App Review belum tersedia.
+
+==================================================
+18. REGRESSION
+==================================================
+
+WAJIB menjaga hasil Phase 4.
+
+Pastikan tetap PASS:
+
+- Facebook OAuth
+- callback
+- session
+- connection persistence
+- destination persistence
+- reconnect
+- disconnect
+- multi-user isolation
+- security
+- typecheck
+- build
+- existing provider-facebook tests
+
+Jangan merusak fitur yang sudah PASS.
+
+==================================================
+19. PLATFORM BOUNDARY
+==================================================
+
+Pastikan architecture seperti:
+
+Core
+|
++-- Queue
++-- Scheduler
++-- Publishing Service
++-- Retry Policy
++-- Provider Registry
+       |
+       +-- Facebook Provider
+       +-- future providers
+
+Jangan:
+
+Core
+→ FacebookQueue
+→ FacebookScheduler
+
+Queue dan scheduler harus generic.
+
+==================================================
+20. TEST COMMANDS
+==================================================
+
+Setelah implementation:
+
+- API typecheck
+- Web typecheck
+- lint
+- unit tests
+- integration tests yang aman
+- production build
+
+Gunakan command yang memang tersedia di repository.
+
+Jangan mengarang command.
+
+Jika test tertentu membutuhkan credential live Facebook:
+
+SKIP/BLOCK sesuai aturan existing.
+
+Jangan membuat fake PASS.
+
+==================================================
+21. SECURITY AUDIT
+==================================================
+
+Sebelum selesai:
+
+- inspect git diff
+- inspect secrets
+- inspect .env
+- inspect logs
+- pastikan token tidak masuk source
+- pastikan token tidak masuk test fixture
+- pastikan token tidak masuk commit
+- pastikan tidak ada credential plaintext baru
+
+==================================================
+22. GIT
+==================================================
+
+Setelah semua selesai:
+
+1. git status
+2. git diff
+3. cek secret
+4. test
+5. build
+6. commit
+
+Commit message:
+
+feat: harden publishing queue and scheduler
+
+Kemudian push ke branch aktif.
+
+Jangan force push.
+
+Jika push gagal, laporkan error sebenarnya.
+
+==================================================
+23. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+PHASE 5 STATUS
+
+QUEUE:
+PASS/FAIL
+
+SCHEDULER:
+PASS/FAIL
+
+RETRY:
+PASS/FAIL
+
+IDEMPOTENCY:
+PASS/FAIL
+
+CONCURRENCY:
+PASS/FAIL
+
+CANCELLATION:
+PASS/FAIL
+
+ERROR NORMALIZATION:
+PASS/FAIL
+
+HISTORY:
+PASS/FAIL
+
+SECURITY:
+PASS/FAIL
+
+TYPECHECK:
+PASS/FAIL
+
+TESTS:
+PASS/FAIL
+
+BUILD:
+PASS/FAIL
+
+FACEBOOK LIVE TEST:
+BLOCKED / PASS
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash>
+
+PUSH:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+FILES CHANGED:
+<list>
+
+IMPORTANT:
+Jika ada bagian yang belum benar-benar selesai, tulis FAIL/BLOCKED.
+Jangan menyatakan PASS berdasarkan asumsi.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Phase 5 selesai:
+
+STOP.
+
+Jangan mulai YouTube.
+Jangan mulai Instagram.
+Jangan mulai TikTok.
+Jangan membuat fitur baru di luar Phase 5.
+
+Tunggu instruksi berikutnya.
 
 ````
 # Prompt: Phase 4 — Facebook Reels Publishing
