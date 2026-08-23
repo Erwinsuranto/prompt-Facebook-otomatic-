@@ -172,9 +172,67 @@
 
 
 ````
-# 
+# Prompt — Facebook UI Final Verification
 ```
+Lanjutkan dari pekerjaan terakhir.
 
+Fokus HANYA pada final verification Facebook UI. Jangan menambah fitur baru dan jangan menyentuh YouTube/Instagram/TikTok.
+
+1. Jalankan:
+   - pnpm --filter web typecheck
+   - pnpm --filter web lint
+   - production build web
+
+2. Review apps/web/src/app/globals.css dan seluruh CSS/component yang baru disentuh.
+   Pastikan:
+   - tidak ada CSS duplicate
+   - tidak ada class yang tidak terpakai
+   - tidak ada style yang merusak halaman lain
+   - responsive mobile/desktop tetap baik
+   - tidak ada horizontal overflow
+   - status badge, spinner, skeleton, cards, buttons, alert, destination grid konsisten
+
+3. Audit halaman:
+   - Accounts
+   - Facebook connection
+   - Facebook Pages/destinations
+   - Platforms
+
+4. Jika menemukan masalah UI kecil, perbaiki langsung.
+   Jangan melakukan refactor besar.
+
+5. Setelah itu jalankan regression test yang relevan untuk Facebook connection.
+   Jangan mengubah backend yang sudah PASS.
+
+6. Periksa git diff dan pastikan tidak ada:
+   - secret
+   - token
+   - .env
+   - perubahan platform lain
+
+7. Jika semuanya PASS:
+   - commit perubahan UI Facebook
+   - push ke branch aktif
+   - verifikasi remote
+
+Commit message:
+feat: polish facebook connection ui
+
+8. Berikan laporan:
+
+UI TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+BUILD: PASS/FAIL
+FACEBOOK REGRESSION: PASS/FAIL
+MOBILE UI: PASS/FAIL
+DESKTOP UI: PASS/FAIL
+GLOBAL CSS: PASS/FAIL
+GIT STATUS: CLEAN/DIRTY
+COMMIT: <hash>
+PUSH: SUCCESS/FAILED
+
+STOP setelah laporan.
+Jangan lanjut ke provider/platform lain.
 
 ````
 # Prompt — Facebook Final UI Polish
