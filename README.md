@@ -147,9 +147,63 @@
 
 
 ````
-# 
+# Prompt: Buat Folder Design Reference
 ```
+Buat folder khusus untuk menyimpan gambar referensi desain UI Content Pilot.
 
+Folder:
+
+docs/design-reference/
+
+Jangan membuat atau mengubah UI apa pun sekarang.
+
+Jangan mengubah backend.
+Jangan mengubah API.
+Jangan mengubah Facebook provider.
+Jangan mengubah database.
+Jangan melakukan refactor.
+
+Yang perlu dilakukan hanya:
+
+1. Buat folder:
+   docs/design-reference/
+
+2. Buat file README.md di dalam folder tersebut yang menjelaskan bahwa folder ini digunakan untuk menyimpan gambar/screenshot/reference desain UI Content Pilot.
+
+3. README.md harus menjelaskan:
+
+   - gambar di folder ini adalah visual reference
+   - AI/coding agent wajib melihat gambar sebelum mengerjakan redesign UI
+   - gambar tidak boleh digunakan sebagai background atau asset UI secara langsung kecuali memang diperintahkan
+   - implementasi harus dibuat menggunakan component/UI code asli project
+   - gambar reference tidak boleh mengubah logic backend atau API
+   - nama file gambar sebaiknya jelas dan deskriptif
+
+4. Jangan membuat gambar dummy.
+
+5. Jangan membuat file PNG/JPG placeholder.
+
+6. Jangan menambahkan dependency baru.
+
+7. Jangan mengubah file lain di luar:
+   docs/design-reference/
+
+Setelah selesai, tampilkan:
+
+DESIGN REFERENCE FOLDER: CREATED
+
+PATH:
+docs/design-reference/
+
+FILES:
+docs/design-reference/README.md
+
+STATUS:
+READY FOR IMAGE UPLOAD
+
+STOP.
+
+Saya akan mengupload gambar desain sendiri ke folder tersebut setelah prompt ini selesai.
 
 ````
 # Prompt berikutnya — Fix Production API URL
