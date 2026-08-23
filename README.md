@@ -117,9 +117,92 @@
 
 
 ````
-# 
+# Prompt — Fix Upload Failure
 ```
+Prompt: Fix Upload Failure
 
+Debug masalah upload pada Content Pilot yang sekarang muncul di UI:
+
+"Upload failed. Please check your connection and retry."
+
+KONDISI SAAT INI:
+- Frontend production: https://contentpilot.biz.id
+- API production: https://api.contentpilot.biz.id
+- Facebook connection sudah berhasil.
+- Facebook live publishing sebelumnya sudah berhasil.
+- UI Compose sudah berjalan.
+- History sudah menampilkan publishing job.
+- Server/restart sebelumnya sudah berhasil.
+- Jangan mengubah design/UI kecuali benar-benar diperlukan untuk memperbaiki error.
+
+TUGAS:
+
+1. Audit seluruh upload flow dari frontend sampai backend.
+2. Telusuri request:
+   frontend
+   → /api/media/upload
+   → storage/presigned upload
+   → /api/media/finalize
+3. Cari penyebab sebenarnya dari "Upload failed".
+4. Periksa browser/API response, HTTP status, request URL, CORS, authentication, presigned URL, storage configuration, dan backend logs.
+5. Pastikan production frontend TIDAK menggunakan localhost:4000.
+6. Pastikan API production menggunakan:
+   https://api.contentpilot.biz.id
+7. Jangan membuat fake success.
+8. Jangan bypass error hanya agar UI terlihat berhasil.
+9. Jangan mengubah Facebook publishing logic yang sudah PASS.
+10. Jangan mengubah design system.
+11. Jangan menghapus test yang sudah PASS.
+
+Jika menemukan masalah:
+- perbaiki akar masalahnya
+- pertahankan architecture yang sekarang
+- gunakan error handling yang jelas
+- jangan expose token/credential ke frontend atau response
+
+SETELAH PERBAIKAN:
+
+Jalankan:
+- typecheck
+- lint
+- tests
+- build
+
+Kemudian restart/reload service production jika memang diperlukan.
+
+Verifikasi:
+
+GET https://api.contentpilot.biz.id/health
+GET https://api.contentpilot.biz.id/ready
+GET https://api.contentpilot.biz.id/api/platforms
+
+Lakukan test upload menggunakan file test kecil.
+
+Pastikan:
+1. upload berhasil
+2. finalize berhasil
+3. media tercatat
+4. tidak ada localhost:4000 di production bundle
+5. tidak ada secret/token di Git diff
+6. Facebook regression tetap PASS
+7. UI tidak rusak
+
+Jangan melakukan redesign.
+
+Di akhir tampilkan:
+
+UPLOAD STATUS: PASS/FAIL
+UPLOAD ROOT CAUSE: ...
+API STATUS: PASS/FAIL
+BUILD: PASS/FAIL
+TESTS: PASS/FAIL
+FACEBOOK REGRESSION: PASS/FAIL
+SERVER RESTART: SUCCESS/NOT REQUIRED/FAIL
+GIT STATUS: ...
+COMMIT: ...
+PUSH STATUS: ...
+
+STOP setelah debugging upload selesai.
 
 ````
 # Prompt — Start Server untuk Preview UI
