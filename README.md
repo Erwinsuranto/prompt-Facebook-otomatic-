@@ -127,10 +127,42 @@
 
 
 ````
-# 
+# Prompt — Resume Visual UI
 ```
 
+Lanjutkan pekerjaan UI Content Pilot dari kondisi repository saat ini.
 
+PENTING:
+Model/session ini harus memiliki kemampuan membaca gambar.
+
+Reference utama:
+docs/design-reference/admin-dashboard-reference.png
+
+1. Buka dan lihat gambar reference tersebut secara visual.
+2. Bandingkan dengan UI Content Pilot saat ini.
+3. Identifikasi perbedaan layout, spacing, typography, colors, cards, navigation, buttons, badges, responsive behavior, dan visual hierarchy.
+4. Implementasikan perubahan UI agar mengikuti reference sedekat mungkin.
+5. Jangan mengubah backend/API/Facebook publishing yang sudah PASS.
+6. Jangan membuat fitur baru di luar UI.
+7. Jangan menebak desain jika gambar tidak dapat dibaca.
+
+Setelah perubahan:
+- mobile check
+- desktop check
+- typecheck
+- lint
+- tests
+- build
+- review git diff
+- pastikan tidak ada secret
+
+Jika model TIDAK bisa membaca image:
+STOP SEGERA dan tampilkan:
+VISUAL REFERENCE: NOT ACCESSIBLE
+
+Jangan melakukan perubahan kode berdasarkan asumsi.
+
+Jika image berhasil dibaca, lanjutkan implementasi UI sampai selesai, lalu commit dan push.
 ````
 # Prompt: Restart Content Pilot — Visual Reference UI
 ```
