@@ -122,10 +122,41 @@
 
 
 ````
-# 
+# Prompt — Start Server untuk Preview UI
 ```
 
+Jalankan server Content Pilot agar saya bisa melihat UI terbaru.
 
+ATURAN:
+1. Jangan mengubah source code.
+2. Jangan mengubah UI.
+3. Jangan melakukan commit atau push.
+4. Jangan menjalankan migration.
+5. Jangan mengubah .env atau credential.
+6. Periksa terlebih dahulu service/server yang sedang berjalan.
+7. Jika production server sudah aktif dan melayani build terbaru, jangan restart tanpa alasan.
+8. Jika server belum berjalan, jalankan server dengan cara yang sesuai dengan repository.
+9. Pastikan frontend dapat diakses melalui:
+   https://contentpilot.biz.id
+10. Pastikan API production tetap menggunakan:
+   https://api.contentpilot.biz.id
+11. Verifikasi endpoint:
+   /health
+   /ready
+   /api/platforms
+   /accounts
+12. Setelah server aktif, tampilkan:
+   - server status
+   - frontend URL
+   - API URL
+   - port yang digunakan
+   - apakah build terbaru sedang aktif
+
+STOP setelah server berhasil aktif.
+
+SERVER STATUS: READY
+FRONTEND: <URL>
+API: <URL>
 ````
 # Prompt — Resume Visual UI
 ```
