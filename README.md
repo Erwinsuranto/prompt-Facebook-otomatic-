@@ -192,9 +192,459 @@
 
 
 ````
-# 
+# Prompt: Phase 3 — Facebook Reels Publishing
 ```
+Lanjutkan project Content Pilot dari kondisi terakhir.
 
+STATUS TERAKHIR:
+- Facebook OAuth: PASS
+- Session: PASS
+- Connection persistence: PASS
+- Destination persistence: PASS
+- Multi-user isolation: PASS
+- Reconnect: PASS
+- Disconnect: PASS
+- Security: PASS
+- Typecheck: PASS
+- Build: PASS
+- Connection Layer Status: READY
+- Facebook Page destination: ACTIVE
+
+Sekarang mulai PHASE 3:
+FACEBOOK REELS PUBLISHING.
+
+PENTING:
+Jangan merusak connection layer yang sudah PASS.
+Jangan mengubah arsitektur core tanpa alasan.
+Jangan membuat fake/mock publishing success.
+Jangan menggunakan Facebook username/password automation.
+Gunakan Facebook/Meta official Graph API.
+
+==================================================
+1. RESEARCH TERLEBIH DAHULU
+==================================================
+
+Sebelum coding:
+
+Audit kembali dokumentasi resmi Meta/Facebook API yang relevan untuk Page Reels publishing.
+
+Verifikasi secara aktual:
+
+- endpoint upload Reels
+- API version yang digunakan project
+- required access token
+- required permissions
+- Page access token requirement
+- upload flow
+- resumable upload jika diperlukan
+- video requirements
+- caption requirements
+- publish/finalize flow
+- status checking
+- error response
+- rate limits
+- restrictions/limitations
+
+JANGAN mengarang endpoint atau permission.
+
+Jika ada bagian yang belum dapat diverifikasi:
+MARK AS NEEDS VERIFICATION
+
+Gunakan hasil research tersebut sebagai dasar implementation.
+
+==================================================
+2. PROVIDER ARCHITECTURE
+==================================================
+
+Facebook publishing harus tetap berada di Facebook provider.
+
+Jangan memasukkan Facebook-specific API logic ke core.
+
+Gunakan struktur/modul existing repository jika sudah ada.
+
+Jika diperlukan, pisahkan:
+
+facebook/
+  auth/
+  api/
+  reels/
+  provider/
+
+Tetapi jangan membuat duplicate architecture jika repository sudah memiliki struktur yang sesuai.
+
+Core hanya mengetahui konsep generik:
+
+PublishingJob
+Destination
+Media
+Provider
+Capability
+
+Facebook provider menangani detail API Facebook.
+
+==================================================
+3. CAPABILITY
+==================================================
+
+Tambahkan/aktifkan capability Facebook Reels hanya jika API research membuktikan capability tersebut tersedia.
+
+Contoh konsep:
+
+facebook:
+  capabilities:
+    - reels
+
+Jangan hardcode capability sebagai available jika implementation belum benar-benar siap.
+
+==================================================
+4. PUBLISHING JOB
+==================================================
+
+Gunakan PublishingJob yang sudah dirancang.
+
+Contoh:
+
+Media
+  ↓
+PublishingJob
+  ↓
+provider = facebook
+destination = Facebook Page
+content_type = reels
+
+Status:
+
+draft
+queued
+processing
+uploading
+publishing
+published
+failed
+retrying
+cancelled
+
+Jangan membuat global status yang menghilangkan status per destination.
+
+==================================================
+5. MEDIA VALIDATION
+==================================================
+
+Sebelum upload:
+
+- validasi MIME type
+- validasi file size
+- validasi video metadata
+- validasi duration
+- validasi dimensions
+- validasi requirement Facebook berdasarkan dokumentasi resmi
+- pastikan file benar-benar tersedia di storage
+
+Jangan upload file yang jelas tidak memenuhi requirement.
+
+Error harus dikembalikan dengan jelas kepada user.
+
+==================================================
+6. PUBLISH FLOW
+==================================================
+
+Implement flow sebenarnya:
+
+User memilih video
+→ pilih Facebook Page
+→ pilih Reels
+→ isi caption
+→ submit
+→ create PublishingJob
+→ queue
+→ worker
+→ Facebook provider
+→ upload
+→ publish/finalize
+→ cek status jika diperlukan
+→ simpan result
+→ update job status
+
+Jika Facebook berhasil:
+
+published
+
+Jika gagal:
+
+failed
+
+Simpan informasi error yang aman.
+
+==================================================
+7. QUEUE / WORKER
+==================================================
+
+Gunakan queue/worker architecture existing.
+
+Jangan membuat queue Facebook terpisah jika core queue sudah tersedia.
+
+Flow:
+
+PublishingJob
+→ Queue
+→ Worker
+→ Provider Registry
+→ Facebook Provider
+→ publishReel()
+
+Worker harus dapat menangani:
+
+- retryable error
+- permanent error
+- timeout
+- rate limit
+- invalid token
+- permission denied
+- unsupported media
+
+==================================================
+8. RETRY
+==================================================
+
+Temporary error:
+
+- network error
+- timeout
+- temporary API error
+- rate limit
+
+→ retry sesuai mekanisme queue existing.
+
+Permanent error:
+
+- invalid token
+- permission denied
+- invalid destination
+- unsupported media
+- invalid request
+
+→ failed tanpa infinite retry.
+
+Simpan:
+
+- attempt count
+- error code
+- error message
+- timestamp
+- provider response metadata jika aman
+
+Jangan menyimpan access token di log.
+
+==================================================
+9. DATABASE
+==================================================
+
+Gunakan schema existing.
+
+Jangan membuat model Facebook-specific seperti:
+
+FacebookReelJob
+
+jika PublishingJob generik sudah tersedia.
+
+Gunakan:
+
+Media
+Post
+PublishingJob
+PublishingAttempt
+Destination
+PlatformConnection
+
+Jika migration diperlukan:
+
+- buat migration
+- jangan menghapus data existing
+- jangan reset database
+- jangan menghapus connection user yang sudah berhasil
+- verifikasi migration sebelum apply
+
+==================================================
+10. UI
+==================================================
+
+Update UI existing, jangan membuat dashboard baru.
+
+Tambahkan flow minimal:
+
+Upload Content
+→ pilih video
+→ pilih Facebook Page
+→ pilih Reels
+→ caption
+→ Publish
+
+Tampilkan:
+
+- selected destination
+- media preview
+- caption
+- publishing status
+- error message jika gagal
+
+Jangan menampilkan YouTube/Instagram/TikTok sebagai aktif.
+
+Jika provider belum tersedia:
+Coming Soon / unavailable.
+
+UI harus responsive desktop dan mobile.
+
+==================================================
+11. SECURITY
+==================================================
+
+Pastikan:
+
+- user hanya dapat menggunakan connection miliknya
+- user hanya dapat publish ke destination miliknya
+- access token tidak dikirim ke frontend
+- access token tidak muncul di logs
+- jangan commit secret
+- validasi authorization setiap PublishingJob
+- validasi ownership Media
+- validasi ownership Destination
+- validasi MIME/file upload
+- cegah path traversal
+- jangan menerima arbitrary internal URLs tanpa validasi jika ada remote media support
+
+==================================================
+12. TESTING
+==================================================
+
+Buat/ubah test yang relevan.
+
+Minimal test:
+
+1. Facebook provider registration
+2. capability detection
+3. destination ownership
+4. media validation
+5. PublishingJob creation
+6. queue dispatch
+7. retryable error
+8. permanent error
+9. successful publish response handling
+10. user isolation
+
+Untuk integration test Facebook:
+
+Gunakan API resmi dan credential yang memang tersedia.
+
+Jangan menggunakan fake success untuk menyatakan publishing berhasil.
+
+Jika credential/API environment belum tersedia:
+
+- jangan mengarang PASS
+- jalankan unit/integration test yang dapat dilakukan
+- tandai LIVE FACEBOOK PUBLISH TEST sebagai BLOCKED/NEEDS CREDENTIAL
+
+==================================================
+13. BUILD & VERIFICATION
+==================================================
+
+Setelah implementation:
+
+API typecheck
+Web typecheck
+Lint
+Unit tests
+Integration tests yang aman
+Production build
+
+Kemudian verifikasi UI melalui browser.
+
+Pastikan connection layer tetap bekerja:
+
+Facebook connection
+→ destination
+→ Accounts
+→ Platforms
+
+Jangan sampai Phase 3 merusaknya.
+
+==================================================
+14. GIT
+==================================================
+
+Sebelum commit:
+
+git status
+git diff
+audit secret
+audit token
+audit API key
+
+Jangan commit:
+
+.env
+API key
+access token
+refresh token
+password
+credential
+
+Commit hanya perubahan Phase 3.
+
+Commit message:
+
+feat: add facebook reels publishing
+
+Push ke branch aktif.
+
+Jangan force push.
+
+Jika push gagal, laporkan error sebenarnya.
+
+==================================================
+15. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+PHASE 3 STATUS
+
+FACEBOOK API RESEARCH: PASS/NEEDS VERIFICATION
+FACEBOOK REELS PROVIDER: PASS/FAIL
+MEDIA VALIDATION: PASS/FAIL
+PUBLISHING JOB: PASS/FAIL
+QUEUE: PASS/FAIL
+WORKER: PASS/FAIL
+RETRY: PASS/FAIL
+ERROR HANDLING: PASS/FAIL
+UI: PASS/FAIL
+SECURITY: PASS/FAIL
+TYPECHECK: PASS/FAIL
+TESTS: PASS/FAIL
+BUILD: PASS/FAIL
+
+LIVE FACEBOOK PUBLISH TEST:
+PASS / FAIL / BLOCKED
+
+CONNECTION LAYER REGRESSION:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash>
+
+PUSH:
+SUCCESS / FAILED
+
+Jangan menyatakan publishing READY jika live API flow belum benar-benar diverifikasi.
+
+Jika semua yang diperlukan PASS:
+
+PHASE 3 FACEBOOK REELS: READY
+
+STOP setelah laporan.
+Jangan lanjut ke Phase 4 tanpa instruksi.
 
 ````
 # 
