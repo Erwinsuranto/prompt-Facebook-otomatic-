@@ -157,11 +157,36 @@
 
 
 ````
-# 
+# Prompt: Restart & Verify Production
 ```
+Restart server Content Pilot setelah perubahan UI terakhir.
 
+Lakukan:
+1. Identifikasi process manager yang sedang menjalankan web/API (PM2/systemd/docker/etc).
+2. Restart service yang benar, jangan mematikan service yang tidak terkait.
+3. Pastikan API kembali healthy.
+4. Pastikan web production kembali HTTP 200.
+5. Verifikasi bundle terbaru sudah aktif.
+6. Jangan mengubah source code.
+7. Jangan mengubah .env atau credential.
+8. Jangan melakukan git reset/force push.
 
-````
+Setelah restart, cek:
+- https://contentpilot.biz.id
+- /accounts
+- /platforms
+- /upload
+
+Laporkan:
+SERVER RESTART: SUCCESS/FAILED
+API HEALTH: PASS/FAIL
+WEB: PASS/FAIL
+LATEST BUILD ACTIVE: YES/NO
+GIT STATUS: CLEAN/DIRTY
+
+STOP setelah verifikasi.
+
+```
 # Prompt: Facebook UI Final Polish
 # 
 ```
