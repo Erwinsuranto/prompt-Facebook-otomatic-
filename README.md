@@ -187,10 +187,865 @@
 
 
 ````
-# 
+# Prompt: Phase 4 — Facebook Reels Publishing
 ```
 
+# Prompt — Phase 4: Facebook Reels Publishing
 
+Kita lanjutkan project Content Pilot setelah Phase 3 Facebook Connection selesai.
+
+STATUS SAAT INI:
+
+- Facebook OAuth: PASS
+- OAuth callback: PASS
+- Session: PASS
+- Connection persistence: PASS
+- Destination persistence: PASS
+- Multi-user isolation: PASS
+- Reconnect: PASS
+- Disconnect: PASS
+- Facebook Page discovery: PASS
+- Facebook destination aktif: PASS
+- Typecheck: PASS
+- Web build: PASS
+- API tests: PASS
+- Provider Facebook tests: PASS
+- Git push Phase 3: SUCCESS
+
+JANGAN membongkar atau mengganti connection layer yang sudah PASS.
+
+Sekarang fokus hanya pada:
+
+PHASE 4 — FACEBOOK REELS PUBLISHING
+
+==================================================
+1. TUJUAN
+==================================================
+
+Implementasikan publishing Facebook Reels melalui Facebook Graph API resmi.
+
+Flow yang diinginkan:
+
+User
+→ pilih video
+→ pilih Facebook Page
+→ isi caption
+→ Publish
+→ create upload session
+→ upload video
+→ monitor processing/status
+→ finalize/publish
+→ simpan hasil
+→ tampilkan status di UI
+
+Arsitektur tetap provider-based.
+
+Core tidak boleh berisi logic khusus Facebook.
+
+Gunakan Facebook provider yang sudah ada dari Phase 3.
+
+==================================================
+2. JANGAN IMPLEMENTASI YANG TIDAK DIMINTA
+==================================================
+
+JANGAN:
+
+- membuat YouTube provider
+- membuat Instagram provider
+- membuat TikTok provider
+- membuat scheduler penuh
+- membuat analytics
+- membuat Facebook personal-profile publishing
+- menggunakan username/password Facebook
+- menggunakan browser automation
+- menggunakan scraping
+- membuat fake publishing
+- membuat fake success
+- membuat dummy Facebook response
+- mengubah OAuth flow yang sudah PASS
+- menghapus connection system yang sudah ada
+- mengganti database architecture tanpa alasan
+- melakukan refactor besar yang tidak diperlukan
+
+Fokus hanya Facebook Reels publishing.
+
+==================================================
+3. OFFICIAL API
+==================================================
+
+Gunakan Facebook Graph API resmi.
+
+Flow Reels terdiri dari:
+
+1. initialize/create upload session
+2. upload video
+3. optional/status checking
+4. finalize/publish
+
+Konsep endpoint Reels:
+
+POST /{page-id}/video_reels
+
+dengan upload phase START/FINISH sesuai API yang digunakan provider.
+
+Upload binary menggunakan upload URL dari response initialization.
+
+Jangan hardcode API version jika project sudah memiliki konfigurasi API version.
+
+Gunakan API version configuration yang sudah dipakai project.
+
+Jika provider sudah memiliki abstraction untuk Graph API, gunakan abstraction tersebut.
+
+Jangan membuat HTTP client Facebook kedua hanya untuk fitur Reels.
+
+==================================================
+4. PAGE ACCESS TOKEN
+==================================================
+
+Gunakan credential/token dari PlatformConnection Facebook yang sudah berhasil dibuat pada Phase 3.
+
+Jangan meminta user memasukkan Page Access Token secara manual jika connection system sudah menyediakannya.
+
+Jangan menyimpan token plaintext di log.
+
+Jangan menampilkan token di frontend.
+
+Jangan mengirim token ke browser.
+
+Jika token harus didekripsi:
+
+decrypt hanya di server/provider layer.
+
+==================================================
+5. CAPABILITY
+==================================================
+
+Tambahkan capability Facebook:
+
+reels
+
+Capability hanya boleh aktif jika provider Facebook memang mendukungnya.
+
+Jangan membuat UI menganggap publishing tersedia hanya karena provider status = ready.
+
+Bedakan:
+
+provider ready
+connection ready
+destination ready
+publishing capability ready
+
+==================================================
+6. MEDIA VALIDATION
+==================================================
+
+Sebelum membuat publishing job, lakukan validation.
+
+Minimal periksa:
+
+- file exists
+- MIME type
+- video format
+- duration
+- width
+- height
+- aspect ratio
+- file size jika API requirement membutuhkannya
+
+Untuk Reels, gunakan requirement resmi yang berlaku pada API yang dipakai.
+
+Jangan hardcode requirement berdasarkan asumsi lama jika dokumentasi/API response menunjukkan requirement berbeda.
+
+Jika video tidak memenuhi requirement:
+
+JANGAN mengirim video ke Facebook.
+
+Kembalikan error yang jelas kepada user.
+
+Contoh:
+
+"Video tidak memenuhi requirement Facebook Reels: aspect ratio harus 9:16."
+
+Error harus terstruktur dan dapat ditampilkan UI.
+
+==================================================
+7. PUBLISHING JOB
+==================================================
+
+Gunakan PublishingJob architecture yang sudah ada.
+
+Satu destination = satu publishing job.
+
+Contoh:
+
+Video A
+→ Facebook Page YourReels
+→ PublishingJob #123
+
+Job harus menyimpan minimal:
+
+- id
+- userId
+- platform
+- connectionId
+- destinationId
+- mediaId
+- content/caption
+- status
+- providerPostId/videoId jika tersedia
+- attempt count
+- error code
+- error message
+- createdAt
+- updatedAt
+- publishedAt jika berhasil
+
+Sesuaikan dengan database model existing.
+
+JANGAN membuat duplicate job model jika model generic sudah tersedia.
+
+==================================================
+8. STATUS MACHINE
+==================================================
+
+Gunakan status yang konsisten dengan core.
+
+Minimal:
+
+queued
+processing
+uploading
+publishing
+published
+failed
+retrying
+cancelled
+
+Jangan menandai:
+
+published
+
+sebelum Facebook benar-benar menerima publish/finalize successfully.
+
+Response HTTP 200 dari upload initialization BUKAN berarti Reel sudah published.
+
+Jangan membuat fake success.
+
+==================================================
+9. FACEBOOK REELS FLOW
+==================================================
+
+Implementasikan flow server-side:
+
+STEP 1
+Validate connection.
+
+STEP 2
+Validate destination.
+
+Pastikan destination adalah Facebook Page yang valid.
+
+STEP 3
+Validate media.
+
+STEP 4
+Create PublishingJob.
+
+STEP 5
+Set status:
+
+processing/uploading
+
+STEP 6
+Call Facebook Reels initialization.
+
+Simpan provider video_id/upload session information yang aman jika diperlukan untuk melanjutkan job.
+
+STEP 7
+Upload binary video ke upload URL yang diberikan Facebook.
+
+Jangan load file besar sepenuhnya ke memory jika streaming/chunked upload dapat digunakan dengan stack existing.
+
+Gunakan streaming/chunking bila cocok dengan architecture project.
+
+STEP 8
+Jika API menyediakan upload/status checking:
+
+gunakan status checking untuk mengetahui apakah upload/processing sudah selesai.
+
+STEP 9
+Finalize/publish Reel.
+
+STEP 10
+Jika response benar-benar menunjukkan publish berhasil:
+
+status = published
+
+simpan provider post/video ID.
+
+STEP 11
+Jika gagal:
+
+status = failed
+
+simpan error terstruktur.
+
+==================================================
+10. ERROR HANDLING
+==================================================
+
+Bedakan temporary error dan permanent error.
+
+Temporary:
+
+- timeout
+- network error
+- temporary Facebook API error
+- rate limit
+- temporary upload failure
+
+Permanent:
+
+- invalid token
+- permission denied
+- invalid destination
+- unsupported media
+- invalid parameter
+- app permission problem
+
+Temporary error boleh masuk retry mechanism jika queue architecture existing mendukungnya.
+
+Permanent error jangan otomatis retry tanpa perubahan.
+
+Jangan retry:
+
+invalid OAuth token
+permission denied
+unsupported media
+
+==================================================
+11. IDEMPOTENCY
+==================================================
+
+Publishing harus sebisa mungkin idempotent.
+
+Jangan membuat duplicate Reel ketika worker restart setelah request Facebook berhasil tetapi response tidak terbaca.
+
+Gunakan provider operation ID / job metadata / existing publishing attempt mechanism jika tersedia.
+
+Audit existing architecture terlebih dahulu.
+
+Jangan membuat sistem idempotency baru jika sudah ada mekanisme yang dapat digunakan.
+
+==================================================
+12. PUBLISHING ATTEMPT
+==================================================
+
+Jika PublishingAttempt sudah tersedia:
+
+gunakan untuk mencatat setiap percobaan.
+
+Minimal:
+
+- jobId
+- attempt number
+- startedAt
+- finishedAt
+- status
+- provider request stage
+- provider response code
+- normalized error code
+- normalized error message
+
+Jangan menyimpan:
+
+- access token
+- refresh token
+- secret
+- credential plaintext
+
+==================================================
+13. BACKEND API
+==================================================
+
+Tambahkan endpoint API hanya jika memang belum tersedia.
+
+Contoh konsep:
+
+POST /api/publishing/facebook/reels
+
+atau gunakan routing convention existing.
+
+JANGAN membuat route duplicate.
+
+Endpoint harus:
+
+- authenticated
+- authorize user
+- validate input
+- validate destination ownership
+- validate media ownership
+- create publishing job
+- return job information
+
+Jangan menerima Page ID arbitrary lalu langsung publish.
+
+Pastikan destination memang milik connection/user yang sedang login.
+
+==================================================
+14. FRONTEND
+==================================================
+
+Tambahkan UI publishing Reels menggunakan design system existing.
+
+Jangan membuat halaman baru jika existing Upload/Publish page dapat digunakan.
+
+Flow:
+
+Upload/select video
+
+↓
+
+Video preview
+
+↓
+
+Caption
+
+↓
+
+Platform:
+Facebook
+
+↓
+
+Destination:
+Facebook Page
+
+↓
+
+Validation
+
+↓
+
+Publish
+
+↓
+
+Publishing status
+
+Contoh status:
+
+Ready
+Uploading
+Processing
+Publishing
+Published
+Failed
+
+Jika Facebook connection belum tersedia:
+
+tampilkan:
+
+"Connect Facebook"
+
+Jika connection tersedia tetapi destination tidak tersedia:
+
+tampilkan:
+
+"No Facebook Page available"
+
+Jika media invalid:
+
+tampilkan alasan validation.
+
+Jangan menampilkan "Published" sebelum backend benar-benar menyatakan published.
+
+==================================================
+15. HISTORY
+==================================================
+
+Jika History system sudah tersedia:
+
+Facebook Reels publishing harus muncul di history.
+
+Minimal:
+
+- thumbnail/media
+- platform
+- destination
+- caption
+- status
+- created time
+- published time
+- error jika gagal
+
+Gunakan existing History architecture.
+
+Jangan membuat history system kedua.
+
+==================================================
+16. RETRY
+==================================================
+
+Gunakan retry architecture existing.
+
+Jika belum tersedia:
+
+buat minimal retry abstraction yang tidak mengunci core ke Facebook.
+
+Jangan membangun scheduler kompleks.
+
+Retry hanya untuk error yang memang temporary.
+
+Gunakan exponential backoff jika cocok dengan queue architecture.
+
+==================================================
+17. SECURITY
+==================================================
+
+Periksa:
+
+- authorization
+- user isolation
+- destination ownership
+- media ownership
+- token handling
+- log redaction
+- request validation
+- file validation
+
+Pastikan user A tidak dapat menggunakan destination milik user B.
+
+Pastikan user A tidak dapat publish media milik user B.
+
+Pastikan access token tidak muncul di:
+
+- frontend
+- API response
+- logs
+- errors
+- database plaintext
+
+==================================================
+18. TESTING
+==================================================
+
+Karena live Facebook publishing membutuhkan credential/app configuration yang sesuai, JANGAN memalsukan live test.
+
+Buat automated tests menggunakan mocked provider/API response.
+
+Test minimal:
+
+1. valid Reels publish request
+2. invalid media
+3. invalid destination
+4. missing connection
+5. expired/invalid token
+6. permission denied
+7. Facebook API temporary error
+8. Facebook API permanent error
+9. upload failure
+10. finalize failure
+11. successful publish response
+12. retryable error
+13. non-retryable error
+14. user isolation
+15. duplicate/idempotency scenario
+16. token redaction
+
+Test harus verificar status transition.
+
+Contoh:
+
+queued
+→ processing
+→ uploading
+→ publishing
+→ published
+
+Failure:
+
+queued
+→ processing
+→ uploading
+→ failed
+
+Jangan membuat test:
+
+"Facebook published successfully"
+
+jika hanya berdasarkan mock tanpa membedakannya sebagai mocked test.
+
+Label dengan jelas:
+
+MOCKED / UNIT / INTEGRATION
+
+==================================================
+19. LIVE TEST RULE
+==================================================
+
+Live Facebook publish test hanya boleh dilakukan jika credential/App Review/permission yang diperlukan memang tersedia.
+
+Jika belum tersedia:
+
+status:
+
+LIVE PUBLISH TEST: BLOCKED
+
+Bukan:
+
+PASS
+
+Jangan membuat fake credential.
+
+Jangan membuat fake Page.
+
+Jangan mengubah database agar terlihat seperti publish berhasil.
+
+Jika live test blocked, tetap pastikan implementation dan automated tests PASS.
+
+==================================================
+20. API RESPONSE NORMALIZATION
+==================================================
+
+Provider Facebook harus menerjemahkan response Facebook menjadi error/status generic.
+
+Core tidak boleh bergantung pada raw Facebook error structure.
+
+Contoh:
+
+Facebook error:
+permission denied
+
+Core:
+
+PERMISSION_DENIED
+
+Facebook error:
+invalid token
+
+Core:
+
+AUTHENTICATION_FAILED
+
+Facebook error:
+rate limit
+
+Core:
+
+RATE_LIMITED
+
+Facebook error:
+invalid media
+
+Core:
+
+INVALID_MEDIA
+
+Gunakan existing error abstraction jika sudah tersedia.
+
+==================================================
+21. OBSERVABILITY
+==================================================
+
+Tambahkan logging yang aman untuk:
+
+- job started
+- upload started
+- upload completed
+- publish started
+- publish completed
+- failure
+- retry
+
+Jangan log:
+
+- access token
+- refresh token
+- authorization header
+- cookies
+- secrets
+
+Gunakan job ID dan destination ID untuk tracing.
+
+==================================================
+22. DOCUMENTATION
+==================================================
+
+Update documentation yang relevan.
+
+Minimal dokumentasikan:
+
+- Facebook Reels publishing architecture
+- publishing flow
+- status machine
+- required permissions
+- media requirements
+- error handling
+- retry behavior
+- live test limitation
+
+Jika docs/PLATFORM_MODULES.md sudah ada:
+
+UPDATE FILE tersebut.
+
+Jangan membuat duplicate documentation.
+
+Jika README memiliki current implementation status:
+
+update status Facebook Reels sesuai kondisi sebenarnya.
+
+==================================================
+23. NO UNRELATED CHANGES
+==================================================
+
+Jangan menyentuh:
+
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+
+Jangan mengubah:
+
+- existing Facebook OAuth
+- connection callback
+- destination discovery
+
+kecuali benar-benar diperlukan untuk publishing dan perubahan tersebut terbukti aman.
+
+Jika menemukan bug lama pada connection layer:
+
+JANGAN melakukan refactor besar.
+
+Catat sebagai finding kecuali bug tersebut benar-benar memblokir Phase 4.
+
+==================================================
+24. BUILD & VERIFICATION
+==================================================
+
+Setelah implementation:
+
+1. typecheck
+2. lint
+3. unit tests
+4. provider tests
+5. API tests
+6. web tests
+7. production build
+8. inspect git diff
+9. inspect git status
+
+Semua harus PASS sebelum commit.
+
+Jika ada test lama yang unrelated dan gagal:
+
+jangan menghapus test hanya agar PASS.
+
+Investigasi dan laporkan.
+
+==================================================
+25. GIT
+==================================================
+
+Sebelum commit:
+
+- git status
+- git diff
+- pastikan tidak ada secret
+- pastikan perubahan hanya Phase 4
+- pastikan tidak ada file temporary
+
+Commit:
+
+feat: add facebook reels publishing
+
+Push langsung ke branch project yang sedang digunakan.
+
+JANGAN force push.
+
+Setelah push:
+
+verifikasi remote.
+
+==================================================
+26. FINAL REPORT
+==================================================
+
+Di akhir tampilkan:
+
+PHASE 4 STATUS
+
+Facebook Reels Provider:
+PASS / INCOMPLETE
+
+Media Validation:
+PASS / INCOMPLETE
+
+Publishing Job:
+PASS / INCOMPLETE
+
+Upload Flow:
+PASS / INCOMPLETE
+
+Publish Flow:
+PASS / INCOMPLETE
+
+Status Tracking:
+PASS / INCOMPLETE
+
+Retry:
+PASS / INCOMPLETE
+
+History:
+PASS / INCOMPLETE
+
+Security:
+PASS / INCOMPLETE
+
+Tests:
+PASS / INCOMPLETE
+
+Build:
+PASS / INCOMPLETE
+
+LIVE FACEBOOK TEST:
+PASS / BLOCKED
+
+Jika live test blocked karena credential/App Review/permission:
+
+jelaskan alasan sebenarnya.
+
+Jangan menyatakan live publish berhasil.
+
+Git:
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS / FAILED
+REMOTE VERIFIED: YES / NO
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Phase 4 selesai:
+
+STOP.
+
+Jangan lanjut ke Facebook Video/Photo/Text Post.
+
+Jangan lanjut YouTube.
+
+Jangan lanjut Instagram.
+
+Jangan lanjut TikTok.
+
+Tunggu instruksi berikutnya.
 ````
 # Prompt: Phase 3 — Facebook Reels Publishing
 ```
