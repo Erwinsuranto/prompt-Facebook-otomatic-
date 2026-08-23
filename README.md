@@ -137,10 +137,46 @@
 
 
 ````
-# 
+# Prompt — Paksa Verifikasi Reference Image
 ```
 
+# UI DESIGN REFERENCE — VISUAL VERIFICATION
 
+Jangan melakukan perubahan kode terlebih dahulu.
+
+Saya sudah menaruh gambar desain reference di:
+
+docs/design-reference/
+
+Tugas pertama kamu hanya melakukan verifikasi.
+
+1. Periksa seluruh file di docs/design-reference/.
+2. Pastikan file gambar benar-benar ada.
+3. Untuk setiap gambar, gunakan kemampuan image/vision yang tersedia pada session ini untuk MEMBUKA DAN MELIHAT gambar secara visual.
+4. Jangan hanya membaca nama file, metadata, atau ukuran file.
+5. Jangan menebak isi desain.
+6. Jangan membuat perubahan kode jika kamu tidak dapat melihat gambar secara visual.
+
+Jika session/model ini TIDAK memiliki kemampuan untuk melihat gambar secara visual, berhenti dan laporkan:
+
+VISUAL REFERENCE: NOT ACCESSIBLE
+
+Jangan melakukan implementasi UI berdasarkan asumsi.
+
+Jika gambar berhasil dilihat, laporkan secara singkat:
+
+REFERENCE IMAGES: FOUND
+VISUAL ACCESS: PASS
+IMAGES REVIEWED: <jumlah>
+PAGES/SCREENS IDENTIFIED: <daftar>
+READY FOR UI IMPLEMENTATION: YES
+
+Setelah itu STOP dan tunggu instruksi berikutnya.
+
+Jangan coding.
+Jangan mengubah file.
+Jangan commit.
+Jangan push.
 ````
 # Prompt — Implement UI Mengikuti Design Reference
 ```
