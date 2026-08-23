@@ -132,9 +132,185 @@
 
 
 ````
-# 
+# Prompt: Restart Content Pilot — Visual Reference UI
 ```
+# Prompt Restart — Content Pilot UI Reference
 
+Lanjutkan project Content Pilot dari kondisi repository SAAT INI.
+
+JANGAN mengulang pekerjaan yang sudah selesai.
+JANGAN melakukan audit dari awal.
+Baca kondisi repository, git history, dan perubahan terakhir terlebih dahulu.
+
+## KONDISI TERAKHIR
+
+Project:
+Content Pilot
+
+Repository:
+`/root/content-pilot`
+
+Reference design:
+`docs/design-reference/admin-dashboard-reference.png`
+
+Reference image tersebut adalah DESIGN UTAMA yang harus digunakan untuk UI Content Pilot.
+
+Model/session ini memiliki kemampuan vision/image input.
+
+## TUGAS UTAMA SEKARANG
+
+Buka dan ANALISIS gambar:
+
+`docs/design-reference/admin-dashboard-reference.png`
+
+Jangan hanya membaca nama file.
+
+Gunakan kemampuan vision untuk benar-benar melihat gambar dan memahami:
+
+- layout
+- sidebar
+- topbar
+- navigation
+- card
+- typography
+- warna
+- spacing
+- border
+- radius
+- button
+- badge
+- icon
+- table/grid
+- responsive behavior
+- mobile layout
+- desktop layout
+- visual hierarchy
+- empty state
+- loading state
+- status indicator
+
+Kemudian bandingkan desain tersebut dengan UI Content Pilot yang sekarang.
+
+## ATURAN VISUAL
+
+Gambar reference adalah sumber kebenaran visual.
+
+Jangan membuat desain berdasarkan asumsi.
+
+Jangan membuat design system baru jika elemen yang dibutuhkan sudah terlihat pada reference.
+
+Jangan mengganti backend/API/provider yang sudah bekerja.
+
+Jangan merusak Facebook publishing yang sudah PASS.
+
+Fokus pada UI/UX.
+
+Jika ada perbedaan antara UI sekarang dan reference:
+
+→ sesuaikan UI agar sedekat mungkin dengan reference.
+
+Pertahankan fungsi existing.
+
+## PRIORITAS
+
+Urutan pekerjaan:
+
+1. Baca reference image.
+2. Audit UI existing.
+3. Identifikasi perbedaan.
+4. Buat rencana perubahan kecil dan terkontrol.
+5. Implementasikan UI.
+6. Pastikan responsive desktop.
+7. Pastikan responsive mobile.
+8. Pastikan Facebook UI/regression tetap PASS.
+9. Jalankan typecheck.
+10. Jalankan lint.
+11. Jalankan tests.
+12. Jalankan build.
+13. Review git diff.
+14. Commit perubahan.
+15. Push ke branch aktif.
+16. Verifikasi remote.
+
+## PENTING
+
+Jangan berhenti hanya karena sebelumnya model tidak bisa membaca image.
+
+Sekarang gunakan vision secara langsung.
+
+Jika gambar berhasil dibaca:
+lanjutkan implementation.
+
+Jika gambar ternyata benar-benar tidak dapat dibaca oleh session ini:
+STOP dan laporkan:
+
+VISUAL REFERENCE: NOT ACCESSIBLE
+
+Jangan menebak desain.
+
+## SCOPE
+
+Untuk sekarang fokus pada UI Content Pilot.
+
+Jangan mulai:
+
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+- fitur publishing baru
+
+Facebook yang sudah bekerja harus tetap aman.
+
+## QUALITY CHECK
+
+Setelah implementation:
+
+UI STATUS: PASS / FAIL
+DESKTOP UI: PASS / FAIL
+MOBILE UI: PASS / FAIL
+FACEBOOK REGRESSION: PASS / FAIL
+TYPECHECK: PASS / FAIL
+LINT: PASS / FAIL
+TEST: PASS / FAIL
+BUILD: PASS / FAIL
+
+Jika ada failure, perbaiki sebelum commit.
+
+## GIT
+
+Sebelum commit:
+
+- git status
+- review git diff
+- pastikan tidak ada secret/token/.env
+- jangan commit perubahan yang tidak berhubungan dengan UI
+
+Commit message:
+
+feat(web): align content pilot ui with visual reference
+
+Push ke branch aktif.
+
+Setelah selesai tampilkan:
+
+UI STATUS: PASS
+REFERENCE STATUS: APPLIED
+DESKTOP: PASS
+MOBILE: PASS
+FACEBOOK REGRESSION: PASS
+TYPECHECK: PASS
+LINT: PASS
+TEST: PASS
+BUILD: PASS
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+STOP setelah selesai.
 
 ````
 # Prompt — Paksa Verifikasi Reference Image
