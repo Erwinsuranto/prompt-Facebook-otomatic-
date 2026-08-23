@@ -167,10 +167,836 @@
 
 
 ````
-# 
+# Prompt: Phase 6 — Facebook Upload & Publishing UI
 ```
 
+# Prompt — Phase 6: Facebook Upload & Publishing UI
 
+Kita lanjutkan project Content Pilot dari kondisi repository SAAT INI.
+
+JANGAN mengulang Phase 0–5.
+JANGAN mengubah arsitektur Facebook connection yang sudah PASS.
+JANGAN menyentuh YouTube, Instagram, TikTok, X, Pinterest, atau LinkedIn.
+
+STATUS SAAT INI:
+
+- Facebook OAuth/connection: PASS
+- Facebook account connection: PASS
+- Facebook Page discovery: PASS
+- Destination persistence: PASS
+- Reconnect: PASS
+- Disconnect: PASS
+- Connection persistence: PASS
+- Facebook provider regression: PASS
+- API typecheck: PASS
+- Web typecheck: PASS
+- Lint: PASS
+- Production build: PASS
+- Mobile UI regression: PASS
+- Facebook Pages/destination UI: sudah diperbaiki
+- Provider readiness: Facebook OAuth ready
+- Destination: aktif
+- Phase 5: selesai dan sudah di-commit/push
+
+LIVE FACEBOOK PUBLISHING sebelumnya masih BLOCKED karena credential/permission publishing nyata belum tersedia.
+
+Sekarang tugas kita adalah menyiapkan dan mengimplementasikan Facebook upload/publishing secara nyata menggunakan API resmi Meta/Facebook.
+
+==================================================
+1. ATURAN PALING PENTING
+==================================================
+
+Sebelum coding:
+
+1. Inspect repository saat ini.
+2. Baca implementation Facebook yang SUDAH ADA.
+3. Jangan membuat ulang Facebook OAuth.
+4. Jangan membuat ulang connection layer.
+5. Jangan membuat fake upload.
+6. Jangan membuat fake publish success.
+7. Jangan menggunakan browser automation.
+8. Jangan menggunakan username/password Facebook.
+9. Gunakan Facebook/Meta Graph API resmi.
+10. Jangan mengarang endpoint, permission, parameter, atau response.
+11. Jika API capability belum pasti, cek dokumentasi resmi Meta terlebih dahulu.
+12. Jangan mengubah provider lain.
+13. Jangan melakukan massive refactor.
+14. Jangan menghapus test yang sudah PASS.
+15. Jangan merusak connection layer yang sudah stabil.
+
+Jika credential/permission publishing belum tersedia, tetap implementasikan seluruh production-ready flow sampai boundary API dan berikan status yang jelas:
+
+READY_FOR_LIVE_CREDENTIAL
+
+bukan:
+
+PUBLISHED
+
+Jangan membuat mock response terlihat seperti publish berhasil.
+
+==================================================
+2. TUJUAN PHASE INI
+==================================================
+
+Bangun alur:
+
+Upload video
+→ validate video
+→ preview
+→ pilih Facebook Page
+→ caption
+→ publish
+→ upload/publish process
+→ status
+→ result
+→ history
+
+Target UI:
+
+Facebook Upload
+
+[ Select Video / Drag & Drop ]
+
+Video Preview
+
+Filename
+Size
+Duration
+Resolution
+
+Caption
+[.................................]
+
+Facebook Page
+[ Your Page ▼ ]
+
+Publishing
+
+( ) Publish Now
+( ) Schedule
+
+[ Publish to Facebook ]
+
+Setelah submit:
+
+Uploading...
+Publishing...
+Published
+atau
+Failed
+
+==================================================
+3. MEDIA UPLOAD
+==================================================
+
+Implement media upload secara modular.
+
+Media harus tetap platform-independent.
+
+Jangan membuat model seperti:
+
+FacebookVideo
+
+Gunakan media generic yang sudah ada/ditentukan architecture project.
+
+Minimal validasi:
+
+- MIME type
+- file extension
+- file size
+- video readability
+- duration jika diperlukan
+- dimensions jika diperlukan
+
+Jangan mengasumsikan batas ukuran/durasi.
+
+Gunakan requirement resmi Meta untuk endpoint yang benar-benar digunakan.
+
+Error harus jelas.
+
+Contoh:
+
+Unsupported format
+File too large
+Invalid video
+Upload failed
+Facebook rejected media
+
+Jangan menampilkan error internal mentah kepada user jika tidak aman.
+
+==================================================
+4. FACEBOOK PAGE SELECTION
+==================================================
+
+Gunakan destination Facebook Page yang SUDAH tersimpan.
+
+Jangan membuat Page connection baru.
+
+UI harus menampilkan:
+
+Facebook
+Page name
+Page status
+Connected/Active
+
+Jika hanya ada satu Page:
+
+gunakan Page tersebut sebagai default.
+
+Jika banyak Page:
+
+gunakan dropdown/select.
+
+Jika tidak ada Page:
+
+tampilkan empty state:
+
+"No Facebook Pages available"
+
+dan tombol:
+
+"Reconnect Facebook"
+
+Jangan hardcode Page ID.
+
+==================================================
+5. CAPTION
+==================================================
+
+Buat caption editor yang bagus.
+
+Minimal:
+
+- textarea
+- character counter jika memang relevan
+- preserve line breaks
+- trim input
+- validation
+- disabled state saat publishing
+
+Jangan membuat caption editor terlalu besar.
+
+Mobile harus nyaman digunakan.
+
+==================================================
+6. PUBLISH FLOW
+==================================================
+
+Gunakan PublishingJob yang SUDAH dirancang.
+
+Jangan membuat sistem job baru khusus Facebook.
+
+Flow:
+
+User
+→ create PublishingJob
+→ queue
+→ Facebook provider
+→ upload/publish
+→ update job status
+→ save result
+→ history
+
+Gunakan status yang sudah ada.
+
+Contoh:
+
+draft
+queued
+processing
+uploading
+publishing
+published
+failed
+retrying
+
+Jangan mengubah status secara tidak valid.
+
+==================================================
+7. FACEBOOK PROVIDER
+==================================================
+
+Implement publishing di:
+
+provider-facebook
+
+atau struktur provider Facebook yang SUDAH ADA.
+
+Jangan menaruh logic Facebook di:
+
+- core
+- generic publishing service
+- generic queue
+- generic media service
+
+Core hanya memanggil provider.
+
+Konsep:
+
+PublishingJob
+→ provider registry
+→ FacebookProvider
+→ Facebook API
+
+==================================================
+8. API IMPLEMENTATION
+==================================================
+
+Gunakan endpoint resmi Meta yang sesuai dengan jenis content yang kita pilih.
+
+Sebelum implementation:
+
+Research dokumentasi resmi Meta untuk:
+
+- Page video publishing
+- video upload flow
+- Reels publishing jika memang menjadi target pertama
+- required permissions
+- Page access token
+- resumable upload jika diperlukan
+- publishing status
+- error response
+
+Pilih SATU jenis Facebook video publishing yang paling tepat untuk Phase ini berdasarkan API resmi dan kondisi credential yang sudah tersedia.
+
+Jangan implementasikan banyak jenis publishing sekaligus.
+
+Prioritas:
+
+FACEBOOK VIDEO UPLOAD/PUBLISH TERLEBIH DAHULU.
+
+Setelah stabil baru Reels.
+
+==================================================
+9. TOKEN SECURITY
+==================================================
+
+Gunakan connection/token system yang SUDAH ADA.
+
+Jangan:
+
+- hardcode token
+- menyimpan token di frontend
+- menampilkan token ke browser
+- log access token
+- commit token
+- menyimpan token plaintext jika architecture existing sudah menggunakan secure storage
+
+Backend/provider yang menangani credential.
+
+Frontend hanya menerima status/error/result yang diperlukan.
+
+==================================================
+10. UPLOAD UI — REDESIGN
+==================================================
+
+Selain backend, perbaiki UI Upload agar terlihat jauh lebih modern dibanding UI Accounts sebelumnya.
+
+Target:
+
+Clean
+Modern
+Professional
+Dark theme konsisten
+Responsive
+Mobile-first
+Tidak terlalu banyak whitespace
+Tidak terlalu banyak border
+Tidak terlalu banyak tombol
+
+Gunakan design system existing.
+
+Jangan membuat design system kedua.
+
+==================================================
+11. UPLOAD PAGE
+==================================================
+
+Buat layout seperti:
+
+------------------------------------------------
+Facebook Upload
+Upload content to your Facebook Page
+
+[ Upload area ]
+
+Drag & drop video here
+or
+[ Choose Video ]
+
+Supported formats...
+------------------------------------------------
+
+Setelah video dipilih:
+
+------------------------------------------------
+Video Preview
+
+[ VIDEO ]
+
+filename.mp4
+1080 × 1920
+25 MB
+00:32
+
+[ Replace ]
+------------------------------------------------
+
+Caption
+
+[ Write your caption... ]
+
+0 / ...
+
+------------------------------------------------
+
+Publish to
+
+Facebook
+
+Page
+[ Yourreels ▼ ]
+
+------------------------------------------------
+
+Publishing
+
+[ Publish Now ]
+
+atau schedule jika scheduler existing memang sudah siap.
+
+[ Publish to Facebook ]
+------------------------------------------------
+
+UI harus berubah berdasarkan state.
+
+==================================================
+12. UPLOAD STATES
+==================================================
+
+Implement state yang jelas:
+
+EMPTY
+
+No video selected.
+
+SELECTED
+
+Video sudah dipilih.
+
+VALIDATING
+
+Validasi media.
+
+READY
+
+Media valid dan siap dipublish.
+
+UPLOADING
+
+Upload ke backend/provider.
+
+PUBLISHING
+
+Facebook sedang memproses publishing.
+
+SUCCESS
+
+Facebook publish berhasil.
+
+FAILED
+
+Publishing gagal.
+
+RETRY
+
+Jika error temporary dan retry memang diperbolehkan.
+
+Jangan membuat SUCCESS sebelum provider benar-benar mengembalikan hasil sukses.
+
+==================================================
+13. SUCCESS UI
+==================================================
+
+Jika benar-benar sukses:
+
+tampilkan:
+
+Published successfully
+
+Facebook
+Page Name
+
+Content ID / Post ID jika tersedia dan aman ditampilkan.
+
+Timestamp.
+
+Action:
+
+[ View History ]
+
+Jika API memberikan URL publik yang valid:
+
+[ Open on Facebook ]
+
+Jangan membuat URL Facebook secara manual jika response API tidak menyediakan informasi yang diperlukan.
+
+==================================================
+14. ERROR UI
+==================================================
+
+Error harus user-friendly.
+
+Contoh:
+
+Permission required
+
+Facebook account needs publishing permission.
+
+atau:
+
+Facebook rejected this video
+
+The selected media does not meet Facebook's requirements.
+
+atau:
+
+Temporary Facebook error
+
+Please try again.
+
+Simpan detail teknis di server log/job attempt, bukan ditampilkan semuanya ke user.
+
+==================================================
+15. RETRY
+==================================================
+
+Gunakan retry architecture yang SUDAH ADA.
+
+Temporary error:
+
+retry boleh.
+
+Permanent error:
+
+jangan automatic retry.
+
+Contoh permanent:
+
+- permission denied
+- invalid destination
+- invalid token
+- unsupported media
+
+Contoh temporary:
+
+- timeout
+- network error
+- rate limit
+- temporary provider error
+
+Jangan membuat infinite retry.
+
+==================================================
+16. HISTORY
+==================================================
+
+Setelah publishing:
+
+History harus dapat menampilkan:
+
+Platform
+Facebook
+
+Destination
+Page name
+
+Content
+thumbnail/video
+
+Status
+
+Published at
+
+Error jika failed
+
+Job ID jika diperlukan.
+
+Jangan membuat history Facebook terpisah dari generic publishing history jika architecture existing sudah generic.
+
+==================================================
+17. TESTING
+==================================================
+
+Tambahkan test sesuai architecture existing.
+
+Minimal:
+
+API:
+
+- upload validation
+- create publishing job
+- Facebook provider validation
+- destination validation
+- permission error
+- provider error mapping
+- successful response mapping
+- temporary error
+- permanent error
+
+Worker:
+
+- queued → processing
+- processing → uploading
+- uploading → publishing
+- publishing → published
+- failure handling
+- retry handling
+
+Frontend:
+
+- empty state
+- select video
+- invalid video
+- ready state
+- publish disabled state
+- loading state
+- success state
+- failure state
+- mobile layout
+
+Jangan menghapus test lama.
+
+==================================================
+18. LIVE TEST
+==================================================
+
+Setelah implementation:
+
+JANGAN membuat fake Facebook account.
+
+JANGAN membuat fake Page.
+
+JANGAN membuat fake access token.
+
+JANGAN membuat fake publish response.
+
+Jika credential nyata dan permission publishing tersedia:
+
+lakukan satu live test dengan content uji.
+
+Jika credential/permission belum tersedia:
+
+jalankan semua test sampai boundary API dan laporkan:
+
+LIVE FACEBOOK PUBLISH TEST: BLOCKED
+
+Reason:
+<actual reason>
+
+Jangan menyatakan PASS.
+
+==================================================
+19. UI REGRESSION
+==================================================
+
+Pastikan perubahan Upload tidak merusak:
+
+/accounts
+/platforms
+Facebook connection
+Facebook Pages
+Reconnect
+Disconnect
+History
+existing navigation
+
+Test breakpoint minimal:
+
+- mobile ~360px
+- mobile ~390px
+- tablet
+- desktop
+
+Pastikan:
+
+- tidak ada horizontal overflow
+- button tidak keluar layar
+- text tidak terpotong
+- modal/dialog responsive
+- upload area responsive
+- video preview responsive
+
+==================================================
+20. GIT SAFETY
+==================================================
+
+Sebelum commit:
+
+git status
+
+Periksa:
+
+git diff
+
+Pastikan tidak ada:
+
+- access token
+- refresh token
+- password
+- API key
+- .env
+- credential
+- secret
+
+Jangan commit perubahan yang tidak berhubungan dengan Phase ini.
+
+==================================================
+21. VERIFICATION
+==================================================
+
+Setelah implementation:
+
+1. API typecheck
+2. Web typecheck
+3. lint
+4. unit tests
+5. provider tests
+6. worker tests
+7. web tests
+8. production build
+9. mobile UI regression
+10. Facebook provider regression
+
+Jika ada failure:
+
+perbaiki akar masalah.
+
+Jangan hanya bypass test.
+
+Jangan menurunkan assertion.
+
+==================================================
+22. DOCUMENTATION
+==================================================
+
+Update documentation yang relevan.
+
+Minimal:
+
+README.md
+docs/PLATFORM_MODULES.md
+docs/ROADMAP.md
+docs/research/facebook-api.md
+
+Tambahkan status aktual:
+
+Facebook connection: COMPLETE
+
+Facebook destination discovery: COMPLETE
+
+Facebook upload: <status>
+
+Facebook publishing: <status>
+
+Live publishing: <status>
+
+Jangan menulis COMPLETE jika belum benar-benar selesai.
+
+==================================================
+23. COMMIT
+==================================================
+
+Jika semua verification yang bisa dilakukan PASS:
+
+buat commit dengan message:
+
+feat: add facebook video publishing flow
+
+Jika live test masih blocked karena credential/permission eksternal tetapi implementation dan automated test sudah benar, tetap boleh commit implementation dengan status yang jelas.
+
+Jangan mengklaim live publishing PASS jika belum dilakukan.
+
+Push ke branch aktif.
+
+Jangan force push.
+
+Setelah push, verifikasi remote.
+
+==================================================
+24. FINAL REPORT
+==================================================
+
+Di akhir tampilkan:
+
+PHASE: 6
+
+FACEBOOK CONNECTION: PASS
+
+FACEBOOK DESTINATION: PASS
+
+MEDIA UPLOAD: PASS / BLOCKED
+
+FACEBOOK PROVIDER: PASS / BLOCKED
+
+PUBLISHING FLOW: PASS / BLOCKED
+
+LIVE FACEBOOK PUBLISH TEST: PASS / BLOCKED
+
+UI UPLOAD: PASS
+
+MOBILE UI: PASS
+
+API TYPECHECK: PASS/FAIL
+
+WEB TYPECHECK: PASS/FAIL
+
+LINT: PASS/FAIL
+
+TESTS: PASS/FAIL
+
+BUILD: PASS/FAIL
+
+REGRESSION: PASS/FAIL
+
+GIT STATUS: CLEAN/DIRTY
+
+COMMIT: <hash>
+
+BRANCH: <branch>
+
+PUSH STATUS: SUCCESS/FAILED
+
+REMOTE VERIFIED: YES/NO
+
+Jika LIVE FACEBOOK PUBLISH TEST BLOCKED:
+
+jelaskan alasan sebenarnya.
+
+Jangan membuat fake success.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Phase 6 selesai:
+
+STOP.
+
+Jangan mulai:
+
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+- bulk publishing
+- advanced automation
+
+Tunggu instruksi berikutnya.
+
+Fokus sampai Facebook video upload/publishing benar-benar stabil.
 ````
 # Prompt — Facebook UI Final Verification
 ```
