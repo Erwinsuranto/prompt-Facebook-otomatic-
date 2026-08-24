@@ -79,7 +79,213 @@
 ````
 # 
 ```
+PROMPT: FIX MANUAL UPLOAD VALIDATION & SHARED UPLOAD FLOW
 
+Hasil E2E terakhir:
+
+MOBILE BROWSER: PASS
+REAL UPLOAD: PASS
+COMPOSE: PASS
+FACEBOOK REELS: PASS
+FACEBOOK VERIFICATION: PASS
+REGRESSION: PASS
+BUILD: PASS
+
+Real mobile browser sudah berhasil:
+
+browser → pilih video → upload → compose → publish → Facebook Page → Reel terverifikasi.
+
+JANGAN mengubah flow publishing Facebook yang sudah PASS.
+
+JANGAN membuat uploader baru.
+
+JANGAN mengubah downloader.
+
+JANGAN melakukan refactor besar.
+
+Hanya perbaiki 2 temuan berikut.
+
+==================================================
+BUG 1 — COMPOSE UPLOAD FLOW
+==================================================
+
+Saat ini Compose masih menangani file input secara langsung.
+
+Gunakan shared upload helper/component/service yang sudah tersedia di repository agar:
+
+Manual Upload
+dan
+Downloader Ingestion
+
+menggunakan pipeline media yang konsisten.
+
+Target:
+
+Browser File Picker
+→ shared upload flow
+→ upload
+→ finalize
+→ media READY
+→ Compose media picker
+
+Jangan membuat duplicate upload implementation.
+
+Cari implementation upload existing terlebih dahulu.
+
+Reuse implementation tersebut.
+
+Jika shared helper sudah ada tetapi Compose belum menggunakannya, ubah Compose agar menggunakan helper tersebut.
+
+Jangan mengubah API contract jika tidak diperlukan.
+
+==================================================
+BUG 2 — INVALID FILE VALIDATION
+==================================================
+
+Saat user memilih file yang bukan video:
+
+contoh:
+.jpg
+.png
+.txt
+
+file tidak boleh:
+
+upload sampai dianggap READY
+atau
+masuk Compose sebagai media yang valid.
+
+Backend finalize harus melakukan validasi MIME/content type yang sebenarnya.
+
+Jika invalid, return error terstruktur:
+
+VALIDATION_ERROR
+
+dengan pesan yang jelas, misalnya:
+
+"Unsupported video format"
+
+atau pesan existing yang paling sesuai.
+
+Jangan menggunakan error generik:
+
+"Failed to create the post from media."
+
+jika sebenarnya root cause adalah file bukan video.
+
+Pastikan:
+
+invalid file
+→ validation failed
+→ media tidak menjadi READY
+→ Compose tidak dapat mempublikasikannya.
+
+==================================================
+REGRESSION
+==================================================
+
+Setelah perubahan, test kembali:
+
+1. Manual browser upload video
+2. Downloader ingestion
+3. Compose media picker
+4. Facebook Reels publish
+
+Expected:
+
+Manual Upload = PASS
+Downloader = PASS
+Media Finalize = PASS
+Media Ready Filter = PASS
+Compose = PASS
+Facebook Reels = PASS
+
+==================================================
+TEST INVALID FILE
+==================================================
+
+Test minimal satu file non-video.
+
+Expected:
+
+UPLOAD VALIDATION = PASS
+MEDIA READY = NO
+ERROR CODE = VALIDATION_ERROR
+ERROR MESSAGE = jelas dan spesifik
+
+Pastikan tidak ada fake success.
+
+==================================================
+IMPORTANT
+==================================================
+
+Jangan mengubah:
+
+- Facebook API
+- Facebook provider
+- worker publishing flow
+- queue
+- downloader
+- storage architecture
+- database schema
+
+kecuali benar-benar diperlukan untuk memperbaiki dua bug di atas.
+
+Jangan menghapus test existing.
+
+Tambahkan/update test hanya jika diperlukan untuk mengunci regression.
+
+==================================================
+FINAL CHECK
+==================================================
+
+Jalankan:
+
+typecheck
+lint
+tests
+build
+
+Kemudian:
+
+git diff
+git status
+
+Jika semua PASS:
+
+commit dengan message:
+
+fix: unify compose upload and media validation
+
+Push ke branch aktif.
+
+Jangan force push.
+
+Jika push gagal, laporkan error sebenarnya.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan:
+
+SHARED UPLOAD FLOW: PASS/FAIL
+MANUAL VIDEO UPLOAD: PASS/FAIL
+DOWNLOADER REGRESSION: PASS/FAIL
+INVALID FILE VALIDATION: PASS/FAIL
+MEDIA READY GUARD: PASS/FAIL
+COMPOSE: PASS/FAIL
+FACEBOOK REELS: PASS/FAIL
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+
+GIT STATUS: CLEAN/NOT CLEAN
+COMMIT: <hash>
+PUSH STATUS: SUCCESS/FAILED
+
+STOP setelah selesai.
 
 ````
 # 
