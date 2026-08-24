@@ -87,10 +87,774 @@
 
 
 ````
-# 
+# Prompt — Unified Media Pipeline: Manual Upload + Downloader
 ```
 
+PROMPT: UNIFIED MEDIA PIPELINE — MANUAL UPLOAD + DOWNLOADER
 
+Kita lanjutkan project Content Pilot.
+
+JANGAN membuat fitur upload baru dari nol sebelum melakukan audit terhadap implementation yang SUDAH ADA.
+
+Tujuan task ini adalah memastikan Content Pilot memiliki SATU media pipeline yang dapat menerima media dari dua sumber:
+
+1. Manual Upload
+   - User memilih video langsung dari perangkat/HP/PC.
+2. Downloader
+   - Video yang berhasil didownload oleh fitur downloader masuk ke media system yang sama.
+
+Kedua sumber tersebut HARUS menghasilkan Media object yang sama dan dapat digunakan oleh Compose untuk publishing.
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+1. Audit repository terlebih dahulu.
+2. Cari implementation upload/manual upload yang SUDAH ADA.
+3. Cari implementation downloader yang SUDAH ADA.
+4. Cari Media Library yang SUDAH ADA.
+5. Cari endpoint:
+   - media upload
+   - media finalize
+   - media status
+   - media listing
+   - downloader output/import
+6. Cari storage abstraction yang SUDAH ADA.
+7. Cari Compose media picker yang SUDAH ADA.
+8. Jangan membuat duplicate uploader.
+9. Jangan membuat duplicate storage system.
+10. Jangan membuat duplicate Media model jika sudah ada.
+11. Jangan membuat duplicate downloader.
+12. Jangan mengubah Facebook publishing flow yang sudah PASS kecuali benar-benar diperlukan untuk integrasi media.
+13. Jangan mengubah Facebook Page/Reels API flow yang sudah terbukti berhasil.
+14. Jangan membuat fake success state.
+15. Jangan menggunakan browser automation untuk menggantikan official Facebook API.
+16. Jangan menghapus implementation existing hanya karena struktur menurutmu kurang bagus.
+
+==================================================
+TARGET ARCHITECTURE
+==================================================
+
+Gunakan satu pipeline:
+
+MANUAL UPLOAD
+       │
+       ▼
+MEDIA INGESTION
+       │
+       ▼
+STORAGE
+       │
+       ▼
+FINALIZE
+       │
+       ▼
+MEDIA STATUS = READY
+       │
+       ▼
+MEDIA LIBRARY
+       │
+       ▼
+COMPOSE MEDIA PICKER
+       │
+       ▼
+FACEBOOK PAGE
+       │
+       ▼
+REELS PUBLISHING
+
+
+DOWNLOADER
+       │
+       ▼
+MEDIA INGESTION
+       │
+       ▼
+STORAGE
+       │
+       ▼
+FINALIZE
+       │
+       ▼
+MEDIA STATUS = READY
+       │
+       ▼
+MEDIA LIBRARY
+       │
+       ▼
+COMPOSE MEDIA PICKER
+       │
+       ▼
+FACEBOOK PAGE
+       │
+       ▼
+REELS PUBLISHING
+
+
+PENTING:
+
+Manual Upload dan Downloader TIDAK boleh memiliki dua media pipeline terpisah.
+
+Keduanya harus berakhir pada Media entity/storage pipeline yang sama.
+
+==================================================
+MEDIA LIFECYCLE
+==================================================
+
+Media minimal memiliki lifecycle:
+
+created
+uploading
+processing
+ready
+failed
+
+Aturan:
+
+- Media dengan status uploading tidak boleh digunakan Compose.
+- Media dengan status processing tidak boleh digunakan Compose.
+- Media dengan status failed tidak boleh digunakan Compose.
+- Hanya media status ready yang boleh dipilih untuk publishing.
+
+Jika repository sudah memiliki status yang berbeda, gunakan status existing dan jangan membuat duplicate status system.
+
+==================================================
+MANUAL UPLOAD
+==================================================
+
+Pastikan user dapat:
+
+1. Membuka Compose atau Media Library.
+2. Menekan tombol:
+
+   Upload Media
+
+   atau
+
+   Upload from device
+
+3. Memilih video dari perangkat.
+4. Browser mengirim file ke backend/storage menggunakan flow existing.
+5. Upload mendapatkan progress/status yang benar.
+6. Setelah upload selesai, backend melakukan finalize.
+7. Media berubah menjadi:
+
+   READY
+
+8. Media tersebut langsung dapat muncul di Media Library.
+9. Media tersebut dapat dipilih dari Compose.
+
+Jangan membuat upload langsung menjadi ready sebelum backend benar-benar menyelesaikan proses upload/finalize.
+
+==================================================
+DOWNLOADER
+==================================================
+
+Downloader yang sudah ada harus menggunakan Media Pipeline yang sama.
+
+Flow:
+
+Downloader
+→ download video
+→ create/ingest Media
+→ storage
+→ finalize
+→ status ready
+→ Media Library
+
+Jangan membuat:
+
+DownloaderMedia
+
+jika Media generic sudah tersedia.
+
+Downloader harus menghasilkan Media generic.
+
+Jika downloader sudah menyimpan file ke storage, gunakan storage abstraction existing dan buat/register Media record yang benar.
+
+Jangan mendownload ulang file hanya untuk memasukkannya ke Media Library.
+
+==================================================
+MEDIA LIBRARY
+==================================================
+
+Media Library harus menjadi tempat pusat semua media.
+
+Media dapat memiliki metadata seperti:
+
+- id
+- filename
+- mimeType
+- size
+- duration
+- width
+- height
+- storage key/path
+- thumbnail
+- status
+- source
+- createdAt
+- updatedAt
+
+Jika field sudah ada, gunakan field existing.
+
+Source dapat membedakan:
+
+manual
+downloader
+
+Jika architecture existing sudah memiliki source field, gunakan itu.
+
+Jika belum ada dan memang diperlukan, tambahkan dengan migration yang benar.
+
+Contoh:
+
+Media #001
+source = manual
+status = ready
+
+Media #002
+source = downloader
+status = ready
+
+Keduanya harus diperlakukan sama oleh Compose.
+
+==================================================
+COMPOSE
+==================================================
+
+Compose saat ini memiliki dropdown:
+
+Media
+
+yang menampilkan file seperti:
+
+compose_test.mp4
+web_ui_test.mp4
+reel_missing.mp4
+reel_e2e.mp4
+reel_test.mp4
+
+Jangan menghapus picker tersebut.
+
+Perbaiki agar picker mengambil media dari Media API/storage layer yang benar.
+
+HANYA tampilkan:
+
+status = ready
+
+Jangan tampilkan media yang masih:
+
+uploading
+processing
+failed
+
+Tambahkan kemampuan:
+
+[ Upload Media ]
+
+sehingga user dapat upload video manual tanpa harus masuk ke sistem terpisah jika architecture existing memang mendukung flow tersebut.
+
+Jika repository sudah memiliki uploader di halaman lain, gunakan component/service tersebut kembali.
+
+Jangan membuat uploader kedua.
+
+==================================================
+COMPOSE FLOW
+==================================================
+
+Target:
+
+Compose
+
+Content Type:
+Reels
+
+Media:
+
+[ Upload Media ]
+
+atau
+
+[ Select existing media ]
+
+User dapat:
+
+A. Upload video baru
+
+atau
+
+B. Memilih video yang sudah ada dari:
+
+- Manual Upload
+- Downloader
+
+Kemudian:
+
+Caption
+
+Publish to:
+
+Facebook Page
+Yourdreels
+
+Publish now / Schedule
+
+Publish
+
+==================================================
+FACEBOOK PUBLISHING
+==================================================
+
+Facebook Page Reels publishing yang sekarang SUDAH PASS.
+
+JANGAN rewrite.
+
+JANGAN mengganti Graph API flow.
+
+JANGAN membuat provider Facebook baru.
+
+JANGAN mengubah authentication/token flow.
+
+JANGAN mengubah worker publishing flow jika tidak diperlukan.
+
+Pastikan hanya media yang valid dan status ready yang diberikan ke publishing pipeline.
+
+Existing successful flow harus tetap:
+
+queued
+→ uploading
+→ published
+
+dan Facebook harus menghasilkan:
+
+publish_status = published
+video_status = ready
+
+serta permalink/externalId jika memang sudah tersedia.
+
+==================================================
+VALIDATION
+==================================================
+
+Untuk manual upload:
+
+Validasi:
+
+- MIME type
+- extension
+- file size
+- video readability
+- duration jika existing validator mendukung
+- aspect ratio jika existing validator mendukung
+
+Minimal video MP4 harus dapat diproses.
+
+Jangan menambahkan restriction yang tidak diperlukan.
+
+Jika backend sudah memiliki validator, gunakan validator existing.
+
+==================================================
+ERROR HANDLING
+==================================================
+
+Jangan menampilkan error generik jika backend sudah mengetahui penyebab sebenarnya.
+
+Contoh:
+
+Salah:
+
+Failed to create the post from media.
+
+Jika sebenarnya media masih uploading.
+
+Harus:
+
+Media is still uploading. Please wait until upload is complete.
+
+Jika media belum finalized:
+
+Media is not ready yet. Please wait for finalization.
+
+Jika file invalid:
+
+Unsupported video format.
+
+Jika upload gagal:
+
+Upload failed: <safe error message>
+
+Jangan expose:
+
+- access token
+- API key
+- internal secret
+- raw provider response
+- database credentials
+- internal stack trace
+
+==================================================
+IMPORTANT: MISSING_MEDIA
+==================================================
+
+Sebelumnya ditemukan error:
+
+missing_media
+
+dan UI menampilkan:
+
+Failed to create the post from media.
+
+Audit root cause secara menyeluruh.
+
+Pastikan:
+
+Compose
+→ memilih Media ID yang valid
+→ backend dapat menemukan Media
+→ storage object tersedia
+→ media sudah finalized
+→ worker dapat membaca media
+→ Facebook provider menerima media
+→ publishing berhasil.
+
+Jangan hanya menyembunyikan error.
+
+Perbaiki root cause.
+
+==================================================
+UPLOAD STORAGE
+==================================================
+
+Gunakan storage abstraction existing.
+
+Repository sebelumnya menggunakan S3-compatible/MinIO/local development storage.
+
+Jangan membuat storage baru.
+
+Pastikan:
+
+Manual Upload
+→ storage existing
+
+Downloader
+→ storage existing
+
+Facebook Publisher
+→ media/storage existing
+
+Jika presigned URL digunakan, pastikan URL tersebut dapat diakses oleh service yang memang membutuhkannya.
+
+Jangan mengubah working storage architecture tanpa alasan.
+
+==================================================
+API
+==================================================
+
+Audit endpoint existing terlebih dahulu.
+
+Cari endpoint seperti:
+
+POST /api/media/upload
+
+POST /api/media/finalize
+
+GET /api/media
+
+GET /api/media/:id
+
+GET /api/media/:id/status
+
+atau endpoint dengan fungsi yang sama.
+
+Gunakan endpoint existing jika tersedia.
+
+Jika endpoint missing:
+
+buat endpoint minimal yang diperlukan.
+
+Jangan membuat duplicate endpoint dengan fungsi sama.
+
+Downloader juga harus menggunakan API/service/media ingestion yang sama jika architecture memungkinkan.
+
+==================================================
+FRONTEND
+==================================================
+
+Audit:
+
+apps/web/src/app/compose/*
+apps/web/src/components/*
+atau struktur frontend existing.
+
+Cari:
+
+- Compose page
+- media picker
+- upload component
+- media library
+- API client
+- upload handler
+
+Reuse existing components.
+
+Jika upload component sudah ada di Media Library:
+
+gunakan component tersebut di Compose melalui reusable component.
+
+Jangan copy-paste logic upload.
+
+==================================================
+BACKEND
+==================================================
+
+Audit:
+
+- Media service
+- Storage service
+- Upload service
+- Downloader service
+- Worker
+- Facebook provider
+- Publishing service
+
+Pastikan semua menggunakan Media entity yang sama.
+
+Target:
+
+Manual Upload
+       \
+        → MediaService → Storage
+       /
+Downloader
+
+Bukan:
+
+Manual Upload → ManualMediaService
+Downloader → DownloaderMediaService
+
+yang menghasilkan dua sistem berbeda.
+
+==================================================
+TESTING
+==================================================
+
+Setelah implementation selesai, WAJIB test end-to-end.
+
+TEST 1 — MANUAL UPLOAD
+
+Gunakan video baru dari local/device.
+
+Flow:
+
+local video
+→ upload
+→ finalize
+→ status ready
+→ muncul di Media Library
+→ muncul di Compose
+→ pilih video
+→ pilih Facebook Page Yourdreels
+→ publish
+→ queue
+→ worker
+→ published
+
+Verifikasi video benar-benar muncul di Facebook Page.
+
+Jangan hanya memeriksa HTTP 200.
+
+==================================================
+
+TEST 2 — DOWNLOADER
+
+Gunakan downloader existing.
+
+Flow:
+
+Downloader
+→ download
+→ Media
+→ finalize
+→ ready
+→ Media Library
+→ Compose
+→ Facebook Page Yourdreels
+→ Reels
+→ publish
+→ published
+
+Verifikasi video benar-benar muncul di Facebook Page.
+
+==================================================
+
+TEST 3 — MEDIA READY GUARD
+
+Upload media tetapi sebelum finalize selesai:
+
+Media harus TIDAK muncul sebagai selectable di Compose.
+
+Setelah:
+
+status = ready
+
+media harus muncul.
+
+==================================================
+
+TEST 4 — FAILED MEDIA
+
+Simulasikan/gunakan media gagal.
+
+Pastikan:
+
+failed media tidak dapat dipublish.
+
+UI harus memberikan error yang jelas.
+
+==================================================
+REGRESSION TEST
+==================================================
+
+Jalankan:
+
+- typecheck
+- lint
+- unit tests
+- API tests
+- build
+- existing Facebook regression tests
+
+Pastikan Facebook publishing yang sebelumnya PASS tetap PASS.
+
+Jangan menghapus test existing.
+
+Jangan mengurangi jumlah test hanya agar build hijau.
+
+==================================================
+GIT SAFETY
+==================================================
+
+Sebelum commit:
+
+git status
+git diff
+
+Pastikan:
+
+- tidak ada secret
+- tidak ada token
+- tidak ada API key
+- tidak ada credential
+- tidak ada file pribadi
+
+Jangan force push.
+
+Jangan commit perubahan yang tidak berkaitan dengan task.
+
+==================================================
+OUTPUT YANG WAJIB DILAPORKAN
+==================================================
+
+Setelah selesai berikan:
+
+1. EXISTING MEDIA SYSTEM
+   - apa yang sudah ada
+   - file/component/service yang digunakan
+
+2. MANUAL UPLOAD
+   - endpoint
+   - component
+   - storage flow
+   - finalize flow
+
+3. DOWNLOADER
+   - bagaimana downloader masuk ke Media Pipeline
+
+4. MEDIA LIFECYCLE
+   - status yang digunakan
+   - kapan menjadi ready
+
+5. COMPOSE
+   - bagaimana media ready muncul di picker
+
+6. FACEBOOK
+   - pastikan publishing flow existing tetap digunakan
+
+7. FILES CHANGED
+   - daftar file yang benar-benar diubah
+   - alasan perubahan
+
+8. TEST RESULTS
+   - typecheck
+   - lint
+   - tests
+   - build
+   - manual upload E2E
+   - downloader E2E
+   - Facebook E2E
+
+9. FACEBOOK VERIFICATION
+   Tampilkan:
+
+   FACEBOOK PAGE: Yourdreels
+   CONTENT TYPE: Reels
+   SOURCE: Manual / Downloader
+   STATUS: PUBLISHED
+   EXTERNAL ID: <id>
+   PERMALINK: <permalink>
+
+10. FINAL STATUS
+
+Tampilkan:
+
+MEDIA PIPELINE: PASS
+MANUAL UPLOAD: PASS
+DOWNLOADER INGESTION: PASS
+MEDIA FINALIZE: PASS
+MEDIA READY FILTER: PASS
+COMPOSE MEDIA PICKER: PASS
+FACEBOOK PAGE REELS: PASS
+REGRESSION TEST: PASS
+BUILD: PASS
+
+==================================================
+STOP CONDITION
+==================================================
+
+Jika Manual Upload sudah ada tetapi hanya tidak terhubung ke Compose:
+
+JANGAN membuat uploader baru.
+
+Jika Downloader sudah menghasilkan Media:
+
+JANGAN membuat downloader baru.
+
+Jika Media Library sudah ada:
+
+JANGAN membuat Media Library baru.
+
+Jika Facebook publishing sudah PASS:
+
+JANGAN rewrite Facebook publishing.
+
+Fokus hanya menyatukan:
+
+MANUAL UPLOAD
++
+DOWNLOADER
+↓
+ONE MEDIA PIPELINE
+↓
+MEDIA LIBRARY
+↓
+COMPOSE
+↓
+FACEBOOK PAGE REELS
+
+Setelah seluruh test PASS dan Facebook Page benar-benar menampilkan Reel:
+
+STOP.
 ````
 # 
 ```
