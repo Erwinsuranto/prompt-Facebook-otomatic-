@@ -107,10 +107,145 @@
 
 
 ````
-# 
+# Prompt: Fix Web 502 — Jangan Ganggu Facebook
 ```
 
+# Prompt — Fix Web 502 Without Changing Facebook Publishing
 
+Kita lanjut dari kondisi terakhir.
+
+STATUS PENTING:
+- Facebook Upload: PASS
+- Facebook Publish: PASS
+- Job Worker: PASS
+- Status Update: PASS
+- History: PASS
+- Flow: queued → processing → publishing → published
+- Graph API mengonfirmasi publish_status = published
+- Facebook Reel sudah berhasil dibuat.
+
+JANGAN mengubah atau merusak Facebook uploader/publisher yang sudah PASS.
+
+Masalah yang sekarang harus diperbaiki hanya:
+
+https://contentpilot.biz.id
+
+mengembalikan:
+
+502 Bad Gateway
+Cloudflare
+
+## TUJUAN
+
+Cari root cause kenapa domain contentpilot.biz.id mendapatkan HTTP 502 dan perbaiki akses web tanpa mengubah logic Facebook publishing.
+
+## LANGKAH WAJIB
+
+1. Audit service yang menjalankan frontend/web.
+2. Audit service backend/API.
+3. Cek process yang sedang berjalan.
+4. Cek port yang digunakan masing-masing service.
+5. Cek systemd/service manager jika digunakan.
+6. Cek konfigurasi nginx/reverse proxy.
+7. Cek upstream yang digunakan nginx.
+8. Cek apakah frontend/web benar-benar listening.
+9. Cek apakah backend/API benar-benar listening.
+10. Test langsung dari server menggunakan localhost/127.0.0.1 terhadap port upstream.
+11. Test domain dari server.
+12. Periksa nginx error log.
+13. Periksa service log.
+14. Periksa apakah ada service yang crash atau restart loop.
+15. Periksa konfigurasi Cloudflare hanya jika diperlukan.
+
+Gunakan diagnosis berdasarkan hasil command nyata.
+
+JANGAN menebak port.
+
+## ATURAN PENTING
+
+Jangan:
+- mengubah Facebook provider
+- mengubah Facebook publishing flow
+- mengubah Graph API
+- mengubah upload flow
+- mengubah worker publishing
+- mengubah database publishing
+- menghapus file
+- melakukan refactor besar
+- mengganti arsitektur
+- membuat fake endpoint
+- membuat fake success response
+
+Fokus hanya pada:
+WEB → NGINX → BACKEND/FRONTEND → DOMAIN
+
+## PERBAIKAN
+
+Setelah menemukan root cause:
+
+1. Perbaiki hanya konfigurasi/service yang menyebabkan 502.
+2. Restart hanya service yang memang diperlukan.
+3. Jangan restart worker Facebook jika tidak diperlukan.
+4. Validasi service setelah restart.
+5. Test localhost.
+6. Test melalui nginx.
+7. Test domain.
+8. Pastikan HTTP response kembali normal.
+
+## VERIFIKASI AKHIR
+
+Pastikan:
+
+WEB STATUS: PASS
+API STATUS: PASS
+DOMAIN STATUS: PASS
+HTTP STATUS: 200 atau status aplikasi yang benar
+
+Dan pastikan:
+
+FACEBOOK UPLOAD: PASS
+FACEBOOK PUBLISH: PASS
+JOB WORKER: PASS
+
+## GIT
+
+Sebelum perubahan:
+- git status
+- catat file yang akan diubah
+
+Setelah perubahan:
+- git diff
+- pastikan tidak ada secret
+- jalankan test/build yang relevan
+- jangan commit perubahan Facebook yang tidak diperlukan
+
+Jika masalah hanya konfigurasi server dan tidak menyentuh repository, tidak perlu membuat perubahan kode.
+
+## FINAL REPORT
+
+Laporkan:
+
+ROOT CAUSE:
+...
+
+FILE/SERVICE YANG DIPERBAIKI:
+...
+
+PORT:
+...
+
+NGINX STATUS:
+...
+
+WEB STATUS: PASS/FAIL
+API STATUS: PASS/FAIL
+DOMAIN STATUS: PASS/FAIL
+
+FACEBOOK PUBLISHING:
+UNCHANGED / PASS
+
+Jangan lanjut mengerjakan fitur lain setelah 502 berhasil diperbaiki.
+STOP.
 ````
 # Prompt — Fix Facebook Publishing Status
 ```
