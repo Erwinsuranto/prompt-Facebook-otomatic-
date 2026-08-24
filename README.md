@@ -97,10 +97,142 @@
 
 
 ````
-# 
+# Prompt — Test Facebook Page Publish via Web
 ```
 
+TASK: TEST REAL FACEBOOK PAGE REEL THROUGH WEB UI
 
+Web Content Pilot saat ini tidak bisa diakses / server mati.
+
+Saya ingin kamu sekarang melakukan TEST END-TO-END melalui WEB UI yang sebenarnya.
+
+JANGAN menambah fitur baru.
+JANGAN redesign UI.
+JANGAN membuat mock/fake success.
+JANGAN mengubah flow Facebook publishing yang sudah terbukti PASS.
+JANGAN melakukan refactor besar.
+
+TUJUAN:
+Pastikan user dapat membuka Content Pilot melalui browser dan melakukan:
+
+Upload video
+→ Compose
+→ pilih Facebook Page "Yourdreels"
+→ Publish now
+→ Publish
+→ Queue
+→ Worker
+→ Facebook Page
+→ Reel benar-benar muncul
+→ History = published
+
+LANGKAH:
+
+1. Periksa status service/project saat ini.
+2. Jalankan service yang diperlukan agar WEB Content Pilot dapat diakses.
+3. Pastikan frontend dan backend/API yang diperlukan benar-benar aktif.
+4. Pastikan reverse proxy/nginx/Cloudflare route yang digunakan project mengarah ke service yang benar.
+5. Jangan mengubah domain atau konfigurasi Cloudflare jika tidak diperlukan.
+
+SETELAH WEB HIDUP:
+
+6. Buka Content Pilot melalui browser.
+7. Gunakan UI asli, bukan API/curl sebagai pengganti test.
+8. Masuk ke halaman Compose.
+9. Upload video test baru.
+10. Pastikan upload berhasil.
+11. Pilih destination:
+    Facebook Page → Yourdreels
+12. Pilih content type:
+    Reel
+13. Isi caption sederhana:
+    Content Pilot Web Test
+14. Pilih:
+    Publish now
+15. Klik Publish.
+
+VERIFIKASI:
+
+Pantau job dari UI dan backend sampai status:
+
+queued
+→ uploading
+→ processing/publishing
+→ published
+
+Kemudian buka History.
+
+Pastikan job menunjukkan:
+
+Destination: Yourdreels (Facebook Page)
+Content type: reels
+Status: Published
+
+SETELAH ITU:
+
+16. Buka Facebook Page "Yourdreels" di browser.
+17. Buka tab Reels.
+18. Pastikan video test benar-benar muncul di Page.
+
+PENTING:
+
+Test harus menggunakan video BARU.
+
+Jangan menganggap test berhasil hanya karena:
+- API mengembalikan 200
+- job menjadi published
+- worker mengatakan success
+
+Keberhasilan final harus diverifikasi dari Facebook Page bahwa Reel benar-benar muncul.
+
+Jika gagal:
+
+JANGAN langsung mengubah kode.
+
+Catat titik kegagalannya:
+
+A. Web server tidak hidup
+B. Reverse proxy/Cloudflare
+C. Frontend
+D. Upload media
+E. API request
+F. Queue
+G. Worker
+H. Facebook publish
+I. History/status update
+
+Jika gagal di salah satu tahap, tampilkan error sebenarnya dan root cause berdasarkan log.
+
+Jika server mati, hidupkan server terlebih dahulu.
+
+Jika server sudah hidup tetapi Cloudflare menghasilkan 502, periksa service upstream, port listening, nginx/reverse proxy, dan koneksi localhost sebelum mengubah aplikasi.
+
+Jangan menghapus data/job lama.
+
+Jangan menjalankan test terhadap Facebook Profile pribadi.
+TEST INI KHUSUS FACEBOOK PAGE "Yourdreels".
+
+HASIL AKHIR WAJIB:
+
+WEB STATUS: PASS/FAIL
+WEB URL: <url>
+UPLOAD: PASS/FAIL
+FACEBOOK PAGE: Yourdreels
+PUBLISH REQUEST: PASS/FAIL
+WORKER: PASS/FAIL
+FACEBOOK REEL: VERIFIED / NOT VERIFIED
+HISTORY: PASS/FAIL
+
+Jika Reel benar-benar terlihat di Facebook Page:
+
+FACEBOOK PAGE REEL TEST: PASS
+
+Jika belum terlihat:
+
+FACEBOOK PAGE REEL TEST: FAIL
+
+Jangan menyatakan PASS sebelum Reel benar-benar diverifikasi di Facebook Page.
+STOP setelah test selesai.
 ````
 # Prompt: Fix Facebook missing_media Without Breaking Successful Publishing
 ```
