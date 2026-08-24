@@ -112,9 +112,112 @@
 
 
 ````
-# 
+# Prompt — Fix Facebook Publishing Status
 ```
+# Prompt — Fix Facebook Reels Job Status
 
+Fokus hanya pada masalah berikut:
+
+Facebook Reels sudah berhasil dipublish ke Facebook Page.
+Saya sudah memverifikasi Reel muncul di Facebook Page.
+
+Namun di Content Pilot → History, publishing job masih berstatus:
+
+Queued
+
+Padahal seharusnya setelah Facebook berhasil menerima/publish Reel:
+
+Queued → Processing/Publishing → Published
+
+TASK:
+
+1. Audit flow Facebook publishing yang sekarang.
+2. Jangan mengubah UI/design.
+3. Jangan mengubah Facebook uploader yang sudah berhasil.
+4. Jangan membuat uploader baru.
+5. Jangan mengubah destination/Page selection.
+6. Jangan mengubah storage/upload flow yang sudah PASS.
+
+Cari penyebab kenapa job tetap `queued` setelah Facebook berhasil publish.
+
+Periksa terutama:
+
+- PublishingJob lifecycle
+- queue worker
+- worker execution
+- Facebook provider publish result
+- Facebook response/result ID
+- status update setelah publish berhasil
+- database transaction
+- polling/status verification jika digunakan
+- worker acknowledgement/completion
+- retry/error handling
+- History API yang membaca status job
+
+Pastikan alurnya menjadi:
+
+Upload media
+→ create PublishingJob
+→ queued
+→ worker mengambil job
+→ processing
+→ Facebook publish
+→ Facebook berhasil
+→ simpan Facebook post/reel ID
+→ update PublishingJob = published
+→ simpan publishedAt
+→ History membaca status terbaru
+
+Jika Facebook API sudah mengembalikan success tetapi worker tidak mengubah status database, perbaiki bagian tersebut.
+
+Jika worker sebenarnya tidak berjalan, cari penyebabnya dan perbaiki worker/queue agar job benar-benar dieksekusi.
+
+Jangan menggunakan fake success.
+Status `published` hanya boleh diberikan setelah provider Facebook benar-benar mengembalikan keberhasilan.
+
+Tambahkan/pertahankan informasi penting:
+
+- provider
+- destinationId
+- providerPostId/reelId
+- status
+- publishedAt
+- error jika gagal
+- attempt count
+
+Setelah perbaikan:
+
+1. typecheck
+2. lint
+3. test yang relevan
+4. build
+5. restart service jika diperlukan
+6. lakukan test upload Facebook Reels
+7. verifikasi Reel benar-benar muncul di Facebook Page
+8. verifikasi History berubah dari `Queued` menjadi `Published`
+
+Jangan menyentuh provider lain.
+
+Jangan mengubah UI.
+
+Jangan melakukan refactor besar.
+
+OUTPUT:
+
+FACEBOOK UPLOAD: PASS/FAIL
+FACEBOOK PUBLISH: PASS/FAIL
+JOB WORKER: PASS/FAIL
+STATUS UPDATE: PASS/FAIL
+HISTORY: PASS/FAIL
+BUILD: PASS/FAIL
+TEST: PASS/FAIL
+
+Jika semua PASS, tampilkan juga:
+
+Publishing flow:
+queued → processing → publishing → published
+
+STOP setelah masalah ini selesai.
 
 ````
 # Prompt — Fix Upload Failure
