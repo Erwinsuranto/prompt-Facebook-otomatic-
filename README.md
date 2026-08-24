@@ -102,10 +102,152 @@
 
 
 ````
-# 
+# Prompt: Fix Facebook missing_media Without Breaking Successful Publishing
 ```
 
+Kita lanjutkan debugging Facebook publishing.
 
+Dari UI History ditemukan error nyata:
+
+Destination: Yourdreels (Facebook Page)
+Content type: video
+Status: Failed
+Error: missing_media
+
+PENTING:
+Facebook publishing sebelumnya SUDAH berhasil.
+Jangan membongkar atau mengganti flow Facebook publishing yang sudah PASS.
+
+Tujuan task ini hanya mencari dan memperbaiki root cause `missing_media`.
+
+LANGKAH WAJIB:
+
+1. Audit alur lengkap dari:
+   Compose
+   → media selection/upload
+   → media/storage record
+   → publishing job
+   → queue
+   → worker
+   → Facebook provider
+   → publish.
+
+2. Cari semua lokasi yang dapat menghasilkan error:
+   `missing_media`
+
+3. Bandingkan:
+   - job Facebook yang berhasil published sebelumnya
+   - job Facebook yang gagal dengan missing_media.
+
+4. Periksa database/job payload:
+   - mediaId
+   - media URL
+   - storage key
+   - MIME type
+   - file path
+   - media record
+   - job payload
+   - destinationId
+   - post/content ID
+
+5. Pastikan worker mengambil media dari sumber storage yang benar.
+
+6. Jangan menggunakan fake media URL.
+   Jangan membuat dummy success.
+   Jangan bypass validasi media hanya supaya job menjadi published.
+
+7. Jika media sebenarnya sudah tersimpan tetapi worker kehilangan referensinya:
+   perbaiki persistence/serialization job agar media reference tetap tersedia ketika job masuk queue.
+
+8. Jika media record terhapus terlalu cepat:
+   perbaiki lifecycle media agar media tetap tersedia sampai publishing selesai.
+
+9. Jika masalah berasal dari upload/finalize:
+   perbaiki hubungan antara upload → finalized media → publishing job.
+
+10. Pastikan retry terhadap job tidak kehilangan media reference.
+
+11. Jangan mengubah:
+   - Facebook authentication
+   - Page connection
+   - Page ID
+   - Facebook provider architecture
+   - successful publishing flow
+   kecuali audit membuktikan bagian tersebut memang penyebab langsung.
+
+12. Setelah perbaikan:
+   - typecheck
+   - lint
+   - test
+   - build
+
+13. Buat test regression khusus:
+   - create media
+   - create publishing job dengan mediaId
+   - worker membaca media
+   - media tetap tersedia
+   - Facebook provider menerima media yang benar.
+
+14. Jalankan satu test publishing nyata ke Facebook Page `Yourdreels` menggunakan video test baru.
+
+15. Verifikasi end-to-end:
+
+upload
+→ media finalized
+→ job queued
+→ worker processing
+→ Facebook upload
+→ Facebook publish
+→ status published
+→ History menunjukkan Published.
+
+JANGAN hanya mengubah UI agar `missing_media` hilang.
+
+JANGAN menghapus job lama dari database hanya untuk membersihkan History.
+
+JANGAN menganggap sukses hanya berdasarkan response internal.
+
+Sukses harus diverifikasi dari Facebook Page sebenarnya.
+
+OUTPUT:
+
+ROOT CAUSE:
+<penyebab sebenarnya>
+
+FIX:
+<file dan perubahan>
+
+REGRESSION TEST:
+<PASS/FAIL>
+
+FACEBOOK REAL PUBLISH:
+<PASS/FAIL>
+
+HISTORY STATUS:
+<PUBLISHED/FAILED>
+
+TYPECHECK:
+<PASS/FAIL>
+
+LINT:
+<PASS/FAIL>
+
+TEST:
+<PASS/FAIL>
+
+BUILD:
+<PASS/FAIL>
+
+GIT STATUS:
+<status>
+
+Jika semuanya berhasil, commit perubahan dengan pesan:
+
+fix: resolve facebook missing media publishing
+
+Push ke branch aktif dan verifikasi remote.
+
+STOP setelah verifikasi.
 ````
 # Prompt: Fix Web 502 — Jangan Ganggu Facebook
 ```
