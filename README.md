@@ -94,7 +94,142 @@
 ````
 # 
 ```
+TASK: FIX WEB COMPOSE "FAILED TO CREATE THE POST FROM MEDIA"
 
+Facebook Page publishing backend SUDAH TERBUKTI BERHASIL.
+
+VERIFIED:
+- Facebook Page: Yourdreels
+- Publish Request: PASS
+- Worker: PASS
+- Facebook Reel: VERIFIED
+- History: PASS
+- Reel benar-benar muncul di Facebook Page
+- Backend publishing flow sudah PASS
+
+MASALAH SEKARANG HANYA DI WEB UI.
+
+Di halaman Compose:
+- Destination: Yourdreels (facebook)
+- Video format: MP4
+- Publish now
+- Saat klik Publish muncul:
+
+"Failed to create the post from media."
+
+PENTING:
+Jangan mengubah Facebook publishing flow yang sudah PASS.
+Jangan mengubah Graph API publishing logic.
+Jangan mengubah worker.
+Jangan membuat mock success.
+Jangan membuat workaround yang melewati web flow.
+
+FOKUS HANYA:
+Web Compose
+→ create post from media
+→ API request
+→ response
+→ queue/job creation
+
+LANGKAH DEBUG:
+
+1. Periksa frontend Compose dan cari fungsi/API yang dipanggil ketika tombol Publish ditekan.
+
+2. Identifikasi endpoint POST yang digunakan untuk:
+   "create post from media"
+
+3. Periksa request payload yang dikirim frontend.
+
+4. Periksa response HTTP sebenarnya:
+   - status code
+   - response body
+   - error code
+   - validation error
+   - missing field
+   - media ID
+   - destination ID
+   - content type
+   - caption
+   - publish mode
+
+5. Cocokkan payload frontend dengan API contract/backend yang sebenarnya.
+
+6. Periksa apakah frontend mengirim:
+   - mediaId yang benar
+   - destinationId yang benar
+   - contentType yang benar
+   - caption
+   - publishNow/schedule data yang benar
+
+7. Jika backend endpoint sebenarnya membutuhkan field tertentu tetapi frontend tidak mengirimnya, perbaiki frontend agar menggunakan contract backend yang benar.
+
+8. Jika frontend memanggil endpoint yang salah, perbaiki endpoint frontend.
+
+9. Jika backend endpoint menolak payload karena validation, jangan mematikan validation.
+   Perbaiki payload frontend atau contract yang memang salah.
+
+10. Gunakan browser/network log atau server log untuk mendapatkan error sebenarnya.
+
+11. Setelah ditemukan root cause, lakukan perubahan MINIMAL.
+
+REGRESSION RULE:
+
+Setelah fix:
+
+- Existing Facebook backend test harus tetap PASS.
+- Worker test harus tetap PASS.
+- Facebook Page publish test harus tetap PASS.
+- Jangan merusak flow upload yang sudah berhasil.
+
+TEST END-TO-END DARI WEB:
+
+1. Buka Content Pilot melalui browser.
+2. Compose.
+3. Upload VIDEO BARU.
+4. Pilih:
+   Facebook Page → Yourdreels
+5. Content type:
+   Reels
+6. Caption:
+   Content Pilot Web Compose Test
+7. Publish now.
+8. Klik Publish.
+
+WAJIB pastikan:
+
+Web Compose
+→ API create post from media
+→ job dibuat
+→ queued
+→ uploading
+→ publishing
+→ published
+→ History published
+→ Reel benar-benar muncul di Facebook Page Yourdreels.
+
+Jangan menyatakan PASS hanya karena API mengembalikan 200.
+
+HASIL AKHIR:
+
+WEB COMPOSE: PASS/FAIL
+CREATE POST FROM MEDIA: PASS/FAIL
+JOB CREATION: PASS/FAIL
+QUEUE: PASS/FAIL
+WORKER: PASS/FAIL
+FACEBOOK PAGE: PASS/FAIL
+FACEBOOK REEL VERIFIED: YES/NO
+HISTORY: PASS/FAIL
+
+ROOT CAUSE:
+<jelaskan penyebab sebenarnya>
+
+FILES CHANGED:
+<daftar file>
+
+TESTS:
+<hasil test>
+
+STOP setelah test selesai.
 
 ````
 # Prompt — Test Facebook Page Publish via Web
