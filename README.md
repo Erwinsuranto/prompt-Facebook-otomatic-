@@ -85,7 +85,310 @@
 # 
 ```
 
+TASK: REAL BROWSER MANUAL UPLOAD E2E TEST
 
+Hasil implementation terakhir menunjukkan:
+
+MEDIA PIPELINE: PASS
+MANUAL UPLOAD: PASS
+DOWNLOADER INGESTION: PASS
+MEDIA FINALIZE: PASS
+MEDIA READY FILTER: PASS
+COMPOSE MEDIA PICKER: PASS
+FACEBOOK PAGE REELS: PASS
+REGRESSION TEST: PASS
+BUILD: PASS
+
+Namun sekarang saya ingin memverifikasi SATU HAL yang belum boleh diasumsikan:
+
+APAKAH USER BENAR-BENAR BISA MEMILIH FILE VIDEO DARI PERANGKAT MELALUI WEB BROWSER DAN MEMPUBLISH-NYA?
+
+Jangan hanya menjalankan unit/API test.
+Jangan hanya melakukan backend import.
+Jangan hanya menggunakan file yang sudah ada di Media Library.
+
+Lakukan REAL BROWSER E2E TEST.
+
+==================================================
+TARGET FLOW
+==================================================
+
+Browser
+→ Content Pilot
+→ Compose
+→ Reels
+→ Upload Media / Select File
+→ pilih video lokal
+→ upload
+→ upload selesai
+→ finalize
+→ status READY
+→ media muncul/terpilih di Compose
+→ pilih Facebook Page Yourdreels
+→ Publish now
+→ queue
+→ worker
+→ Facebook
+→ published
+→ verifikasi Reel benar-benar muncul di Facebook Page
+
+==================================================
+IMPORTANT
+==================================================
+
+Gunakan uploader/component yang SUDAH ADA.
+
+JANGAN membuat uploader baru jika uploader existing sudah tersedia.
+
+JANGAN mengubah backend publishing yang sudah PASS.
+
+JANGAN mengubah Facebook provider kecuali ditemukan bug nyata yang menghambat browser upload.
+
+Fokus pada jalur browser → upload → media → compose.
+
+==================================================
+STEP 1 — AUDIT UI
+==================================================
+
+Periksa halaman Compose.
+
+Pastikan untuk content type:
+
+Reels
+
+tersedia cara yang jelas untuk:
+
+1. memilih media existing
+2. upload media dari perangkat
+
+Jika UI saat ini hanya memiliki dropdown media seperti:
+
+-- select --
+compose_test.mp4
+web_ui_test.mp4
+...
+
+dan TIDAK ada tombol/input:
+
+Upload Media
+Choose File
+Select File
+
+maka identifikasi component existing yang seharusnya digunakan.
+
+Jangan membuat duplicate upload system.
+
+==================================================
+STEP 2 — REAL FILE INPUT
+==================================================
+
+Pastikan browser menggunakan:
+
+<input type="file">
+
+atau mekanisme file picker yang benar.
+
+Accept minimal:
+
+video/*
+
+Jika project sudah memiliki restriction MIME tertentu, gunakan restriction existing.
+
+Jangan menggunakan URL palsu.
+
+Jangan menganggap file local path dapat dikirim langsung ke backend tanpa upload.
+
+==================================================
+STEP 3 — BROWSER UPLOAD
+==================================================
+
+Gunakan file video lokal baru yang BELUM ada di Media Library.
+
+Contoh:
+
+compose_browser_manual_test.mp4
+
+Flow:
+
+User memilih file
+→ frontend upload
+→ backend/storage
+→ upload progress/status
+→ finalize
+→ Media status READY
+
+Pastikan frontend tidak menganggap upload sukses hanya karena request awal mengembalikan HTTP 200.
+
+==================================================
+STEP 4 — READY GUARD
+==================================================
+
+Selama upload:
+
+Media tidak boleh dianggap READY.
+
+Jika finalize belum selesai:
+
+media tidak boleh dipakai untuk publishing.
+
+Setelah finalize:
+
+status harus READY.
+
+Kemudian media harus dapat dipilih oleh Compose.
+
+==================================================
+STEP 5 — COMPOSE
+==================================================
+
+Setelah upload selesai:
+
+- media tampil/terpilih
+- filename benar
+- tidak ada error missing_media
+- tidak ada "Failed to create the post from media"
+
+Pastikan Compose mengirim MEDIA ID yang benar ke backend.
+
+Jangan hanya mengirim filename/path.
+
+==================================================
+STEP 6 — PUBLISH
+==================================================
+
+Gunakan:
+
+Content type:
+Reels
+
+Destination:
+Yourdreels (Facebook Page)
+
+Publish:
+Publish now
+
+Kemudian verifikasi:
+
+queued
+→ uploading
+→ publishing
+→ published
+
+==================================================
+STEP 7 — FACEBOOK VERIFICATION
+==================================================
+
+Jangan berhenti pada HTTP success.
+
+Verifikasi melalui Facebook Page Yourdreels bahwa Reel benar-benar dibuat.
+
+Verifikasi:
+
+- video benar
+- caption benar
+- content type = Reel
+- externalId tersedia
+- permalink tersedia
+- publish_status = published
+- video_status = ready
+
+==================================================
+STEP 8 — TEST DOWNLOADER REGRESSION
+==================================================
+
+Jangan mengubah downloader.
+
+Pastikan downloader existing tetap menghasilkan:
+
+Downloader
+→ Media
+→ READY
+→ Compose
+→ Facebook Reels
+
+Jika sudah PASS, cukup regression check.
+
+==================================================
+STEP 9 — ERROR TEST
+==================================================
+
+Test minimal satu kondisi invalid:
+
+- file bukan video
+atau
+- upload gagal
+
+Pastikan UI memberikan error yang sebenarnya.
+
+Jangan menampilkan error generik jika backend sudah memberikan alasan yang lebih spesifik.
+
+==================================================
+STEP 10 — MOBILE BROWSER
+==================================================
+
+Karena aplikasi digunakan melalui HP, test juga browser mobile.
+
+Pastikan:
+
+- tombol upload dapat ditekan
+- file picker terbuka
+- video dapat dipilih dari perangkat
+- upload berjalan
+- UI tidak tertutup/terpotong
+- status upload terlihat
+- setelah READY media dapat dipilih
+- publish tetap bekerja
+
+==================================================
+JANGAN MERUSAK
+==================================================
+
+Jangan mengubah:
+
+- Facebook authentication
+- Facebook Graph API publishing flow
+- worker
+- downloader
+- storage architecture
+- Media model
+
+kecuali ditemukan bug yang benar-benar menyebabkan browser upload gagal.
+
+==================================================
+HASIL WAJIB
+==================================================
+
+Laporkan:
+
+BROWSER MANUAL UPLOAD: PASS/FAIL
+FILE PICKER: PASS/FAIL
+UPLOAD: PASS/FAIL
+FINALIZE: PASS/FAIL
+MEDIA READY: PASS/FAIL
+COMPOSE: PASS/FAIL
+FACEBOOK PUBLISH: PASS/FAIL
+FACEBOOK VERIFICATION: PASS/FAIL
+MOBILE BROWSER: PASS/FAIL
+DOWNLOADER REGRESSION: PASS/FAIL
+
+Jika PASS, tampilkan:
+
+SOURCE: Browser Manual Upload
+FILE: <filename>
+MEDIA ID: <id>
+FACEBOOK PAGE: Yourdreels
+CONTENT TYPE: Reels
+STATUS: PUBLISHED
+EXTERNAL ID: <id>
+PERMALINK: <permalink>
+
+Jika FAIL:
+
+Jangan menutupi error.
+
+Tampilkan root cause sebenarnya, file yang bermasalah, dan perbaikan minimal yang diperlukan.
+
+STOP setelah verifikasi selesai.
 ````
 # Prompt — Unified Media Pipeline: Manual Upload + Downloader
 ```
