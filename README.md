@@ -44,6 +44,445 @@
 ````
 # 
 ```
+LANJUTKAN PROJECT CONTENT PILOT DARI KONDISI TERAKHIR.
+
+HASIL VERIFIKASI TERAKHIR:
+
+- REGRESSION: PASS
+- TYPECHECK: PASS
+- LINT: PASS
+- TEST: PASS (261 tests)
+- BUILD: PASS
+- SCHEDULER: PASS
+- GIT STATUS: CLEAN
+- PUSH STATUS: SUCCESS
+- REMOTE VERIFIED: YES
+
+MASALAH YANG TERSISA HANYA FACEBOOK PROVIDER DI VPS BARU.
+
+HASIL TERAKHIR:
+
+FACEBOOK PUBLISH:
+FAIL (honest) — META_APP_ID/META_APP_SECRET tidak tersedia di VPS baru.
+Provider dengan benar mengembalikan provider_not_configured.
+Job TIDAK fake-published.
+
+FACEBOOK LIVE VERIFICATION:
+NOT RUN — membutuhkan credential Meta asli dan OAuth login ke Page asli.
+
+JANGAN MENGUBAH CODE FACEBOOK PUBLISHING YANG SUDAH BENAR HANYA UNTUK MEMBUAT TEST PASS.
+
+==================================================
+TUJUAN
+==================================================
+
+Pulihkan konfigurasi Meta/Facebook pada VPS baru menggunakan configuration/secrets yang benar, TANPA mengekspos secret dan TANPA mengubah architecture.
+
+Tujuannya:
+
+VPS baru
+→ Meta configuration tersedia
+→ Facebook OAuth dapat digunakan
+→ Page connection tersedia
+→ Facebook provider dapat berjalan
+→ Publish Now dari Web UI
+→ Queue
+→ Worker
+→ Facebook Graph API
+→ published
+→ verifikasi Reel pada Page asli.
+
+==================================================
+STEP 1 — AUDIT CONFIGURATION
+==================================================
+
+Periksa repository dan environment untuk mengetahui:
+
+- nama variable Meta App ID yang sebenarnya
+- nama variable Meta App Secret yang sebenarnya
+- OAuth configuration
+- callback URL
+- Page connection configuration
+- token storage
+- encryption configuration
+- application URL
+- frontend URL
+- backend URL
+
+JANGAN mengarang nama environment variable.
+
+Gunakan nama variable yang memang digunakan oleh source code.
+
+JANGAN print value secret ke terminal.
+
+Yang boleh ditampilkan hanya:
+
+META_APP_ID: PRESENT / MISSING
+META_APP_SECRET: PRESENT / MISSING
+OAUTH CONFIG: PRESENT / MISSING
+CALLBACK CONFIG: PRESENT / MISSING
+PAGE AUTH: PRESENT / MISSING
+
+Jangan pernah menampilkan nilai token/secret.
+
+==================================================
+STEP 2 — BEDAKAN CODE VS ENVIRONMENT
+==================================================
+
+Pastikan provider Facebook tidak rusak.
+
+Periksa source code untuk memastikan:
+
+- missing Meta configuration menghasilkan provider_not_configured
+- tidak ada fake publish
+- tidak ada fake success
+- tidak ada hardcoded credential
+- error tetap honest
+- existing tests tetap valid
+
+Jika code sudah benar:
+
+JANGAN ubah code hanya untuk menghilangkan FAIL.
+
+Masalah utama adalah environment VPS baru.
+
+==================================================
+STEP 3 — RESTORE ENVIRONMENT
+==================================================
+
+Konfigurasikan environment VPS baru sesuai configuration project.
+
+Jika secret tersedia melalui deployment/environment yang sah, gunakan secret tersebut.
+
+JANGAN:
+
+- commit secret
+- menulis secret ke source code
+- menulis secret ke README
+- menulis secret ke test fixture
+- menampilkan secret di output
+- membuat fake META_APP_ID
+- membuat fake META_APP_SECRET
+
+Pastikan `.env`/secret storage tetap berada di luar Git sesuai architecture project.
+
+==================================================
+STEP 4 — OAUTH CONFIGURATION
+==================================================
+
+Pastikan OAuth configuration menggunakan URL VPS baru yang benar.
+
+Periksa:
+
+- OAuth authorize URL
+- callback URL
+- application base URL
+- backend callback URL
+- redirect URI
+- allowed origins jika memang digunakan
+
+Jangan mengubah callback secara sembarangan.
+
+Jika callback URL harus didaftarkan di Meta App Dashboard dan tidak dapat diubah hanya dari VPS:
+
+laporkan dengan jelas konfigurasi apa yang perlu disesuaikan.
+
+Jangan mengarang bahwa OAuth berhasil jika belum benar-benar dicoba.
+
+==================================================
+STEP 5 — RESTART APPLICATION
+==================================================
+
+Setelah environment diperbaiki:
+
+restart component yang membutuhkan environment:
+
+- API/backend
+- worker
+- scheduler
+- frontend jika diperlukan
+
+Pastikan process benar-benar membaca environment terbaru.
+
+Jangan hanya restart frontend jika credential digunakan backend/worker.
+
+==================================================
+STEP 6 — PROVIDER HEALTH CHECK
+==================================================
+
+Verifikasi provider Facebook.
+
+Target:
+
+META CONFIG:
+PASS
+
+FACEBOOK PROVIDER:
+CONFIGURED
+
+Provider tidak boleh lagi:
+
+provider_not_configured
+
+jika semua configuration memang tersedia.
+
+==================================================
+STEP 7 — WEB OAUTH TEST
+==================================================
+
+Gunakan Web UI sebenarnya.
+
+Flow:
+
+Accounts
+→ Facebook
+→ Connect Account
+→ OAuth
+→ login/authorization Meta
+→ callback ke VPS baru
+→ token tersimpan aman
+→ connection berhasil
+→ Page dapat ditemukan
+
+Jangan menggunakan Facebook username/password automation.
+
+Gunakan OAuth resmi.
+
+Jika Meta meminta App Review/permission tertentu:
+
+catat permission yang diminta dan statusnya.
+
+==================================================
+STEP 8 — PAGE DESTINATION
+==================================================
+
+Setelah OAuth berhasil:
+
+ambil Page/destination melalui flow provider yang sudah ada.
+
+Pastikan:
+
+- Page ditemukan
+- Page ID tersimpan
+- connection valid
+- token tidak ditampilkan
+- destination dapat dipilih dari Compose
+
+Jangan hardcode Page ID.
+
+==================================================
+STEP 9 — REAL WEB PUBLISH TEST
+==================================================
+
+Lakukan test nyata melalui browser:
+
+Compose
+→ Reels
+→ pilih media READY
+→ pilih Facebook Page
+→ isi caption
+→ Publish Now
+
+Pastikan:
+
+UI
+→ API
+→ Queue
+→ Worker
+→ Facebook Provider
+→ Graph API
+→ published
+
+Jangan langsung menganggap publish berhasil berdasarkan response internal.
+
+==================================================
+STEP 10 — FACEBOOK VERIFICATION
+==================================================
+
+Setelah publish:
+
+verifikasi status melalui API yang memang digunakan project.
+
+Pastikan hasil nyata:
+
+publish_status = published
+
+dan jika provider mengembalikan video/reel status:
+
+video/reel status = ready
+
+Kemudian verifikasi Reel benar-benar tersedia pada Page asli.
+
+Catat ID/permalink yang aman untuk dilaporkan.
+
+Jangan menampilkan access token.
+
+==================================================
+STEP 11 — REGRESSION
+==================================================
+
+Setelah credential diperbaiki, jalankan kembali:
+
+- manual upload
+- downloader
+- media READY
+- compose
+- queue
+- worker
+- scheduler
+- Facebook publish
+- Facebook regression
+- typecheck
+- lint
+- test
+- build
+
+Jangan menghapus test yang sebelumnya PASS.
+
+Target tidak boleh hanya Facebook PASS.
+
+Semua regression harus tetap PASS.
+
+==================================================
+STEP 12 — JIKA CREDENTIAL TIDAK DAPAT DIPULIHKAN
+==================================================
+
+Jika credential Meta asli memang tidak tersedia di VPS baru:
+
+JANGAN membuat fake credential.
+
+JANGAN fake OAuth.
+
+JANGAN fake Facebook publish.
+
+JANGAN mengubah test agar PASS.
+
+JANGAN mengklaim Facebook LIVE VERIFICATION PASS.
+
+Sebaliknya:
+
+- pertahankan provider_not_configured yang honest
+- pastikan semua bagian lain tetap PASS
+- laporkan tepat configuration apa yang hilang
+- jangan commit secret
+- jangan melakukan perubahan code yang tidak diperlukan
+
+==================================================
+STEP 13 — GIT
+==================================================
+
+Jika hanya perubahan environment/secrets:
+
+JANGAN commit secret.
+
+Jika tidak ada perubahan source code:
+
+jangan membuat commit kosong.
+
+Jika memang ada perubahan code yang diperlukan dan aman:
+
+- git status
+- inspect diff
+- pastikan tidak ada secret
+- commit
+- push
+- verify remote
+
+Jangan force push.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan:
+
+META APP CONFIG:
+PASS / MISSING
+
+OAUTH CONFIG:
+PASS / MISSING
+
+FACEBOOK PROVIDER:
+PASS / NOT CONFIGURED
+
+FACEBOOK OAUTH:
+PASS / NOT RUN
+
+PAGE CONNECTION:
+PASS / NOT RUN
+
+PAGE DESTINATION:
+PASS / NOT RUN
+
+MANUAL UPLOAD:
+PASS / FAIL
+
+DOWNLOADER:
+PASS / FAIL
+
+MEDIA READY:
+PASS / FAIL
+
+COMPOSE:
+PASS / FAIL
+
+QUEUE:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+SCHEDULER:
+PASS / FAIL
+
+FACEBOOK PUBLISH:
+PASS / FAIL / NOT RUN
+
+FACEBOOK LIVE VERIFICATION:
+PASS / FAIL / NOT RUN
+
+REGRESSION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash atau NONE>
+
+PUSH STATUS:
+SUCCESS / NOT NEEDED / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+==================================================
+STOP CONDITION
+==================================================
+
+Jika Facebook credential asli berhasil dipasang dan Facebook Web E2E berhasil:
+
+STOP setelah semua regression PASS dan push berhasil.
+
+Jika credential Meta tidak tersedia:
+
+STOP setelah diagnosis lengkap.
+
+JANGAN membuat fake credential atau fake Facebook success.
+
+Masalah saat ini adalah environment VPS baru, bukan alasan untuk membongkar architecture atau publishing flow yang sudah PASS.
 
 
 ````
