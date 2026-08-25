@@ -55,9 +55,276 @@
 
 
 ````
-# 
+# Prompt 01 versi terbaru
 ```
+# Prompt 01 — Continue & Correct Repository Audit
 
+Kita lanjutkan Prompt 01.
+
+Saya sudah meninjau hasil sebelumnya dan ada masalah penting:
+
+Repository saat ini masih berisi project lama berbasis Python/NiceGUI dan platform sosial yang berbeda. Project tersebut BUKAN arsitektur final untuk project baru Content Pilot yang sedang kita bangun.
+
+Karena itu, jangan menganggap struktur lama sebagai arsitektur final.
+
+Tujuan kita sekarang adalah menyelesaikan Phase 0 dengan benar sebelum coding fitur apa pun.
+
+## PROJECT BARU
+
+Nama project:
+
+Content Pilot
+
+Tujuan:
+
+Membangun web platform untuk mengelola dan melakukan automatic content publishing ke berbagai platform sosial.
+
+Platform pertama yang akan diimplementasikan adalah Facebook.
+
+Namun arsitektur HARUS siap untuk:
+
+- Facebook
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+- platform lain yang nantinya memiliki API publishing resmi yang sesuai
+
+Facebook adalah provider pertama, bukan core system.
+
+## ATURAN UTAMA
+
+Jangan mulai implementation fitur publishing.
+
+Jangan membuat Facebook uploader.
+
+Jangan membuat OAuth Facebook terlebih dahulu.
+
+Jangan membuat queue production terlebih dahulu.
+
+Jangan membuat dashboard production terlebih dahulu.
+
+Selesaikan discovery, architecture, documentation, dan roadmap terlebih dahulu.
+
+## REPOSITORY AUDIT
+
+Audit repository yang benar-benar sedang digunakan.
+
+Periksa:
+
+- seluruh root directory
+- seluruh source code
+- package/dependency
+- konfigurasi
+- database
+- frontend
+- backend
+- test
+- Docker
+- deployment
+- existing UI
+- existing documentation
+
+Pisahkan hasil menjadi:
+
+1. Existing project lama
+2. Existing code yang dapat dipertahankan
+3. Existing code yang tidak relevan
+4. Existing documentation yang perlu dipertahankan
+5. Documentation yang perlu diperbarui
+6. Komponen yang harus dibuat untuk Content Pilot
+7. Risiko migrasi/refactor
+
+Jangan mengklaim architecture baru sudah ada jika file tersebut belum benar-benar dibuat di repository.
+
+## JANGAN MENGHAPUS PROJECT LAMA SECARA SEMBARANGAN
+
+Sebelum menghapus atau mengganti source code lama:
+
+- identifikasi terlebih dahulu
+- jelaskan apa yang tidak relevan
+- tentukan apakah project baru memang akan menggantikan project lama
+- dokumentasikan keputusan
+
+Jangan melakukan destructive migration pada Phase 0.
+
+## TARGET TECH STACK
+
+Gunakan TypeScript full-stack sebagai kandidat utama.
+
+Kandidat architecture:
+
+Frontend:
+Next.js
+
+Backend/API:
+Fastify atau NestJS
+
+Worker:
+BullMQ
+
+Queue:
+Redis
+
+Database:
+PostgreSQL
+
+Object storage:
+S3-compatible storage
+
+Namun ini masih architecture proposal.
+
+Jangan langsung install atau implementasikan semuanya sebelum architecture final disetujui.
+
+Bandingkan Fastify vs NestJS berdasarkan kebutuhan project ini dan pilih yang paling tepat.
+
+Pertimbangkan:
+
+- maintainability
+- modular provider architecture
+- queue/worker
+- OAuth
+- API integration
+- validation
+- testing
+- scalability
+- developer experience
+
+## CORE ARCHITECTURE
+
+Core tidak boleh bergantung pada Facebook.
+
+Core harus menangani konsep generik:
+
+- User
+- Platform
+- PlatformConnection
+- Destination
+- Workspace
+- Media
+- Post
+- PublishingJob
+- PublishingAttempt
+- Schedule
+- Queue
+- Scheduler
+- History
+- AuditLog
+- Notification
+- Storage
+
+Platform-specific implementation harus berada di provider/module masing-masing.
+
+Target konsep:
+
+Core
+→ Provider Registry
+→ Platform Provider
+→ Platform-specific implementation
+
+Contoh:
+
+Core
+→ Facebook Provider
+→ YouTube Provider
+→ Instagram Provider
+→ TikTok Provider
+
+## PROVIDER SYSTEM
+
+Desain provider abstraction yang benar-benar extensible.
+
+Jangan memaksakan semua provider memiliki fitur identik.
+
+Gunakan capability-based architecture.
+
+Contoh capability:
+
+- video
+- reels
+- photo
+- text_post
+- link_post
+- short_video
+- scheduling
+- analytics
+
+Provider harus dapat melaporkan capability yang memang didukung.
+
+Jangan membuat capability berdasarkan asumsi.
+
+Capability harus dapat berasal dari:
+
+- kemampuan API
+- implementation provider
+- permission
+- destination type
+
+## MULTI ACCOUNT / MULTI DESTINATION
+
+Sistem HARUS mendukung banyak account dan banyak destination sejak awal.
+
+Contoh:
+
+User
+→ Facebook Account 1
+→ Page A
+→ Page B
+→ Page C
+
+User
+→ Facebook Account 2
+→ Page D
+→ Page E
+
+Dan nantinya:
+
+User
+→ YouTube Account 1
+→ Channel A
+→ Channel B
+
+Jangan membuat database atau UI yang hanya mendukung satu Facebook Account atau satu Page.
+
+## DESTINATION WORKSPACE / PAGE ISOLATION
+
+Setiap Page/Channel/Destination harus memiliki workspace sendiri.
+
+Contoh:
+
+```text
+Facebook Account
+├── Page A
+│   └── Workspace Page A
+│       ├── Dashboard
+│       ├── Downloader
+│       ├── Storage
+│       ├── Publish
+│       ├── Queue
+│       ├── Schedule
+│       └── History
+│
+├── Page B
+│   └── Workspace Page B
+│       ├── Dashboard
+│       ├── Downloader
+│       ├── Storage
+│       ├── Publish
+│       ├── Queue
+│       ├── Schedule
+│       └── History
+│
+└── Page C
+    └── Workspace Page C
+        ├── Dashboard
+        ├── Downloader
+        ├── Storage
+        ├── Publish
+        ├── Queue
+        ├── Schedule
+        └── History
 
 ````
 # Downloader/Storage/Publish/Queue/Schedule terpisah → auto daily slot → sequence tidak reset.
