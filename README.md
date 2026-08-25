@@ -39,7 +39,195 @@
 ````
 # 
 ```
+LANJUTKAN PROJECT CONTENT PILOT.
 
+Saya menduga masalah Facebook setelah pindah VPS terjadi karena source code diambil dari GitHub, sedangkan file .env/secrets memang tidak ikut repository.
+
+JANGAN langsung mengubah code.
+
+Lakukan diagnosis terlebih dahulu.
+
+1. Audit repository dan pastikan apakah Facebook/Meta provider implementation SUDAH ADA di source code.
+
+2. Cari configuration/env schema yang digunakan project untuk Meta/Facebook.
+
+3. Periksa:
+   - .env.example
+   - .gitignore
+   - config files
+   - environment loader
+   - deployment configuration
+   - process manager configuration
+   - provider configuration
+
+4. Jangan pernah menampilkan nilai secret/token.
+
+Tampilkan hanya:
+
+META_APP_ID: PRESENT / MISSING
+META_APP_SECRET: PRESENT / MISSING
+META_ACCESS_TOKEN: PRESENT / MISSING
+META_REFRESH_TOKEN: PRESENT / MISSING
+FACEBOOK_CONFIG: PRESENT / MISSING
+OAUTH_CONFIG: PRESENT / MISSING
+CALLBACK_URL: PRESENT / MISSING
+FACEBOOK_PROVIDER_CODE: EXISTS / MISSING
+
+5. Jika Facebook provider code SUDAH ADA tetapi ENV/secret MISSING:
+
+JANGAN membuat implementation baru.
+
+Cari tahu credential/configuration apa yang diperlukan oleh code yang sudah ada.
+
+6. Jika .env.example tersedia, gunakan itu sebagai referensi nama variable yang benar.
+
+7. Jangan membuat .env dari tebakan.
+
+8. Jangan membuat fake:
+   - App ID
+   - App Secret
+   - access token
+   - OAuth token
+   - Page token
+
+9. Jangan commit .env atau secret ke GitHub.
+
+10. Jika VPS lama masih dapat diakses, periksa konfigurasi environment VPS lama secara aman dan bandingkan dengan VPS baru.
+
+Jangan tampilkan nilai secret.
+Hanya laporkan nama variable mana yang ada/hilang.
+
+11. Jika credential Meta memang masih tersedia di VPS lama, pindahkan secara aman ke VPS baru menggunakan mekanisme secret/environment yang benar.
+
+12. Setelah environment lengkap, restart service yang membutuhkan ENV.
+
+13. Verifikasi:
+
+FACEBOOK PROVIDER: CONFIGURED
+
+14. Kemudian test dari WEB UI sebenarnya:
+
+Compose
+→ Reels
+→ pilih media
+→ pilih Facebook Page
+→ Publish Now
+
+15. Verifikasi sampai Reel benar-benar muncul di Facebook Page asli.
+
+Jangan menganggap response API saja sebagai success.
+
+16. Pastikan fitur yang sudah PASS tetap PASS:
+
+MANUAL UPLOAD
+DOWNLOADER
+MEDIA READY
+COMPOSE
+QUEUE
+WORKER
+SCHEDULER
+REGRESSION
+TYPECHECK
+LINT
+TEST
+BUILD
+
+17. Jika ternyata Facebook provider code memang BELUM ADA di repository, jangan langsung membuat implementation besar.
+
+Laporkan:
+
+FACEBOOK PROVIDER CODE: MISSING
+
+dan jelaskan file/module apa yang seharusnya dibuat berdasarkan architecture project.
+
+18. Jika hanya ENV yang hilang, jangan mengubah source code.
+
+19. Jika memang ada perubahan code yang diperlukan, baru lakukan perubahan tersebut dan pastikan tidak ada secret masuk Git.
+
+20. Setelah selesai:
+
+GIT STATUS
+COMMIT
+PUSH STATUS
+REMOTE VERIFIED
+
+Jangan membuat commit kosong.
+
+FINAL REPORT:
+
+ROOT CAUSE:
+<penyebab sebenarnya>
+
+FACEBOOK PROVIDER CODE:
+EXISTS / MISSING
+
+ENV CONFIG:
+COMPLETE / INCOMPLETE
+
+META APP ID:
+PRESENT / MISSING
+
+META APP SECRET:
+PRESENT / MISSING
+
+FACEBOOK PROVIDER:
+CONFIGURED / NOT CONFIGURED
+
+OAUTH:
+PASS / NOT RUN / FAIL
+
+PAGE CONNECTION:
+PASS / NOT RUN / FAIL
+
+FACEBOOK PUBLISH:
+PASS / NOT RUN / FAIL
+
+FACEBOOK LIVE VERIFICATION:
+PASS / NOT RUN / FAIL
+
+MANUAL UPLOAD:
+PASS / FAIL
+
+DOWNLOADER:
+PASS / FAIL
+
+MEDIA READY:
+PASS / FAIL
+
+COMPOSE:
+PASS / FAIL
+
+QUEUE:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+SCHEDULER:
+PASS / FAIL
+
+REGRESSION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+PUSH:
+SUCCESS / NOT NEEDED / FAILED
+
+STOP setelah laporan.
 
 ````
 # 
