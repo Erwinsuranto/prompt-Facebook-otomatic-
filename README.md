@@ -72,9 +72,186 @@
 
 
 ````
-# 
+# Prompt: Web Manual Upload + Downloader → Facebook Page Reels
 ```
+Lanjutkan project Content Pilot dari kondisi repository TERKINI.
 
+PENTING:
+Jangan mengubah flow Facebook publishing yang sudah terbukti PASS.
+Jangan refactor besar.
+Jangan membuat fitur baru yang tidak diminta.
+
+Kondisi saat ini:
+- Facebook Page Reels publishing: PASS
+- Manual Video Upload backend: PASS
+- Downloader Ingestion: PASS
+- Shared Upload Flow: PASS
+- Media Ready Guard: PASS
+- Facebook Reels verification: PASS
+- Test: PASS
+- Build: PASS
+- Git clean dan sudah push
+
+TUJUAN SEKARANG:
+
+Pastikan fitur upload melalui WEB benar-benar bisa digunakan end-to-end dengan DUA sumber media:
+
+1. Manual upload dari perangkat/local
+2. Media hasil Downloader
+
+FLOW 1 — MANUAL UPLOAD
+
+Dari halaman Compose:
+
+- pilih Content Type = Reels
+- pilih/upload video dari perangkat
+- video masuk ke shared media upload flow
+- tunggu upload selesai
+- finalize media
+- media muncul sebagai READY
+- media dapat dipilih di Media picker
+- pilih Facebook Page
+- isi caption
+- Publish Now
+- job masuk queue
+- worker memproses
+- Facebook Page menerima Reel
+- verifikasi melalui Facebook Graph API
+- status berubah menjadi published
+
+FLOW 2 — DOWNLOADER
+
+Gunakan media yang berasal dari fitur Downloader.
+
+Pastikan:
+
+Downloader
+→ media ingestion
+→ storage
+→ finalize
+→ READY
+→ muncul di Compose Media picker
+→ pilih Facebook Page
+→ caption
+→ Publish Now
+→ queue
+→ worker
+→ Facebook Page Reel
+→ Graph API verification
+→ published
+
+ATURAN MEDIA:
+
+Jangan membuat sistem upload kedua yang terpisah.
+
+Manual upload dan Downloader HARUS menggunakan shared media pipeline yang sama setelah media masuk ke sistem.
+
+Contoh:
+
+Manual:
+Browser → Upload → Finalize → Media READY
+
+Downloader:
+Downloader → Ingestion → Finalize → Media READY
+
+Kemudian keduanya:
+
+Media READY
+→ Compose
+→ Publish
+→ Facebook
+
+MEDIA PICKER:
+
+Pastikan Media picker hanya menampilkan media yang benar-benar READY.
+
+Media yang:
+- uploading
+- failed
+- invalid
+- belum finalized
+
+tidak boleh dapat dipilih untuk publish.
+
+Jika user mencoba memilih media invalid, tampilkan error yang jelas.
+
+WEB ERROR HANDLING:
+
+Jangan tampilkan error generik seperti:
+
+"Failed to create the post from media."
+
+jika backend memberikan error yang lebih spesifik.
+
+Tampilkan pesan yang aman dan jelas, misalnya:
+
+"Media belum siap. Tunggu upload selesai."
+
+atau
+
+"File video tidak valid."
+
+atau
+
+"Media gagal diproses."
+
+Jangan pernah menampilkan token, credential, atau raw provider response.
+
+TEST WAJIB:
+
+1. Manual upload video baru dari browser.
+2. Pastikan video muncul sebagai READY.
+3. Publish melalui Compose.
+4. Verifikasi Reel benar-benar muncul di Facebook Page.
+5. Ambil media dari Downloader.
+6. Pastikan media Downloader muncul di Compose.
+7. Publish media Downloader melalui Compose.
+8. Verifikasi Reel benar-benar muncul di Facebook Page.
+9. Coba pilih media yang belum READY dan pastikan ditolak dengan pesan yang benar.
+10. Pastikan publishing flow Facebook existing tidak rusak.
+
+JANGAN mengubah Facebook backend publishing flow kecuali ditemukan bug nyata yang diperlukan agar Web flow menggunakan API yang sudah ada.
+
+Jika menemukan bug, perbaiki akar masalahnya, bukan membuat workaround khusus untuk test.
+
+TESTING:
+
+Setelah perubahan:
+
+- typecheck
+- lint
+- unit/regression tests
+- build
+- test manual Web
+- test Facebook Page verification
+
+Gunakan video TEST BARU untuk memastikan bukan hanya memakai artefak test lama.
+
+HASIL YANG WAJIB DILAPORKAN:
+
+MANUAL WEB UPLOAD: PASS/FAIL
+DOWNLOADER → WEB → FACEBOOK: PASS/FAIL
+MEDIA READY GUARD: PASS/FAIL
+COMPOSE: PASS/FAIL
+FACEBOOK PAGE REELS: PASS/FAIL
+GRAPH API VERIFICATION: PASS/FAIL
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+
+Jika semua PASS:
+
+WEB MANUAL UPLOAD: VERIFIED
+DOWNLOADER WEB PUBLISH: VERIFIED
+FACEBOOK PAGE REELS: VERIFIED
+
+Kemudian STOP.
+
+Jangan lanjut ke platform lain.
+Jangan membuat fitur Instagram/YouTube/TikTok.
+Jangan membuat scheduler baru.
+Jangan melakukan refactor besar.
 
 ````
 # 
