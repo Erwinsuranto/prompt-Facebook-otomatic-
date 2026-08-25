@@ -367,7 +367,7 @@ Setiap Destination harus memiliki **workspace sendiri** di UI dan secara logis t
 
 Contoh Facebook:
 
-```text
+text
 Facebook Account
 ├── Page A
 │   └── Workspace Page A
@@ -414,7 +414,7 @@ Secara backend, workspace tidak harus menjadi service terpisah. Core tetap share
 
 Logical flow:
 
-```text
+text
 Destination Workspace
         │
         ├── Downloader ──→ Media/Storage (destination scoped)
@@ -422,7 +422,7 @@ Destination Workspace
         ├── Schedule ────→ Scheduler (destination scoped)
         ├── Queue ───────→ Worker
         └── History ─────→ PublishingAttempt/History
-```
+
 
 Untuk kebutuhan future multi-destination publishing, satu media dapat tetap digunakan bersama, tetapi setiap target Destination harus mendapatkan PublishingJob terpisah dengan status, schedule, queue, dan history masing-masing.
 
@@ -538,7 +538,7 @@ Downloader ────┘
 
 Minimal konsep konfigurasi:
 
-```text
+text
 SchedulingSettings
 - enabled
 - max_videos_per_day
