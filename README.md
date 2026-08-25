@@ -52,9 +52,208 @@
 
 
 ````
-# 
+# Prompt berikutnya — Facebook Video & Post
 ```
+Prompt: Facebook Publishing Capabilities — Video & Post
 
+Lanjutkan project Content Pilot dari repository TERKINI.
+
+Scheduler, Queue, Worker, Manual Upload, Downloader, Media Pipeline, Compose, dan Facebook Reels SUDAH PASS dan SUDAH DI-PUSH.
+
+JANGAN mengulang atau merombak fitur tersebut.
+
+TARGET SEKARANG:
+
+Tambahkan publishing capability Facebook berikut secara modular:
+
+1. Facebook Page Video
+2. Facebook Page Photo/Text Post jika API dan architecture existing mendukungnya
+
+PRINSIP:
+
+- Facebook tetap provider/module, bukan core.
+- Jangan membuat queue baru.
+- Jangan membuat worker baru.
+- Jangan membuat scheduler baru.
+- Gunakan PublishingJob, Queue Manager, Worker, Media Pipeline, History, dan authorization existing.
+- Reels flow yang sudah PASS tidak boleh rusak.
+- Jangan membuat fake success.
+- Jangan mengarang endpoint atau permission Facebook.
+
+SEBELUM CODING:
+
+Audit implementation Facebook existing dan gunakan abstraction yang sudah ada.
+
+Periksa capability provider existing.
+
+Pastikan Video dan Post ditambahkan sebagai capability/module baru tanpa merusak:
+
+- Reels
+- Upload
+- Downloader
+- Queue
+- Worker
+- Retry
+- Cancel
+- Scheduler
+
+IMPLEMENTASI:
+
+### Facebook Page Video
+
+Flow:
+
+Media READY
+→ Compose pilih Video
+→ pilih Facebook Page
+→ caption
+→ Publish Now / Schedule
+→ PublishingJob
+→ Queue Manager
+→ Worker
+→ Facebook Provider
+→ upload/publish
+→ status verification
+→ History
+
+Gunakan media pipeline existing.
+
+### Facebook Photo/Text Post
+
+Jika API resmi dan permission yang digunakan environment ini mendukung:
+
+Implement capability secara modular.
+
+Jika belum dapat diverifikasi:
+JANGAN memaksakan implementation.
+
+Tandai:
+
+UNSUPPORTED / NEEDS VERIFICATION
+
+dan lanjutkan fitur yang benar-benar dapat diverifikasi.
+
+WEB UI:
+
+Compose harus menampilkan content type berdasarkan capability Facebook yang benar-benar tersedia.
+
+Jangan menampilkan fitur yang belum aktif seolah-olah aktif.
+
+Untuk Video:
+
+- media picker
+- caption
+- destination
+- Publish now
+- Schedule
+- validation
+- error state
+
+Gunakan UI existing.
+
+TEST:
+
+Minimal:
+
+1. Facebook Video manual upload
+2. Facebook Video publish now
+3. Facebook Video scheduled publish
+4. Facebook Video invalid media
+5. authorization regression
+6. queue regression
+7. worker regression
+8. retry regression
+9. cancel regression
+10. scheduler regression
+11. Facebook Reels regression
+12. downloader regression
+13. media pipeline regression
+14. history regression
+15. typecheck
+16. lint
+17. full test
+18. build
+
+REAL WEB E2E:
+
+Gunakan video test baru.
+
+Compose melalui WEB
+→ pilih Facebook Video
+→ pilih Page Yourdreels
+→ upload/select media
+→ caption "Content Pilot Facebook Video Test"
+→ Publish Now
+
+Verifikasi:
+
+- job masuk queue
+- worker memproses
+- Facebook publish berhasil
+- Graph API status benar
+- video benar-benar muncul di Page
+- History benar
+- tidak duplicate
+
+Setelah itu lakukan scheduled test jika aman.
+
+Jangan menganggap response API saja sebagai bukti.
+
+REGRESSION:
+
+Pastikan Facebook Reels tetap benar-benar bekerja.
+
+Jika ada failure:
+DEBUG dan FIX.
+
+Jangan menghapus test.
+
+Jangan melemahkan validation.
+
+Jangan mengubah status menjadi PASS tanpa test nyata.
+
+GIT:
+
+Setelah semua PASS:
+
+git status
+git diff
+cek secret
+
+Commit:
+
+feat: add facebook video publishing
+
+Push ke branch aktif.
+
+Jangan force push.
+
+Verifikasi:
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+FINAL REPORT:
+
+FACEBOOK VIDEO: PASS/FAIL
+FACEBOOK POST: PASS/FAIL/NOT SUPPORTED
+SCHEDULED VIDEO: PASS/FAIL
+WEB E2E: PASS/FAIL
+FACEBOOK LIVE: PASS/FAIL
+REELS REGRESSION: PASS/FAIL
+QUEUE: PASS/FAIL
+WORKER: PASS/FAIL
+SCHEDULER: PASS/FAIL
+REGRESSION: PASS/FAIL
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+
+STOP setelah push berhasil.
 
 ````
 # Prompt: Scheduler & Scheduled Publishing
