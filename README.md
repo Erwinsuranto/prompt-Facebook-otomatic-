@@ -22,10 +22,68 @@
 
 
 ````
-# 
+# CALLBACK CONFIGURATION: NEEDS CONFIGURATION
 ```
 
+Lanjutkan dari kondisi saat ini.
 
+STATUS SAAT INI:
+- FACEBOOK PROVIDER: CONFIGURED
+- FACEBOOK OAUTH: READY
+- META_APP_ID: terbaca
+- META_APP_SECRET: terbaca
+- REDIRECT URI: aplikasi sudah menentukan nilai yang benar
+- CALLBACK CONFIGURATION: NEEDS CONFIGURATION
+- Manual Upload: PASS
+- Downloader: PASS
+- Media Ready: PASS
+- Compose: PASS
+- Queue: PASS
+- Worker: PASS
+- Scheduler: PASS
+- Typecheck: PASS
+- Lint: PASS
+- Test: PASS
+- Build: PASS
+- Git: CLEAN
+
+Sekarang fokus hanya menyelesaikan CALLBACK CONFIGURATION.
+
+1. Baca source code dan temukan callback/redirect URI OAuth Facebook yang BENAR-BENAR digunakan aplikasi.
+2. Jangan membuat callback URL baru jika sudah ada.
+3. Tampilkan URL callback final yang digunakan aplikasi tanpa membocorkan secret/token.
+4. Pastikan konfigurasi environment menggunakan base URL/domain VPS yang benar.
+5. Pastikan redirect URI konsisten antara:
+   - frontend
+   - backend
+   - OAuth route
+   - environment
+   - Meta OAuth configuration
+6. Jangan mengubah flow OAuth yang sudah ada jika sudah benar.
+7. Jangan membuat fake OAuth atau fake Facebook success.
+8. Jangan meminta saya memasukkan META_APP_ID atau META_APP_SECRET lagi karena keduanya sudah tersedia di .env.
+9. Jika yang kurang hanya konfigurasi Meta Developer Dashboard, berikan nilai Redirect URI yang harus saya masukkan ke Valid OAuth Redirect URIs.
+10. Setelah konfigurasi lokal siap, lakukan verifikasi route callback dan OAuth flow sejauh yang bisa dilakukan dari VPS.
+11. Jangan mengklaim Facebook OAuth berhasil penuh jika belum ada login/authorization nyata.
+12. Jangan melakukan perubahan source code yang tidak diperlukan.
+
+Setelah selesai, tampilkan:
+
+FACEBOOK PROVIDER: CONFIGURED
+META CREDENTIALS: CONFIGURED
+OAUTH ROUTE: PASS/FAIL
+REDIRECT URI: <URI AKTUAL>
+CALLBACK ROUTE: PASS/FAIL
+META DASHBOARD CONFIG: READY/NEEDS MANUAL CONFIGURATION
+OAUTH E2E: PASS/NOT RUN
+MANUAL UPLOAD: PASS
+DOWNLOADER: PASS
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+
+Jika hanya membutuhkan pengaturan Meta Dashboard, STOP dan jelaskan tepat satu langkah yang harus saya lakukan di Meta Dashboard.
+
+Jangan commit/push jika tidak ada perubahan code.
 ````
 # 
 ```
