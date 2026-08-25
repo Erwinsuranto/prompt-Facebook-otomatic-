@@ -7,10 +7,302 @@
 ````
 
 
-# 
+# Prompt 02 — Auto Publishing Queue & Daily Slot Specification
 ```
 
+Lanjutkan project Content Pilot dari hasil Phase 0.
 
+JANGAN melakukan implementation/coding dulu.
+JANGAN mengubah source code.
+JANGAN membuat database migration.
+JANGAN membuat UI production.
+
+Fokus hanya menyusun SPECIFICATION untuk:
+
+AUTO PUBLISHING QUEUE + DAILY SLOT CONFIGURATION
+
+Requirement yang sudah disepakati:
+
+1. Admin dapat mengatur:
+   - Auto publishing ON/OFF
+   - Maximum video per hari
+   - Timezone
+   - Slot waktu upload harian
+
+Contoh:
+Maximum videos/day = 4
+
+Slots:
+08:00
+11:00
+14:00
+17:00
+
+2. Manual Upload dan Downloader HARUS menggunakan shared pipeline:
+
+Manual Upload ─┐
+               ├→ Media → READY → Scheduler → Publishing Job → Queue → Worker
+Downloader ────┘
+
+3. Setiap media dari downloader harus memiliki identifier sendiri dan metadata:
+   - media_id
+   - source_type
+   - source_id/source_url jika tersedia
+   - created_at
+
+Jangan menggunakan filename sebagai identifier utama.
+
+4. Sequence video bersifat GLOBAL dan tidak reset ketika tanggal berubah.
+
+Contoh:
+
+Hari 1:
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → kosong
+
+Jika besok downloader video baru:
+
+Hari 2:
+08:00 → Video 4
+
+BUKAN kembali menjadi Video 1.
+
+5. Jika hari pertama penuh:
+
+Hari 1:
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → Video 4
+
+Video berikutnya:
+
+Hari 2:
+08:00 → Video 5
+
+6. Jika downloader memasukkan beberapa video sekaligus, urutkan berdasarkan created_at/ingestion order yang stabil.
+
+Contoh:
+Video 1
+Video 2
+Video 3
+Video 4
+
+Masing-masing mendapat slot berurutan.
+
+7. Jika slot hari ini sudah penuh, otomatis cari slot kosong berikutnya pada hari berikutnya.
+
+8. Jangan pernah mengulang sequence_number yang sudah pernah diberikan.
+
+Sequence number harus berbeda dari:
+- media_id
+- publishing_job_id
+- filename
+
+9. Setiap video boleh memiliki manual schedule override.
+
+Contoh:
+
+Auto slot:
+08:00
+
+Tetapi user memilih:
+Video 7 → 20:30
+
+Maka:
+schedule_source = manual
+
+dan scheduled_at = 20:30.
+
+10. Scheduler harus menyimpan waktu aktual:
+
+scheduled_at
+
+Jangan hanya menyimpan:
+day_number
+slot_number
+
+11. Jika konfigurasi slot berubah:
+
+Contoh:
+Awalnya:
+08:00
+11:00
+14:00
+17:00
+
+kemudian diubah menjadi:
+09:00
+13:00
+18:00
+
+Jangan mengubah job yang sudah:
+- published
+- processing
+- uploading
+
+Buat aturan jelas untuk job yang masih:
+- draft
+- queued
+- scheduled
+
+12. Jika video gagal publish:
+
+Sequence number TIDAK boleh dipakai ulang.
+
+13. Jika job dibatalkan:
+
+Sequence number TIDAK boleh dipakai ulang.
+
+14. Scheduler harus timezone-aware.
+
+15. Hindari double scheduling ketika:
+- worker restart
+- server restart
+- scheduler restart
+- job diproses ulang
+
+Gunakan idempotency/deduplication.
+
+16. Buat state transition yang jelas:
+
+Media:
+uploaded
+processing
+ready
+failed
+
+PublishingJob:
+draft
+queued
+scheduled
+processing
+uploading
+publishing
+published
+failed
+cancelled
+retrying
+
+17. Buat logical data model minimal:
+
+SchedulingSettings
+- id
+- enabled
+- timezone
+- max_videos_per_day
+
+DailySlot
+- id
+- settings_id
+- slot_time
+- enabled
+- order
+
+Media
+- id
+- sequence_number jika memang ditempatkan di Media,
+  atau jelaskan jika lebih tepat berada di PublishingJob
+- source_type
+- source_id/source_url
+- created_at
+- status
+
+PublishingJob
+- id
+- media_id
+- provider
+- destination_id
+- sequence_number
+- scheduled_at
+- schedule_source
+- status
+- created_at
+
+Jika menurutmu sequence_number lebih tepat hanya berada di PublishingJob, jelaskan alasannya dan gunakan desain tersebut.
+
+18. Buat contoh algoritma scheduling.
+
+Gunakan contoh:
+
+Settings:
+4 video/day
+08:00, 11:00, 14:00, 17:00
+
+Input:
+Video 1
+Video 2
+Video 3
+Video 4
+Video 5
+Video 6
+
+Tunjukkan hasil schedule.
+
+Kemudian contoh kedua:
+
+Hari pertama hanya ada:
+Video 1
+Video 2
+Video 3
+
+Hari kedua downloader:
+Video 4
+Video 5
+
+Tunjukkan hasil schedule.
+
+19. Jelaskan kasus khusus:
+
+- slot sudah lewat
+- semua slot hari ini penuh
+- downloader memasukkan 10 video sekaligus
+- video gagal
+- video dibatalkan
+- server restart
+- timezone berubah
+- admin mengubah jumlah slot
+- admin mengubah max videos/day
+- manual override
+- duplicate downloader event
+
+20. Buat acceptance criteria yang jelas sehingga nanti implementation dapat dites.
+
+21. Jangan membuat fake implementation.
+
+22. Jangan mengubah code.
+
+23. Jangan melakukan migration.
+
+24. Jangan melakukan commit/push karena tahap ini hanya specification.
+
+OUTPUT:
+
+1. Auto Publishing Architecture
+2. Scheduling Data Model
+3. Sequence Number Strategy
+4. Slot Allocation Algorithm
+5. Queue Interaction
+6. State Transition
+7. Rescheduling Rules
+8. Edge Cases
+9. Idempotency Strategy
+10. Acceptance Criteria
+11. Implementation Plan untuk phase berikutnya
+
+Setelah specification selesai:
+
+STOP.
+
+Tampilkan:
+
+DAILY SLOT SPEC: COMPLETE
+CODE CHANGES: NONE
+DATABASE CHANGES: NONE
+IMPLEMENTATION STATUS: NOT STARTED
+NEXT STEP: IMPLEMENT DAILY SLOT SYSTEM
 ````
 # 
 ```
