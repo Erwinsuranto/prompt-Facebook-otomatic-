@@ -49,7 +49,735 @@
 ````
 # 
 ```
+LANJUTKAN PROJECT CONTENT PILOT.
 
+Jangan mulai dari nol.
+Jangan membuat ulang fitur publishing yang sudah PASS.
+Jangan melakukan refactor besar yang tidak diperlukan.
+
+MASALAH SAAT INI:
+Project sebelumnya sudah berhasil melewati banyak test:
+
+- manual video upload: PASS
+- downloader ingestion: PASS
+- media pipeline: PASS
+- media ready guard: PASS
+- compose: PASS
+- queue: PASS
+- worker: PASS
+- scheduler: PASS
+- Facebook Reels: PASS
+- Facebook live verification: PASS
+- regression: PASS
+- typecheck: PASS
+- lint: PASS
+- build: PASS
+- Git clean / remote verified pada sesi sebelumnya
+
+Tetapi setelah pindah VPS, Web E2E tidak dapat dijalankan karena environment VPS baru tidak lengkap.
+
+Hasil sebelumnya secara eksplisit menunjukkan:
+
+WEB E2E: NOT RUN
+
+Alasan:
+- PostgreSQL belum tersedia/terhubung
+- Redis belum tersedia/terhubung
+- MinIO belum tersedia/terhubung
+- konfigurasi environment tertentu belum tersedia, termasuk META_APP_ID
+- environment VPS baru belum sama dengan environment yang diperlukan untuk menjalankan Web E2E secara penuh
+
+JANGAN menganggap ini sebagai bug pada publishing flow sebelum environment diverifikasi.
+
+==================================================
+TUJUAN SESI INI
+==================================================
+
+Perbaiki environment VPS baru sampai Web E2E dapat dijalankan.
+
+Setelah environment siap:
+
+1. jalankan aplikasi
+2. jalankan Web E2E dari browser/web
+3. test manual upload melalui UI
+4. test downloader melalui UI
+5. test media menjadi READY
+6. test Compose
+7. test Publish Now
+8. test Queue
+9. test Worker
+10. test Facebook publishing
+11. verifikasi Reel benar-benar muncul di Facebook Page
+12. test Schedule jika environment mendukung
+13. test failure handling
+14. jalankan regression
+15. typecheck
+16. lint
+17. test
+18. build
+19. git status
+20. commit
+21. push
+22. verifikasi remote
+
+==================================================
+ATURAN PENTING
+==================================================
+
+JANGAN tanya saya soal kredit Kiro.
+
+JANGAN berhenti untuk meminta konfirmasi yang sebenarnya bisa ditentukan dari repository atau environment.
+
+LANGSUNG lanjutkan diagnosis → perbaikan → test → commit → push.
+
+Namun:
+
+- jangan mengarang hasil test
+- jangan menganggap service berhasil hanya karena process berjalan
+- jangan membuat fake success
+- jangan mematikan test hanya agar PASS
+- jangan skip Web E2E
+- jangan menghapus regression test
+- jangan mengubah Facebook publishing flow yang sudah PASS kecuali memang ditemukan bug nyata
+- jangan mengganti architecture
+- jangan membuat provider baru
+- jangan membuat fitur baru yang tidak berhubungan dengan masalah VPS
+
+==================================================
+STEP 1 — AUDIT VPS BARU
+==================================================
+
+Periksa environment aktual.
+
+Audit:
+
+- OS
+- Node.js
+- npm/pnpm/yarn
+- package manager
+- Docker
+- Docker Compose
+- PostgreSQL
+- Redis
+- MinIO
+- network
+- port
+- process/service manager
+- environment variables
+- .env files
+- application configuration
+- database connection
+- Redis connection
+- object storage connection
+- Facebook/Meta configuration
+
+Cari juga bagaimana project sebenarnya menjalankan:
+
+- frontend
+- backend/API
+- worker
+- scheduler
+- database
+- Redis
+- MinIO
+
+Jangan langsung install sesuatu sebelum memeriksa repository dan konfigurasi existing.
+
+==================================================
+STEP 2 — BANDINKAN DENGAN PROJECT
+==================================================
+
+Baca:
+
+- README
+- package.json
+- docker-compose files jika ada
+- Dockerfile jika ada
+- .env.example
+- config files
+- test setup
+- E2E configuration
+- database configuration
+- Redis configuration
+- MinIO/S3 configuration
+- worker configuration
+- scheduler configuration
+
+Cari semua environment variable yang benar-benar dibutuhkan.
+
+Jangan mengarang nama variable.
+
+Buat daftar:
+
+REQUIRED
+OPTIONAL
+MISSING
+INVALID
+PRESENT
+
+==================================================
+STEP 3 — RESTORE DEPENDENCIES VPS
+==================================================
+
+Jika PostgreSQL, Redis, atau MinIO memang merupakan dependency project:
+
+pastikan service tersebut tersedia dan benar-benar usable.
+
+Jika project menggunakan Docker Compose:
+
+gunakan konfigurasi existing project.
+
+Jangan membuat stack kedua yang duplicate.
+
+Jika project memang menggunakan service native:
+
+gunakan service native sesuai architecture existing.
+
+Pastikan:
+
+PostgreSQL:
+- running
+- reachable
+- database tersedia
+- credentials benar
+- migration/schema tersedia
+
+Redis:
+- running
+- reachable
+- queue dapat digunakan
+
+MinIO/S3:
+- running
+- bucket tersedia
+- credential benar
+- application dapat upload/download object
+
+Jangan hanya memeriksa `docker ps`.
+
+Lakukan connection test nyata dari application/runtime.
+
+==================================================
+STEP 4 — ENVIRONMENT VARIABLES
+==================================================
+
+Audit seluruh environment variable.
+
+Jangan copy secret secara sembarangan.
+
+Jangan print:
+
+- access token
+- refresh token
+- password
+- API key
+- secret
+- encryption key
+
+ke output terminal/report.
+
+Pastikan configuration yang dibutuhkan Web E2E tersedia.
+
+Termasuk jika memang diwajibkan oleh project:
+
+- META_APP_ID
+- Meta/Facebook configuration
+- database URL
+- Redis URL
+- S3/MinIO endpoint
+- storage credentials
+- application URL
+- worker configuration
+
+Jika ada variable yang memang tidak diperlukan untuk test tertentu, jangan membuat fake value hanya untuk membuat test lewat.
+
+Jika Meta configuration memang dibutuhkan untuk Facebook live verification, gunakan configuration yang benar dari environment existing/project.
+
+==================================================
+STEP 5 — DATABASE
+==================================================
+
+Jangan membuat database baru secara membabi buta jika database existing dapat digunakan.
+
+Periksa migration.
+
+Jalankan migration yang memang diwajibkan project.
+
+Pastikan schema sesuai dengan code.
+
+Jalankan database health check.
+
+Pastikan tidak ada:
+
+- missing table
+- missing column
+- migration mismatch
+- connection failure
+
+Jika ada data existing yang diperlukan untuk test, jangan menghapusnya sembarangan.
+
+==================================================
+STEP 6 — STORAGE / MINIO
+==================================================
+
+Pastikan media pipeline benar-benar dapat:
+
+upload
+→ store
+→ retrieve
+→ finalize
+→ mark READY
+
+Test object storage dari application.
+
+Pastikan Web UI tidak hanya menampilkan file dari mock/local array.
+
+Media harus benar-benar melewati storage flow yang digunakan production architecture.
+
+==================================================
+STEP 7 — START FULL STACK
+==================================================
+
+Jalankan seluruh component yang diperlukan:
+
+Frontend
+Backend/API
+Worker
+Scheduler
+PostgreSQL
+Redis
+MinIO/S3
+
+Pastikan tidak ada component yang hanya berjalan sebagian.
+
+Periksa log.
+
+Jika ada crash/restart loop, perbaiki sebelum Web E2E.
+
+==================================================
+STEP 8 — WEB E2E
+==================================================
+
+Sekarang WAJIB jalankan Web E2E.
+
+Jangan lagi menulis:
+
+WEB E2E: NOT RUN
+
+Target:
+
+WEB E2E: PASS
+
+Test melalui web UI sebenarnya, bukan hanya API.
+
+==================================================
+STEP 9 — TEST MANUAL UPLOAD
+==================================================
+
+Dari browser:
+
+Compose
+→ Reels/video
+→ pilih Upload Manual
+→ pilih file video lokal
+→ upload
+→ tunggu upload selesai
+→ finalize
+→ pastikan media berubah menjadi READY
+→ pilih media di Compose
+
+Pastikan file upload manual benar-benar berasal dari browser/device.
+
+Jangan hanya memilih media yang sudah ada di library.
+
+Pastikan flow:
+
+browser
+→ upload endpoint
+→ storage
+→ finalize
+→ media READY
+→ compose picker
+
+berfungsi.
+
+==================================================
+STEP 10 — TEST DOWNLOADER
+==================================================
+
+Test downloader dari UI menggunakan downloader yang memang sudah ada.
+
+Flow:
+
+Downloader
+→ input URL/source yang valid
+→ download
+→ ingest media
+→ storage
+→ finalize
+→ READY
+→ muncul di Compose
+
+Pastikan media dari downloader dapat dipakai oleh Compose.
+
+==================================================
+STEP 11 — REGRESSION MEDIA GUARD
+==================================================
+
+Pastikan media yang belum finalized tidak muncul sebagai READY.
+
+Test:
+
+upload sedang berlangsung
+→ media tidak boleh dianggap READY
+
+finalize berhasil
+→ media menjadi READY
+
+file invalid/non-video
+→ status failed
+→ tidak boleh muncul sebagai READY
+
+Jangan mengubah behavior guard yang sudah PASS kecuali test nyata menemukan regression.
+
+==================================================
+STEP 12 — COMPOSE
+==================================================
+
+Dari web:
+
+pilih media READY
+→ pilih content type Reels
+→ isi caption
+→ pilih Facebook Page
+→ Publish Now
+
+Pastikan UI mengirim media ID yang benar.
+
+Jangan menggunakan hardcoded media ID.
+
+==================================================
+STEP 13 — PUBLISH NOW
+==================================================
+
+Test publishing melalui web UI.
+
+Flow wajib:
+
+Compose
+→ Publish Now
+→ API
+→ Queue
+→ Worker
+→ Facebook provider
+→ Facebook Graph API
+→ published
+
+Pastikan UI menampilkan status yang sebenarnya.
+
+Jangan mengubah status menjadi published sebelum worker/provider benar-benar berhasil.
+
+==================================================
+STEP 14 — FACEBOOK VERIFICATION
+==================================================
+
+Setelah publish:
+
+verifikasi melalui Graph API sesuai flow project.
+
+Pastikan:
+
+publish_status = published
+video_status = ready
+
+Kemudian verifikasi dari Facebook Page yang sebenarnya.
+
+Pastikan Reel benar-benar muncul.
+
+Catat:
+
+- external ID
+- status
+- permalink jika tersedia
+
+Jangan menganggap HTTP success saja sebagai bukti publishing berhasil.
+
+==================================================
+STEP 15 — QUEUE / WORKER
+==================================================
+
+Pastikan:
+
+Compose
+→ queue job
+→ worker mengambil job
+→ processing
+→ publishing
+→ terminal status
+
+Tidak boleh ada orphan job.
+
+Test jika memungkinkan:
+
+- successful job
+- temporary failure
+- retry
+- permanent failure
+- cancellation
+
+Jangan merusak retry/cancel logic yang sudah PASS.
+
+==================================================
+STEP 16 — SCHEDULER
+==================================================
+
+Karena environment VPS sekarang sedang diperbaiki, jalankan Web E2E scheduler jika dependency tersedia.
+
+Test:
+
+Compose
+→ Schedule
+→ create schedule
+→ queue/scheduler
+→ worker
+→ publish
+
+Pastikan scheduler menggunakan timezone yang benar.
+
+Pastikan job yang sudah expired tidak dieksekusi ulang secara salah.
+
+Jika Facebook live verification untuk scheduled publishing membutuhkan credential yang tidak tersedia, laporkan secara jelas dan tetap test seluruh scheduler flow sampai titik yang dapat diverifikasi.
+
+Jangan mengarang Facebook live result.
+
+==================================================
+STEP 17 — RUN FULL TEST SUITE
+==================================================
+
+Setelah Web E2E berhasil, jalankan test suite lengkap yang tersedia.
+
+Minimal:
+
+- typecheck
+- lint
+- unit tests
+- API tests
+- worker tests
+- queue tests
+- scheduler tests
+- media tests
+- regression tests
+- Web E2E
+- build
+
+Jangan skip test yang sebelumnya PASS.
+
+==================================================
+STEP 18 — CHECK REGRESSION
+==================================================
+
+Pastikan perbaikan environment tidak mengubah:
+
+- manual upload
+- downloader
+- media finalize
+- media READY guard
+- compose
+- queue
+- worker
+- retry
+- cancel
+- scheduler
+- Facebook Reels
+- Facebook post/video flow
+- existing API
+- existing UI
+
+Jika ada regression, perbaiki sebelum commit.
+
+==================================================
+STEP 19 — GIT
+==================================================
+
+Setelah semuanya PASS:
+
+git status
+
+Periksa seluruh diff.
+
+Pastikan tidak ada:
+
+- .env
+- secret
+- token
+- password
+- private key
+- credentials
+- generated sensitive file
+
+yang masuk commit.
+
+Jika perubahan hanya berupa environment/deployment configuration yang memang aman untuk repository, commit sesuai kebutuhan.
+
+Jangan commit secret.
+
+==================================================
+STEP 20 — COMMIT
+==================================================
+
+Commit perubahan dengan message yang jelas, misalnya:
+
+fix: restore web e2e environment on new vps
+
+Jika perubahan code juga diperlukan:
+
+gunakan commit message yang sesuai dengan perubahan sebenarnya.
+
+Jangan membuat commit kosong.
+
+==================================================
+STEP 21 — PUSH
+==================================================
+
+Langsung push ke branch yang sedang digunakan.
+
+Jangan force push.
+
+Setelah push:
+
+- cek remote
+- pastikan HEAD sama dengan origin branch
+- pastikan commit benar-benar sudah berada di remote
+
+Jika push gagal:
+
+JANGAN mengatakan SUCCESS.
+
+Tampilkan error Git sebenarnya dan berhenti setelah local state aman.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan laporan ringkas:
+
+VPS ENVIRONMENT:
+PASS / FAIL
+
+POSTGRESQL:
+PASS / FAIL
+
+REDIS:
+PASS / FAIL
+
+MINIO / STORAGE:
+PASS / FAIL
+
+ENVIRONMENT CONFIG:
+PASS / FAIL
+
+APPLICATION:
+PASS / FAIL
+
+WEB E2E:
+PASS / FAIL
+
+MANUAL UPLOAD:
+PASS / FAIL
+
+DOWNLOADER:
+PASS / FAIL
+
+MEDIA READY:
+PASS / FAIL
+
+COMPOSE:
+PASS / FAIL
+
+QUEUE:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+FACEBOOK PUBLISH:
+PASS / FAIL
+
+FACEBOOK LIVE VERIFICATION:
+PASS / FAIL
+
+SCHEDULER:
+PASS / FAIL
+
+REGRESSION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+Jika semuanya berhasil:
+
+STOP setelah push.
+
+Jangan lanjut membuat fitur baru.
+
+==================================================
+KONDISI SUKSES UTAMA
+==================================================
+
+Masalah utama sesi ini adalah:
+
+"Setelah pindah VPS, Web E2E tidak bisa dijalankan karena environment dependency belum lengkap."
+
+Jadi jangan hanya memperbaiki code.
+
+Yang harus dibuktikan adalah:
+
+VPS baru
+→ semua dependency aktif
+→ application aktif
+→ browser dapat membuka web
+→ manual upload bekerja
+→ downloader bekerja
+→ media READY
+→ Compose bekerja
+→ Queue bekerja
+→ Worker bekerja
+→ Facebook publish bekerja
+→ Facebook Reel terverifikasi
+→ Web E2E PASS
+→ regression PASS
+→ build PASS
+→ commit
+→ push
+
+Jangan berhenti pada "service sudah running".
+
+Harus dibuktikan melalui test nyata.
 
 ````
 # Prompt berikutnya — Facebook Video & Post
