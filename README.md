@@ -35,7 +35,225 @@
 # 
 ```
 
+LANJUTKAN DI PROJECT CONTENT PILOT.
 
+Hasil audit terakhir SUDAH MEMBUKTIKAN:
+
+FACEBOOK PROVIDER CODE: EXISTS
+ENV CONFIG: INCOMPLETE
+META APP ID: MISSING
+META APP SECRET: MISSING
+FACEBOOK PROVIDER: NOT CONFIGURED
+
+Jadi jangan membuat Facebook provider baru dan jangan mengubah architecture/provider implementation.
+
+ROOT CAUSE SEMENTARA:
+Source code berasal dari GitHub, sedangkan secret/environment configuration tidak ikut repository. VPS baru belum memiliki konfigurasi Meta/Facebook.
+
+Sekarang fokus hanya pada PEMULIHAN KONFIGURASI ENV di VPS baru.
+
+ATURAN KEAMANAN:
+- Jangan pernah menampilkan nilai secret.
+- Jangan commit .env.
+- Jangan push secret ke GitHub.
+- Jangan membuat fake Meta App ID.
+- Jangan membuat fake Meta App Secret.
+- Jangan membuat fake access token.
+- Jangan mengubah source code hanya untuk menghilangkan status provider_not_configured.
+- Jangan menganggap Facebook PASS jika credential asli belum tersedia.
+
+LANGKAH:
+
+1. Audit seluruh repository untuk menemukan sumber konfigurasi Meta yang sebenarnya.
+
+Cari:
+- .env.example
+- environment schema
+- config loader
+- provider configuration
+- Meta/Facebook config
+- OAuth config
+- deployment config
+- Docker/env config
+- process manager config
+
+2. Tentukan NAMA ENV VARIABLE yang benar-benar digunakan oleh source code.
+
+Jangan menebak nama variable.
+
+3. Laporkan hanya status:
+
+META_APP_ID: PRESENT / MISSING
+META_APP_SECRET: PRESENT / MISSING
+META_ACCESS_TOKEN: PRESENT / MISSING
+META_REFRESH_TOKEN: PRESENT / MISSING
+FACEBOOK_PAGE_TOKEN: PRESENT / MISSING
+OAUTH_REDIRECT_URI: PRESENT / MISSING
+META_CONFIG: COMPLETE / INCOMPLETE
+
+Jangan tampilkan nilainya.
+
+4. Periksa apakah VPS lama pernah memiliki environment/configuration tersebut.
+
+Jika VPS lama masih dapat diakses, cari konfigurasi environment Meta secara aman.
+
+Jangan menampilkan secret.
+
+5. Jika credential asli tersedia di VPS lama:
+- pindahkan ke VPS baru secara aman
+- gunakan environment/secret storage yang memang digunakan project
+- jangan memasukkannya ke source code
+- jangan memasukkannya ke Git
+
+6. Jika credential asli TIDAK tersedia di VPS lama:
+STOP dan laporkan credential apa saja yang dibutuhkan.
+
+Jangan membuat credential palsu.
+
+7. Setelah configuration asli tersedia, restart service yang membutuhkan environment tersebut.
+
+8. Jalankan diagnosis ulang.
+
+Target:
+
+FACEBOOK PROVIDER: CONFIGURED
+
+9. Setelah provider configured, verifikasi koneksi Facebook menggunakan credential asli.
+
+10. Jika OAuth/session Page connection membutuhkan login ulang setelah pindah VPS, lakukan flow resmi yang memang digunakan project.
+
+Jangan menggunakan Facebook username/password automation.
+
+11. Setelah configuration berhasil, lakukan test nyata:
+
+WEB
+→ Accounts
+→ Facebook
+→ connection/status
+→ Page discovery
+→ pilih Page
+→ Compose
+→ Reels
+→ pilih media
+→ Publish
+
+12. Jangan hanya menguji API response.
+
+Jika memungkinkan, verifikasi Reel benar-benar muncul di Facebook Page asli.
+
+13. Jangan mengubah fitur yang sudah PASS:
+
+MANUAL UPLOAD
+DOWNLOADER
+MEDIA READY
+COMPOSE
+QUEUE
+WORKER
+SCHEDULER
+REGRESSION
+TYPECHECK
+LINT
+TEST
+BUILD
+
+14. Jika ternyata credential memang harus dibuat ulang di Meta Developer Console, jangan membuatnya secara otomatis.
+
+Laporkan:
+- credential apa yang harus dibuat
+- di mana configuration tersebut harus dipasang
+- redirect URI yang digunakan source code
+- permission yang dibutuhkan source code
+
+Jangan menebak permission atau endpoint.
+
+15. Setelah semuanya selesai, jalankan pemeriksaan lengkap.
+
+FINAL REPORT:
+
+ROOT CAUSE:
+...
+
+FACEBOOK PROVIDER CODE:
+EXISTS
+
+ENV CONFIG:
+COMPLETE / INCOMPLETE
+
+META APP ID:
+PRESENT / MISSING
+
+META APP SECRET:
+PRESENT / MISSING
+
+META CONFIG:
+CONFIGURED / NOT CONFIGURED
+
+FACEBOOK OAUTH:
+PASS / NOT RUN / FAIL
+
+PAGE DISCOVERY:
+PASS / NOT RUN / FAIL
+
+PAGE CONNECTION:
+PASS / NOT RUN / FAIL
+
+FACEBOOK PUBLISH:
+PASS / NOT RUN / FAIL
+
+FACEBOOK LIVE VERIFICATION:
+PASS / NOT RUN / FAIL
+
+MANUAL UPLOAD:
+PASS / FAIL
+
+DOWNLOADER:
+PASS / FAIL
+
+MEDIA READY:
+PASS / FAIL
+
+COMPOSE:
+PASS / FAIL
+
+QUEUE:
+PASS / FAIL
+
+WORKER:
+PASS / FAIL
+
+SCHEDULER:
+PASS / FAIL
+
+REGRESSION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+...
+
+PUSH:
+SUCCESS / NOT NEEDED / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+STOP setelah laporan.
+
+Jangan membuat perubahan code yang tidak diperlukan.
 ````
 # 
 ```
