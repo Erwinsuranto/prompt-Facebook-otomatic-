@@ -60,8 +60,1214 @@
 
 
 ````
-# 
+# Downloader/Storage/Publish/Queue/Schedule terpisah → auto daily slot → sequence tidak reset.
 ```
+LANJUTKAN PROJECT CONTENT PILOT BERDASARKAN HASIL AUDIT DAN STRUKTUR YANG SUDAH DISEPAKATI.
+
+JANGAN MENGUBAH PREMIS UTAMA PROJECT.
+
+==================================================
+TUJUAN UTAMA
+==================================================
+
+Content Pilot adalah platform content publishing multi-platform.
+
+Facebook adalah provider pertama, tetapi CORE harus tetap platform-independent.
+
+Arsitektur harus sejak awal mendukung:
+
+- multiple Facebook accounts
+- multiple Facebook Pages per account
+- multiple YouTube accounts/channels
+- multiple Instagram destinations
+- multiple TikTok destinations
+- platform lain di masa depan
+
+Jangan membuat sistem hanya untuk satu Facebook account atau satu Page.
+
+==================================================
+KONSEP UTAMA: ACCOUNT → DESTINATION → WORKSPACE
+==================================================
+
+Struktur utama:
+
+User
+ ├── Facebook Account A
+ │    ├── Page A
+ │    │    └── Workspace Page A
+ │    ├── Page B
+ │    │    └── Workspace Page B
+ │    └── Page C
+ │         └── Workspace Page C
+ │
+ ├── Facebook Account B
+ │    ├── Page D
+ │    │    └── Workspace Page D
+ │    └── Page E
+ │         └── Workspace Page E
+ │
+ └── YouTube Account
+      ├── Channel A
+      │    └── Workspace Channel A
+      └── Channel B
+           └── Workspace Channel B
+
+Destination adalah konsep generik.
+
+Facebook Page, YouTube Channel, Instagram account, TikTok account, dan destination platform lain semuanya harus dapat menggunakan konsep Destination yang sama.
+
+==================================================
+DESTINATION WORKSPACE
+==================================================
+
+SETIAP DESTINATION MEMILIKI WORKSPACE SENDIRI.
+
+Contoh:
+
+Page A Workspace:
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+Settings
+
+Page B Workspace:
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+Settings
+
+Jangan membuat satu halaman global yang mencampurkan semua Page.
+
+User harus selalu mengetahui workspace/destination yang sedang aktif.
+
+UI harus menyediakan:
+
+Destination / Workspace Switcher
+
+Contoh:
+
+[ Facebook Account A ]
+    [ Page A ▼ ]
+
+atau:
+
+Current Workspace:
+Facebook Page A
+
+Ketika berpindah ke Page B:
+
+Current Workspace:
+Facebook Page B
+
+Semua data yang tampil harus otomatis berubah mengikuti destination tersebut.
+
+==================================================
+DATA ISOLATION
+==================================================
+
+Semua operasi yang berkaitan dengan destination harus menggunakan destination_id.
+
+Minimal:
+
+Media
+PublishingJob
+PublishingAttempt
+Schedule
+Queue metadata
+History
+Auto-publish configuration
+Downloader source
+Publishing settings
+
+harus dapat dilacak ke destination yang sesuai.
+
+Downloader Page A:
+
+Downloader
+→ download video
+→ Media destination_id = Page A
+→ Storage Page A
+→ Queue Page A
+→ Schedule Page A
+→ Publish Page A
+
+Tidak boleh masuk ke Page B.
+
+Downloader Page B:
+
+Downloader
+→ Media destination_id = Page B
+→ Storage Page B
+→ Queue Page B
+→ Schedule Page B
+→ Publish Page B
+
+Tidak boleh tercampur.
+
+CORE SERVICE tetap shared.
+
+Tidak perlu membuat backend/service terpisah untuk setiap Page.
+
+Gunakan logical isolation berdasarkan destination_id.
+
+==================================================
+MEDIA LIBRARY
+==================================================
+
+Media tetap merupakan entity generik.
+
+Minimal:
+
+Media
+- id
+- destination_id
+- source_type
+- source_id
+- source_url jika tersedia
+- filename
+- mime_type
+- size
+- duration
+- width
+- height
+- storage_key
+- thumbnail
+- metadata
+- status
+- created_at
+
+source_type minimal:
+
+manual
+downloader
+other
+
+Media yang berasal dari Downloader harus tetap memiliki identifier/source metadata sehingga dapat diketahui asalnya.
+
+Jangan menggunakan filename sebagai identifier utama.
+
+==================================================
+MANUAL UPLOAD
+==================================================
+
+Manual upload HARUS tetap tersedia.
+
+Flow:
+
+User membuka Workspace Page A
+→ Publish / Upload
+→ pilih file dari perangkat
+→ upload
+→ media pipeline
+→ validation
+→ storage
+→ READY
+→ dapat dipublish atau masuk auto scheduler.
+
+Manual upload dan downloader HARUS menggunakan shared media pipeline.
+
+Jangan membuat dua pipeline media yang berbeda.
+
+==================================================
+DOWNLOADER
+==================================================
+
+Downloader juga harus menjadi bagian dari Workspace.
+
+Contoh:
+
+Page A
+→ Downloader
+→ masukkan URL
+→ download
+→ media tersimpan
+→ Media READY
+→ otomatis masuk scheduling pipeline jika Auto Publish aktif.
+
+Jika downloader menghasilkan beberapa video:
+
+Video 1
+Video 2
+Video 3
+Video 4
+
+masing-masing harus mempunyai Media ID sendiri.
+
+Urutan masuk harus dapat dilacak menggunakan created_at / sequence yang benar.
+
+==================================================
+AUTO PUBLISHING / DAILY SLOT
+==================================================
+
+Setiap Workspace/Destination memiliki pengaturan auto publishing sendiri.
+
+Contoh:
+
+Auto Publish:
+ON
+
+Maximum videos per day:
+4
+
+Timezone:
+Asia/Jakarta
+
+Daily Slots:
+
+08:00
+11:00
+14:00
+17:00
+
+Pengaturan ini BUKAN global.
+
+Page A dapat:
+
+4 video/hari
+
+Page B dapat:
+
+2 video/hari
+
+Page C dapat:
+
+6 video/hari
+
+==================================================
+ATURAN SLOT
+==================================================
+
+Jika:
+
+Maximum videos/day = 4
+
+Slots:
+
+08:00
+11:00
+14:00
+17:00
+
+dan downloader memasukkan:
+
+Video 1
+Video 2
+Video 3
+Video 4
+
+maka:
+
+Hari 1
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → Video 4
+
+Jika downloader memasukkan Video 5 setelah empat slot hari pertama penuh:
+
+Hari 2
+08:00 → Video 5
+
+Video 6:
+
+11:00 → Video 6
+
+dan seterusnya.
+
+==================================================
+JIKA HARI PERTAMA HANYA ADA 3 VIDEO
+==================================================
+
+Contoh:
+
+Hari 1:
+
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → kosong
+
+Jika tidak ada video ke-4 pada hari tersebut:
+
+JANGAN membuat Video 4 secara dummy.
+
+Slot 17:00 tetap kosong.
+
+Jika besok downloader memasukkan Video 4:
+
+Hari 2:
+
+08:00 → Video 4
+
+Bukan:
+
+Hari 1:
+17:00 → Video 4
+
+Karena hari pertama sudah berlalu.
+
+==================================================
+SEQUENCE
+==================================================
+
+Sequence TIDAK RESET setiap hari.
+
+Contoh:
+
+Hari 1:
+
+Video 1
+Video 2
+Video 3
+
+Hari 2:
+
+Video 4
+Video 5
+Video 6
+
+Bukan:
+
+Hari 2:
+Video 1
+Video 2
+Video 3
+
+Sequence harus tetap unik dan monoton.
+
+Jangan mengubah nomor sequence media/job yang sudah diberikan.
+
+Media ID, sequence number, dan PublishingJob ID adalah tiga konsep berbeda.
+
+==================================================
+BILA DOWNLOAD VIDEO SETELAH SLOT PENUH
+==================================================
+
+Contoh:
+
+Maximum:
+4 video/day
+
+Hari 1 sudah:
+
+Video 1
+Video 2
+Video 3
+Video 4
+
+Downloader berikutnya:
+
+Video 5
+
+Maka:
+
+Hari 2
+08:00 → Video 5
+
+Downloader berikutnya:
+
+Video 6
+
+Hari 2
+11:00 → Video 6
+
+Downloader berikutnya:
+
+Video 7
+
+Hari 2
+14:00 → Video 7
+
+dan seterusnya.
+
+Sistem harus mencari slot kosong paling awal di masa depan.
+
+==================================================
+BILA DOWNLOAD VIDEO BANYAK SEKALIGUS
+==================================================
+
+Jika user downloader:
+
+Video 1
+Video 2
+Video 3
+Video 4
+Video 5
+Video 6
+
+dan konfigurasi:
+
+4 video/day
+
+maka:
+
+Hari 1
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → Video 4
+
+Hari 2
+08:00 → Video 5
+11:00 → Video 6
+
+Urutan berdasarkan urutan masuk yang dapat dibuktikan oleh timestamp/sequence.
+
+Jangan random.
+
+==================================================
+MANUAL SCHEDULE OVERRIDE
+==================================================
+
+Setiap video harus dapat diberikan schedule manual.
+
+Contoh:
+
+Video 10
+
+Auto slot:
+14:00
+
+User mengubah:
+
+20:30
+
+Maka job menggunakan:
+
+schedule_source = manual
+
+dan scheduled_at = 20:30.
+
+Manual override harus mengalahkan auto slot.
+
+==================================================
+PERUBAHAN KONFIGURASI
+==================================================
+
+Jika user mengubah:
+
+Maximum videos/day
+atau
+daily slots
+atau
+timezone
+
+JANGAN otomatis mengacak ulang job yang sudah:
+
+published
+processing
+atau sudah final.
+
+Job yang sudah final tidak boleh dipindahkan.
+
+Job yang belum final dapat di-reschedule berdasarkan aturan yang jelas.
+
+Jangan melakukan silent rescheduling.
+
+Jika rescheduling dilakukan, simpan audit/history.
+
+==================================================
+PUBLISHING JOB
+==================================================
+
+Satu target destination = satu PublishingJob.
+
+Contoh:
+
+Media 100
+
+→ Facebook Page A
+PublishingJob A
+
+→ Facebook Page B
+PublishingJob B
+
+→ YouTube Channel A
+PublishingJob C
+
+Status setiap job independen.
+
+Contoh:
+
+Page A:
+published
+
+Page B:
+failed
+
+YouTube:
+queued
+
+Jangan menjadikan satu global status sebagai pengganti status child job.
+
+==================================================
+QUEUE
+==================================================
+
+Queue tetap shared secara infrastructure, tetapi job harus memiliki destination_id.
+
+Contoh:
+
+Queue
+
+Job 001
+destination = Page A
+
+Job 002
+destination = Page B
+
+Worker mengambil job:
+
+→ membaca provider
+→ membaca destination
+→ menjalankan provider yang sesuai
+→ memperbarui job.
+
+Queue tidak boleh salah mengambil destination.
+
+==================================================
+SCHEDULER
+==================================================
+
+Scheduler harus membaca:
+
+destination_id
+timezone
+daily_slots
+max_videos_per_day
+existing scheduled jobs
+existing published jobs
+manual overrides
+
+Kemudian menentukan scheduled_at.
+
+Scheduler harus menyimpan waktu aktual:
+
+scheduled_at
+
+Jangan hanya menyimpan:
+
+day_number
+slot_number
+
+Contoh:
+
+scheduled_at:
+2026-08-27T08:00:00+07:00
+
+Timezone harus diperhitungkan.
+
+==================================================
+DATABASE
+==================================================
+
+Model harus mendukung minimal:
+
+User
+Platform
+PlatformConnection
+Destination
+Media
+PublishingJob
+PublishingAttempt
+Schedule
+AuditLog
+
+Tambahkan entity konfigurasi jika diperlukan, misalnya:
+
+DestinationSchedulingSettings
+
+atau struktur equivalent yang paling cocok dengan database.
+
+DestinationSchedulingSettings minimal:
+
+destination_id
+enabled
+max_videos_per_day
+timezone
+daily_slots
+created_at
+updated_at
+
+Jangan memaksakan nama tabel jika architecture existing memiliki convention berbeda.
+
+==================================================
+PLATFORM PROVIDER
+==================================================
+
+Core tidak boleh mengetahui detail Facebook API.
+
+Gunakan provider abstraction.
+
+Contoh:
+
+Core
+→ Provider Registry
+→ Facebook Provider
+
+Nanti:
+
+Core
+→ YouTube Provider
+→ Instagram Provider
+→ TikTok Provider
+
+Provider harus memiliki capability masing-masing.
+
+Contoh:
+
+Facebook:
+video
+reels
+photo
+text_post
+scheduling
+
+Tetapi capability hanya boleh dinyatakan tersedia jika benar-benar didukung oleh implementation/API.
+
+==================================================
+FACEBOOK ACCOUNT
+==================================================
+
+Satu Facebook account dapat memiliki banyak Page.
+
+Contoh:
+
+Facebook Account 1
+
+Page A
+Page B
+Page C
+
+Semua Page harus dapat ditemukan melalui official Facebook/Meta API setelah authentication berhasil.
+
+Setiap Page menjadi Destination tersendiri.
+
+Jangan membuat:
+
+facebook_page_id global tunggal.
+
+Gunakan:
+
+PlatformConnection
+→ Destination[]
+
+==================================================
+STORAGE
+==================================================
+
+Storage juga harus terstruktur berdasarkan destination secara logical.
+
+Contoh:
+
+storage/
+  destinations/
+    page-A/
+      media/
+      thumbnails/
+    page-B/
+      media/
+      thumbnails/
+
+Implementasi storage fisik boleh berbeda jika menggunakan S3/MinIO/object storage.
+
+Yang penting:
+
+Media harus dapat dilacak dengan:
+
+destination_id
+storage_key
+
+dan tidak tercampur secara logical.
+
+==================================================
+UI STRUCTURE
+==================================================
+
+Jangan membuat semua fitur menjadi satu halaman besar.
+
+Gunakan struktur:
+
+Accounts
+    └── Facebook Account A
+          ├── Page A
+          ├── Page B
+          └── Page C
+
+Setelah memilih Page:
+
+Page A Workspace
+
+├── Dashboard
+├── Downloader
+├── Storage
+├── Publish
+├── Queue
+├── Schedule
+├── History
+└── Settings
+
+==================================================
+WORKSPACE DASHBOARD
+==================================================
+
+Dashboard workspace menampilkan data Page yang sedang aktif.
+
+Contoh:
+
+Facebook Page A
+
+Today's Schedule
+08:00 Video 1
+11:00 Video 2
+14:00 Video 3
+17:00 Empty
+
+Queue
+2 queued
+
+Published Today
+3
+
+Failed
+0
+
+Storage
+27 videos
+
+Jangan menampilkan angka gabungan semua Page kecuali user memang membuka Global Dashboard.
+
+==================================================
+DOWNLOADER PAGE
+==================================================
+
+Downloader harus hanya bekerja untuk workspace aktif.
+
+Header:
+
+Downloader
+Facebook Page A
+
+Input:
+
+URL
+
+[ Download ]
+
+Setelah berhasil:
+
+Video
+Source
+Status
+Media ID
+Created
+Scheduled At
+
+Jika Auto Publish aktif:
+
+Status:
+
+Downloaded
+→ Ready
+→ Scheduled
+
+Jika Auto Publish mati:
+
+Downloaded
+→ Ready
+
+User dapat menjadwalkan manual.
+
+==================================================
+STORAGE PAGE
+==================================================
+
+Storage hanya menampilkan media milik destination aktif.
+
+Filter:
+
+All
+Ready
+Scheduled
+Published
+Failed
+
+Search:
+
+filename
+source
+media ID
+
+Jangan menampilkan media Page lain kecuali user berpindah workspace.
+
+==================================================
+PUBLISH PAGE
+==================================================
+
+Publish page hanya menggunakan destination aktif.
+
+Contoh:
+
+Publishing to:
+
+Facebook Page A
+
+Media:
+[select media]
+
+Caption:
+[...]
+
+Schedule:
+Publish Now
+Schedule
+
+Jika publish ke beberapa destination memang diperlukan, buat child PublishingJob untuk masing-masing destination secara eksplisit.
+
+==================================================
+SCHEDULE PAGE
+==================================================
+
+Tampilkan:
+
+Calendar/List
+
+Tanggal
+Jam
+Video
+Status
+Source
+
+Contoh:
+
+27 Aug
+08:00
+Video 1
+Scheduled
+
+27 Aug
+11:00
+Video 2
+Scheduled
+
+27 Aug
+14:00
+Video 3
+Scheduled
+
+27 Aug
+17:00
+Empty
+
+28 Aug
+08:00
+Video 4
+Scheduled
+
+==================================================
+QUEUE PAGE
+==================================================
+
+Hanya menampilkan queue workspace aktif.
+
+Filter:
+
+Queued
+Processing
+Retrying
+Failed
+Completed
+Cancelled
+
+Setiap job menampilkan:
+
+sequence
+media
+destination
+scheduled_at
+status
+attempts
+last_error
+
+==================================================
+HISTORY PAGE
+==================================================
+
+History hanya untuk destination aktif.
+
+Tampilkan:
+
+published
+failed
+cancelled
+retry
+publish attempts
+
+Jangan mencampur history antar Page.
+
+==================================================
+GLOBAL DASHBOARD
+==================================================
+
+Global Dashboard tetap boleh tersedia.
+
+Global Dashboard hanya merupakan overview.
+
+Contoh:
+
+Accounts
+5
+
+Destinations
+12
+
+Scheduled
+27
+
+Queue
+8
+
+Published Today
+19
+
+Tetapi ketika user masuk ke Workspace, seluruh data menjadi destination-scoped.
+
+==================================================
+SETTINGS
+==================================================
+
+Settings harus dibagi jelas:
+
+Global Settings
+Account Settings
+Destination/Workspace Settings
+Scheduling Settings
+Storage Settings
+Provider Settings
+
+Pengaturan seperti:
+
+max videos/day
+timezone
+daily slots
+auto publishing
+
+HARUS berada pada Destination/Workspace Settings.
+
+==================================================
+SECURITY
+==================================================
+
+Jangan pernah:
+
+- commit access token
+- commit refresh token
+- commit META_APP_SECRET
+- commit API key
+- menampilkan secret di UI
+- menyimpan secret plaintext jika tidak diperlukan
+
+Gunakan environment/secure secret storage.
+
+.env harus tetap ignored oleh Git.
+
+==================================================
+IMPLEMENTATION RULE
+==================================================
+
+SEBELUM CODING:
+
+1. Audit architecture existing.
+2. Pastikan schema existing.
+3. Pastikan UI existing.
+4. Pastikan queue existing.
+5. Pastikan scheduler existing.
+6. Pastikan downloader existing.
+7. Pastikan media pipeline existing.
+
+Jika komponen sudah ada dan PASS:
+
+JANGAN dibuat ulang.
+
+Gunakan dan perluas architecture existing.
+
+Jika ada gap:
+
+perbaiki gap tersebut secara minimal dan modular.
+
+Jangan melakukan rewrite besar tanpa alasan.
+
+==================================================
+TESTING
+==================================================
+
+Tambahkan test untuk aturan penting:
+
+1. Page A tidak melihat media Page B.
+2. Downloader Page A membuat media destination_id Page A.
+3. Downloader Page B membuat media destination_id Page B.
+4. max_videos_per_day = 4.
+5. Empat video masuk Hari 1.
+6. Video kelima masuk Hari 2.
+7. Jika Hari 1 hanya ada tiga video, slot keempat kosong.
+8. Video berikutnya tetap masuk Hari 2.
+9. Sequence tidak reset.
+10. Download batch menghasilkan urutan deterministic.
+11. Manual schedule override bekerja.
+12. Published job tidak dipindahkan saat konfigurasi berubah.
+13. Queue tidak mencampur destination.
+14. History tidak mencampur destination.
+15. Timezone bekerja benar.
+16. Multi-destination publishing membuat child job terpisah.
+17. Failed job tidak merusak job destination lain.
+18. Downloader dan manual upload menggunakan shared media pipeline.
+
+==================================================
+JANGAN FAKE
+==================================================
+
+Jangan membuat:
+
+fake Facebook success
+fake OAuth success
+fake publishing
+fake Page discovery
+fake scheduler success
+fake queue success
+
+Jika API/credential belum tersedia:
+
+gunakan status yang jujur:
+
+NOT CONFIGURED
+NEEDS CONFIGURATION
+NOT RUN
+NEEDS VERIFICATION
+
+Jangan mengubahnya menjadi PASS palsu.
+
+==================================================
+GIT
+==================================================
+
+Setelah perubahan selesai:
+
+1. git status
+2. inspect diff
+3. pastikan tidak ada secret
+4. typecheck
+5. lint
+6. test
+7. build
+8. commit
+9. push ke branch aktif
+10. verifikasi remote
+
+Jangan force push.
+
+Jangan commit secret.
+
+Jangan membuat empty commit.
+
+Jika semuanya berhasil:
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+==================================================
+HASIL YANG DIINGINKAN
+==================================================
+
+Saya ingin hasil akhir memiliki konsep:
+
+ACCOUNT
+↓
+DESTINATION / PAGE
+↓
+WORKSPACE
+↓
+DOWNLOADER
+↓
+STORAGE
+↓
+MEDIA READY
+↓
+AUTO DAILY SLOT
+↓
+SCHEDULE
+↓
+QUEUE
+↓
+WORKER
+↓
+PUBLISH
+↓
+HISTORY
+
+Dan setiap Destination berdiri sendiri secara logical.
+
+Contoh:
+
+Page A
+Downloader A
+Storage A
+Schedule A
+Queue A
+Publish A
+History A
+
+Page B
+Downloader B
+Storage B
+Schedule B
+Queue B
+Publish B
+History B
+
+Tetapi seluruhnya tetap menggunakan CORE/backend/worker infrastructure yang sama.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Jangan mengarang fitur yang belum tersedia.
+
+Jangan menghapus fitur yang sudah PASS.
+
+Jangan membuat duplicate architecture.
+
+Jangan membuat semua Page menjadi satu workspace.
+
+Jangan membuat daily sequence reset.
+
+Jangan memindahkan job published.
+
+Jangan mencampur media antar destination.
+
+Setelah implementation/verifikasi selesai, tampilkan laporan singkat:
+
+CHANGES
+TESTS
+BUILD
+GIT STATUS
+COMMIT
+PUSH STATUS
+REMOTE VERIFIED
+
+Lalu STOP.
 
 
 ````
