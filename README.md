@@ -62,14 +62,189 @@
 
 
 ````
-# 
+# Prompt: Web E2E — Manual Upload & Downloader → Facebook Page
 ```
 
 
 ````
-# 
+# Prompt: Web E2E — Manual Upload & Downloader → Facebook Page
 ```
+Lanjutkan dari repository TERKINI.
 
+Jangan melakukan refactor besar.
+Jangan mengubah Facebook publishing backend yang sudah PASS.
+Jangan membuat platform baru.
+
+TUJUAN:
+Verifikasi bahwa seluruh flow benar-benar bekerja dari UI Web sampai Reel muncul di Facebook Page.
+
+TEST 1 — MANUAL UPLOAD
+
+Dari Web → Compose:
+
+1. Pilih Content Type = Reels.
+2. Upload video baru dari perangkat/browser.
+3. Pastikan upload menggunakan shared media upload flow yang sudah ada.
+4. Tunggu proses upload dan finalize selesai.
+5. Pastikan media berubah menjadi READY.
+6. Pastikan media READY muncul di Media picker.
+7. Pilih media tersebut.
+8. Pilih Facebook Page "Yourdreels".
+9. Isi caption:
+   "Content Pilot Web Manual Test"
+10. Pilih Publish Now.
+11. Pastikan job masuk queue.
+12. Worker memproses job.
+13. Pastikan status menjadi published.
+14. Verifikasi langsung melalui Facebook Graph API bahwa Reel benar-benar published.
+15. Verifikasi Reel benar-benar terlihat pada Facebook Page.
+
+TEST 2 — DOWNLOADER → WEB → FACEBOOK
+
+1. Gunakan video yang berasal dari Downloader.
+2. Pastikan downloader ingestion berhasil.
+3. Pastikan media selesai finalize.
+4. Pastikan media menjadi READY.
+5. Buka Compose melalui Web.
+6. Pastikan media Downloader muncul di Media picker.
+7. Pilih media tersebut.
+8. Pilih Facebook Page "Yourdreels".
+9. Isi caption:
+   "Content Pilot Web Downloader Test"
+10. Publish Now.
+11. Pastikan job masuk queue.
+12. Pastikan worker memproses job.
+13. Pastikan status menjadi published.
+14. Verifikasi melalui Graph API.
+15. Pastikan Reel benar-benar muncul di Facebook Page.
+
+IMPORTANT:
+
+Manual upload dan Downloader HARUS tetap menggunakan shared media pipeline.
+
+Manual:
+Browser
+→ shared upload
+→ finalize
+→ READY
+→ Compose
+→ Facebook
+
+Downloader:
+Downloader
+→ ingestion
+→ finalize
+→ READY
+→ Compose
+→ Facebook
+
+Jangan membuat pipeline upload Facebook kedua.
+
+MEDIA PICKER:
+
+Pastikan hanya media status READY yang dapat dipilih.
+
+Media:
+- uploading
+- processing
+- failed
+- invalid
+- belum finalized
+
+tidak boleh dapat dipublish.
+
+Jika media belum READY, tampilkan pesan yang jelas.
+
+ERROR HANDLING:
+
+Jika backend memberikan error spesifik, UI harus menampilkan alasan yang aman.
+
+Jangan selalu mengubah semua error menjadi:
+
+"Failed to create the post from media."
+
+Contoh pesan:
+
+"Media belum siap. Tunggu proses upload selesai."
+
+"File video tidak valid."
+
+"Media gagal diproses."
+
+Jangan tampilkan:
+- access token
+- API key
+- raw Graph API response
+- credential
+- secret
+
+REGRESSION:
+
+Pastikan perubahan UI tidak merusak:
+
+- Shared Upload Flow
+- Manual Video Upload
+- Downloader Ingestion
+- Media Ready Guard
+- Compose
+- Facebook Reels publishing
+
+TEST WAJIB:
+
+- typecheck
+- lint
+- tests
+- build
+- Web manual upload
+- Web Downloader media
+- Facebook Page verification
+
+Gunakan video TEST BARU untuk manual upload agar tidak hanya menggunakan artefak lama.
+
+Jangan menganggap HTTP 200 atau response API sebagai bukti publish berhasil.
+
+Publish harus diverifikasi sampai Reel benar-benar tercatat sebagai published pada Facebook Page.
+
+LAPORKAN:
+
+WEB MANUAL UPLOAD: PASS/FAIL
+DOWNLOADER → WEB: PASS/FAIL
+MEDIA READY: PASS/FAIL
+COMPOSE: PASS/FAIL
+QUEUE: PASS/FAIL
+WORKER: PASS/FAIL
+FACEBOOK PAGE REELS: PASS/FAIL
+GRAPH API VERIFICATION: PASS/FAIL
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+
+Jika semua PASS:
+
+WEB MANUAL UPLOAD: VERIFIED
+WEB DOWNLOADER PUBLISH: VERIFIED
+FACEBOOK PAGE REELS: VERIFIED
+
+Git:
+- git status
+- inspect diff
+- jangan commit secret
+- commit perubahan yang memang diperlukan
+- push ke branch aktif
+- verifikasi remote
+
+Tampilkan:
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+STOP setelah verifikasi.
+
+Jangan lanjut ke Instagram, YouTube, TikTok, Scheduler, atau fitur lain.
 
 ````
 # Prompt: Web Manual Upload + Downloader → Facebook Page Reels
