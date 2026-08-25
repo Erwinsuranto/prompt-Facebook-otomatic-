@@ -398,7 +398,6 @@ Facebook Account
         ├── Queue
         ├── Schedule
         └── History
-```
 
 Aturan:
 
@@ -494,15 +493,14 @@ Worker memanggil provider yang sesuai.
 Sistem publishing nantinya harus mendukung konfigurasi otomatis berdasarkan kuota video per hari dan slot waktu.
 
 Contoh konfigurasi:
-
-```text
+text
 Maximum videos per day: 4
 Slots:
 08:00
 11:00
 14:00
 17:00
-```
+
 
 Aturan utama:
 
@@ -512,13 +510,12 @@ Aturan utama:
 4. Nomor urut video bersifat global/sequence dan **tidak reset setiap hari**.
 5. Jika hari pertama hanya memiliki 3 video dari kapasitas 4:
 
-```text
+text
 Hari 1
 08:00 → Video 1
 11:00 → Video 2
 14:00 → Video 3
 17:00 → kosong
-```
 
 Jika hari tersebut sudah lewat dan video baru masuk, video baru menjadi Video 4 dan ditempatkan pada slot tersedia berikutnya di hari berikutnya. Jangan mengubahnya kembali menjadi Video 1.
 
@@ -533,11 +530,11 @@ Jika hari tersebut sudah lewat dan video baru masuk, video baru menjadi Video 4 
 
 Logical flow:
 
-```text
+text
 Manual Upload ─┐
                ├→ Media Library → READY → Auto Scheduler → Publishing Job → Queue → Worker
 Downloader ────┘
-```
+
 
 Minimal konsep konfigurasi:
 
@@ -547,11 +544,11 @@ SchedulingSettings
 - max_videos_per_day
 - timezone
 - daily_slots[]
-```
+
 
 Minimal metadata queue/job:
 
-```text
+text
 Media
 - id
 - source_type (manual | downloader | other)
@@ -565,7 +562,7 @@ PublishingJob
 - schedule_source (auto | manual)
 - status
 - destination_id
-```
+
 
 Sequence number, media ID, dan publishing job ID harus dibedakan. Jangan menggunakan filename sebagai identifier utama.
 
