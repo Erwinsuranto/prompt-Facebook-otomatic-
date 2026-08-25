@@ -78,7 +78,257 @@
 # 
 ```
 
+Lanjutkan dari DAILY SLOT SPEC yang sudah COMPLETE.
 
+JANGAN mengulang audit.
+JANGAN membuat specification baru.
+JANGAN bertanya untuk keputusan kecil yang sebenarnya sudah bisa ditentukan dari requirement sebelumnya.
+
+Sekarang IMPLEMENTasikan DAILY SLOT SYSTEM.
+
+ATURAN:
+1. Pertahankan architecture dan code existing.
+2. Jangan melakukan refactor besar yang tidak diperlukan.
+3. Jangan merusak upload, downloader, queue, worker, scheduler, atau publishing yang sudah PASS.
+4. Gunakan migration/schema yang aman.
+5. Jangan membuat fake implementation.
+6. Jangan commit secret.
+7. Setelah selesai WAJIB test, build, git status, commit, dan push.
+
+IMPLEMENTASI:
+
+A. Scheduling Settings
+Tambahkan konfigurasi:
+- enabled
+- max_videos_per_day
+- timezone
+
+B. Daily Slots
+Tambahkan slot yang dapat dikonfigurasi:
+- slot_time
+- enabled
+- order
+
+Contoh default:
+08:00
+11:00
+14:00
+17:00
+
+Jangan hardcode slot di scheduler.
+
+C. Shared Pipeline
+
+Pastikan:
+
+Manual Upload ─┐
+               ├→ Media → READY → Auto Scheduler → Publishing Job → Queue → Worker
+Downloader ────┘
+
+Downloader harus membuat Media dengan:
+- media_id
+- source_type
+- source_id/source_url jika tersedia
+- created_at
+
+D. GLOBAL SEQUENCE
+
+Implementasikan sequence global.
+
+Contoh:
+Hari 1:
+Video 1
+Video 2
+Video 3
+
+Hari 2:
+Video 4
+Video 5
+
+Sequence TIDAK BOLEH reset setiap hari.
+
+Sequence yang sudah pernah digunakan:
+- published
+- failed
+- cancelled
+
+TIDAK BOLEH digunakan ulang.
+
+Jangan gunakan filename sebagai identifier.
+
+E. AUTO SLOT ALLOCATION
+
+Dengan konfigurasi:
+
+max_videos_per_day = 4
+
+08:00
+11:00
+14:00
+17:00
+
+Jika masuk:
+Video 1 → 08:00
+Video 2 → 11:00
+Video 3 → 14:00
+Video 4 → 17:00
+Video 5 → hari berikutnya 08:00
+
+Jika hari pertama hanya ada 3 video:
+
+Video 1 → hari 1 08:00
+Video 2 → hari 1 11:00
+Video 3 → hari 1 14:00
+
+Jika Video 4 baru masuk setelah hari pertama selesai:
+Video 4 → hari 2 08:00
+
+Jangan mengisi ulang Video 1.
+
+F. MULTIPLE DOWNLOAD
+
+Jika downloader memasukkan:
+
+Video A
+Video B
+Video C
+Video D
+Video E
+
+dalam satu batch, gunakan urutan ingestion/created_at yang stabil dan berikan slot berurutan.
+
+Scheduler harus idempotent.
+
+Restart scheduler/worker tidak boleh membuat duplicate PublishingJob.
+
+G. MANUAL OVERRIDE
+
+Setiap PublishingJob dapat memiliki:
+schedule_source = auto | manual
+
+Jika manual:
+scheduled_at harus dihormati scheduler.
+
+Jangan ditimpa oleh auto scheduler.
+
+H. RESCHEDULING
+
+Job yang sudah:
+- published
+- processing
+- uploading
+- publishing
+
+JANGAN diubah karena konfigurasi slot berubah.
+
+Job yang masih:
+- draft
+- queued
+- scheduled
+
+boleh disesuaikan hanya jika memang diperlukan dan tetap mengikuti aturan sequence.
+
+I. TIMEZONE
+
+scheduled_at harus disimpan sebagai waktu absolut yang aman.
+
+Timezone konfigurasi hanya digunakan untuk menentukan slot lokal.
+
+J. DUPLICATE PROTECTION
+
+Pastikan terdapat protection untuk:
+- duplicate media scheduling
+- duplicate sequence
+- duplicate PublishingJob
+- scheduler restart
+- worker restart
+- duplicate downloader event
+
+Gunakan constraint/database/idempotency yang sesuai architecture existing.
+
+K. UI
+
+Tambahkan UI minimal untuk:
+
+Auto Publishing:
+[ ON/OFF ]
+
+Maximum videos/day:
+[ 4 ]
+
+Timezone:
+[ ... ]
+
+Daily Slots:
+08:00 [ON]
+11:00 [ON]
+14:00 [ON]
+17:00 [ON]
+
+Tambahkan:
++ Add Slot
+
+Jangan membuat dashboard baru jika UI existing sudah memiliki Settings.
+
+L. TEST WAJIB
+
+Tambahkan test untuk minimal:
+
+1. 4 video mengisi 4 slot.
+2. Video ke-5 masuk hari berikutnya.
+3. Hari pertama hanya 3 video → video berikutnya tetap sequence berikutnya.
+4. Sequence tidak reset saat tanggal berubah.
+5. Batch downloader mendapat slot berurutan.
+6. Manual override.
+7. Slot yang sudah lewat.
+8. Semua slot hari ini penuh.
+9. Scheduler restart tidak duplicate.
+10. Worker restart tidak duplicate.
+11. Failed job tidak menggunakan ulang sequence.
+12. Cancelled job tidak menggunakan ulang sequence.
+13. Perubahan konfigurasi tidak mengubah published job.
+14. Timezone.
+15. Duplicate downloader event.
+
+Jalankan:
+- typecheck
+- lint
+- test
+- build
+
+Jangan menghapus test existing.
+
+Jika test existing gagal karena perubahan ini, perbaiki implementation sampai regression kembali PASS.
+
+GIT:
+
+Setelah semua PASS:
+
+1. git status
+2. git diff
+3. pastikan tidak ada secret
+4. commit:
+   feat: implement daily slot auto publishing
+5. push ke branch aktif
+6. verifikasi remote
+
+Jangan force push.
+Jangan membuat commit kosong.
+
+OUTPUT AKHIR:
+
+DAILY SLOT IMPLEMENTATION: COMPLETE
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+GIT STATUS: CLEAN/NOT CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS/FAIL
+REMOTE VERIFIED: YES/NO
+
+Jika semua PASS, STOP.
 ````
 
 
