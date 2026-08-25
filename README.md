@@ -57,9 +57,562 @@
 
 
 ````
-# 
+# Prompt: Scheduler & Scheduled Publishing
 ```
+Lanjutkan project Content Pilot dari kondisi repository TERKINI.
 
+JANGAN mengulang audit dari awal dan JANGAN merusak fitur yang sudah PASS.
+
+STATUS TERKINI YANG SUDAH DIVERIFIKASI:
+
+- Shared Upload Flow: PASS
+- Manual Video Upload: PASS
+- Downloader Ingestion: PASS
+- Invalid File Validation: PASS
+- Media Ready Guard: PASS
+- Compose: PASS
+- Facebook Reels: PASS
+- Web Manual Upload: PASS
+- Downloader → Web: PASS
+- Web Downloader Publish: VERIFIED
+- Queue Manager API: PASS
+- Worker Integration: PASS
+- Retry temporary-only: PASS
+- Permanent retry ditolak: PASS
+- Cancel: PASS
+- User Authorization: PASS
+- Facebook Reels Regression: PASS
+- Typecheck: PASS
+- Lint: PASS
+- Tests: PASS
+- Build: PASS
+- Git repository clean
+- Remote sudah verified
+
+JANGAN mengubah flow publishing Facebook yang sudah PASS kecuali benar-benar diperlukan untuk integrasi Scheduler.
+
+==================================================
+TARGET PHASE
+==================================================
+
+Sekarang implementasikan:
+
+SCHEDULER + SCHEDULED PUBLISHING
+
+Tujuan:
+
+User dapat membuat publishing job untuk waktu tertentu.
+
+Flow:
+
+Compose
+→ pilih media
+→ pilih destination
+→ pilih "Schedule"
+→ pilih tanggal & waktu
+→ create scheduled job
+→ job masuk status scheduled
+→ scheduler menunggu waktu eksekusi
+→ job masuk queue
+→ worker menjalankan publishing
+→ Facebook publish
+→ status menjadi published / failed
+
+Scheduler harus menggunakan Queue Manager dan Worker yang SUDAH ADA.
+
+Jangan membuat sistem queue kedua.
+
+Jangan membuat worker kedua.
+
+==================================================
+ATURAN ARSITEKTUR
+==================================================
+
+Scheduler harus tetap platform-independent.
+
+Jangan membuat:
+
+facebookScheduler
+
+Gunakan:
+
+Scheduler
+→ PublishingJob
+→ Queue
+→ Worker
+→ Provider
+
+Contoh:
+
+Schedule
+  ↓
+PublishingJob
+  ↓
+Scheduler
+  ↓
+Queue
+  ↓
+Worker
+  ↓
+Facebook Provider
+  ↓
+Published
+
+Core Scheduler tidak boleh berisi logic Facebook API.
+
+==================================================
+SCHEDULE MODEL
+==================================================
+
+Gunakan model schedule yang sesuai dengan database yang SUDAH ADA.
+
+Jangan membuat database baru.
+
+Schedule minimal harus memiliki konsep:
+
+- id
+- publishing job id / relation
+- scheduledAt
+- status
+- createdAt
+- updatedAt
+
+Status minimal:
+
+scheduled
+processing
+published
+failed
+cancelled
+
+Jika architecture existing sudah mempunyai field/model yang ekuivalen, gunakan yang sudah ada daripada membuat duplicate.
+
+Timezone harus diperhatikan.
+
+Jangan menyimpan waktu tanpa timezone jika architecture existing dapat menyimpan timezone/UTC dengan benar.
+
+Gunakan UTC untuk persistence jika itu sesuai dengan architecture existing, lalu lakukan conversion hanya pada UI.
+
+==================================================
+SCHEDULE API
+==================================================
+
+Audit API existing terlebih dahulu.
+
+Implement endpoint/service untuk:
+
+1. Create scheduled publishing job
+2. List scheduled jobs
+3. Get scheduled job
+4. Cancel scheduled job
+
+Jangan membuat duplicate endpoint jika endpoint yang sama sudah tersedia.
+
+Authorization WAJIB:
+
+User hanya boleh melihat/mengubah schedule miliknya sendiri.
+
+Jangan memperbolehkan user mengakses job milik user lain hanya dengan mengetahui ID.
+
+==================================================
+VALIDATION
+==================================================
+
+Scheduler wajib menolak:
+
+- waktu schedule yang sudah lewat
+- media yang belum READY
+- media invalid
+- destination invalid
+- destination yang tidak dimiliki user
+- publishing job yang sudah published
+- publishing job yang sudah cancelled
+- schedule duplicate yang tidak valid
+
+Gunakan error yang jelas.
+
+Jangan tampilkan raw provider error kepada user.
+
+==================================================
+QUEUE INTEGRATION
+==================================================
+
+Scheduler tidak boleh langsung melakukan Facebook publish.
+
+Ketika scheduledAt tercapai:
+
+scheduled job
+→ enqueue existing PublishingJob
+→ worker existing memproses
+→ provider existing publish
+
+Pastikan tidak terjadi double execution.
+
+Jika scheduler restart:
+
+scheduled job yang belum waktunya tetap harus aman.
+
+Jika scheduler restart setelah waktunya lewat:
+
+job yang valid harus dapat diproses dan tidak hilang.
+
+Jika job sudah queued/processing/published:
+
+scheduler tidak boleh memasukkannya lagi.
+
+Gunakan idempotency / atomic state transition sesuai architecture existing.
+
+==================================================
+CANCEL
+==================================================
+
+User dapat cancel scheduled job sebelum execution.
+
+Flow:
+
+scheduled
+→ cancelled
+
+Setelah job sudah:
+
+processing
+atau
+published
+
+jangan izinkan cancellation seolah-olah masih scheduled.
+
+Return error yang jelas.
+
+==================================================
+SCHEDULER WORKER
+==================================================
+
+Gunakan mekanisme scheduler yang sesuai dengan stack existing.
+
+Jangan menambahkan dependency besar jika tidak diperlukan.
+
+Scheduler harus:
+
+- menemukan scheduled jobs yang waktunya sudah tiba
+- melakukan atomic claim
+- enqueue ke queue existing
+- mencegah duplicate enqueue
+- aman ketika process restart
+- aman ketika ada lebih dari satu scheduler instance jika architecture memungkinkan
+
+Jangan menggunakan setTimeout sederhana sebagai satu-satunya persistence mechanism.
+
+Jangan membuat scheduler yang kehilangan job ketika process restart.
+
+==================================================
+COMPOSE UI
+==================================================
+
+Perbaiki Compose agar Schedule benar-benar berfungsi.
+
+UI harus memiliki:
+
+Content Type
+Media
+Caption
+Destinations
+
+Publish mode:
+
+( ) Publish now
+( ) Schedule
+
+Jika Schedule dipilih:
+
+Date
+Time
+Timezone
+
+Button:
+
+Schedule Post
+
+Jangan menampilkan fake success.
+
+Jika backend gagal:
+
+tampilkan error sebenarnya dalam bentuk aman.
+
+Jika berhasil:
+
+tampilkan:
+
+Scheduled successfully
+
+dan schedule ID/status jika UI existing memang menampilkan metadata tersebut.
+
+==================================================
+SCHEDULED PAGE
+==================================================
+
+Jika route/page Scheduler sudah ada, gunakan dan perbaiki.
+
+Jika belum ada, buat halaman Scheduler yang minimal tetapi benar-benar terhubung backend.
+
+Tampilkan:
+
+- scheduled content
+- destination
+- scheduled time
+- status
+- cancel action
+
+Status:
+
+Scheduled
+Processing
+Published
+Failed
+Cancelled
+
+Jangan membuat halaman mock.
+
+Semua data harus berasal dari API/database sebenarnya.
+
+==================================================
+DASHBOARD / QUEUE
+==================================================
+
+Integrasikan scheduler dengan UI existing.
+
+Dashboard/Queue harus membedakan:
+
+Scheduled
+Queued
+Processing
+Published
+Failed
+Cancelled
+
+Jangan mengubah statistik existing yang sudah PASS kecuali memang diperlukan.
+
+==================================================
+HISTORY
+==================================================
+
+Pastikan scheduled publishing yang akhirnya published/failed masuk ke history existing.
+
+Jangan membuat history system kedua.
+
+Status harus konsisten:
+
+scheduled
+→ queued
+→ processing
+→ published
+
+atau:
+
+scheduled
+→ queued
+→ processing
+→ failed
+
+==================================================
+RETRY
+==================================================
+
+Jangan membuat retry mechanism baru.
+
+Gunakan retry system yang sudah PASS.
+
+Scheduled job yang gagal setelah execution harus mengikuti retry behavior existing.
+
+Permanent error tetap tidak boleh retry permanen.
+
+==================================================
+TESTING
+==================================================
+
+WAJIB jalankan test setelah implementasi.
+
+Minimal test:
+
+1. Create schedule
+2. Schedule future job
+3. Reject past schedule
+4. Reject invalid media
+5. Reject unauthorized destination
+6. List user's schedules
+7. Get schedule
+8. Cancel scheduled job
+9. Cannot cancel published job
+10. Scheduler detects due job
+11. Due job enters existing queue
+12. No duplicate enqueue
+13. Worker publishes scheduled Facebook Reel
+14. Scheduled job becomes published
+15. Failed scheduled job becomes failed
+16. Restart/recovery behavior
+17. Authorization regression
+18. Existing queue regression
+19. Existing upload regression
+20. Existing Facebook Reels regression
+
+Jalankan:
+
+- typecheck
+- lint
+- test
+- build
+
+Jika test existing gagal karena perubahan Scheduler:
+
+DEBUG dan FIX.
+
+Jangan menghapus test hanya supaya PASS.
+
+==================================================
+REAL END-TO-END TEST
+==================================================
+
+Setelah unit/integration tests PASS, lakukan test nyata melalui WEB.
+
+Gunakan media yang sudah tersedia/READY.
+
+Flow:
+
+1. Buka Compose lewat web.
+2. Pilih media.
+3. Pilih Facebook Page Yourdreels.
+4. Pilih Schedule.
+5. Set waktu dekat yang aman untuk test.
+6. Submit.
+7. Verifikasi job muncul sebagai Scheduled.
+8. Tunggu scheduler mengeksekusi.
+9. Verifikasi masuk queue.
+10. Verifikasi worker memproses.
+11. Verifikasi Facebook Page menerima Reel.
+12. Verifikasi status menjadi Published.
+13. Verifikasi History.
+14. Pastikan tidak ada duplicate Reel.
+
+Jangan menganggap API response sebagai bukti publish.
+
+Publish harus diverifikasi dari Facebook Page seperti test sebelumnya.
+
+Jika live Facebook test tidak dapat dilakukan karena credential/environment, lakukan semua test yang memungkinkan dan laporkan blocker sebenarnya. Jangan membuat hasil palsu.
+
+==================================================
+REGRESSION SAFETY
+==================================================
+
+FITUR YANG SUDAH PASS HARUS TETAP PASS:
+
+- Manual upload
+- Downloader
+- Shared upload pipeline
+- Media finalize
+- Media ready guard
+- Compose
+- Queue
+- Worker
+- Retry
+- Cancel
+- Facebook Reels
+
+Jangan melakukan refactor besar terhadap flow tersebut.
+
+Jika harus mengubah shared code:
+
+1. jelaskan alasan
+2. buat regression test
+3. jalankan seluruh test suite
+
+==================================================
+SECURITY
+==================================================
+
+Periksa:
+
+- authorization
+- user isolation
+- schedule ID enumeration
+- input validation
+- timezone handling
+- duplicate execution
+- race condition
+- secret leakage
+- raw provider error leakage
+
+Jangan commit:
+
+- API key
+- Facebook token
+- password
+- credential
+- .env
+- secret file
+
+==================================================
+GIT
+==================================================
+
+Setelah implementation selesai:
+
+1. git status
+2. inspect git diff
+3. pastikan hanya perubahan yang berhubungan dengan Scheduler
+4. pastikan tidak ada secret
+5. run typecheck
+6. run lint
+7. run tests
+8. run build
+9. lakukan real web E2E test jika environment memungkinkan
+
+Jika semuanya PASS:
+
+Commit:
+
+feat: implement scheduled publishing
+
+Kemudian PUSH langsung ke branch yang sedang digunakan.
+
+JANGAN force push.
+
+JANGAN membuat empty commit.
+
+Setelah push:
+
+- verifikasi remote
+- pastikan HEAD == origin/<branch>
+- git status harus clean
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan ringkas:
+
+SCHEDULER: PASS/FAIL
+CREATE SCHEDULE: PASS/FAIL
+CANCEL: PASS/FAIL
+QUEUE INTEGRATION: PASS/FAIL
+WORKER INTEGRATION: PASS/FAIL
+WEB E2E: PASS/FAIL
+FACEBOOK LIVE VERIFICATION: PASS/FAIL
+REGRESSION: PASS/FAIL
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL
+BUILD: PASS/FAIL
+
+GIT STATUS: CLEAN/NOT CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS/FAILED
+REMOTE VERIFIED: YES/NO
+
+Jika ada kegagalan, tampilkan error sebenarnya.
+
+Jangan mengklaim PASS jika belum benar-benar diuji.
+
+SETELAH PUSH BERHASIL, STOP.
 
 ````
 # Prompt: Web E2E — Manual Upload & Downloader → Facebook Page
