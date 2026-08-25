@@ -29,7 +29,85 @@
 ````
 # 
 ```
+Lanjutkan dari kondisi repository saat ini.
 
+Saya sudah menambahkan:
+META_APP_ID
+META_APP_SECRET
+
+ke bagian paling bawah file `.env` di VPS baru.
+
+Sekarang fokus hanya pada konfigurasi dan verifikasi Facebook/Meta. JANGAN mengubah architecture atau membuat ulang fitur yang sudah ada.
+
+LANGKAH:
+
+1. Baca `.env` yang sedang digunakan oleh aplikasi.
+2. Pastikan `META_APP_ID` terbaca.
+3. Pastikan `META_APP_SECRET` terbaca.
+4. Jangan pernah menampilkan nilai secret/token ke terminal output, log, laporan, atau Git.
+5. Pastikan `.env` masuk `.gitignore` dan tidak akan ikut commit/push.
+6. Jangan commit secret apa pun ke GitHub.
+7. Cek apakah nama environment variable yang dipakai source code memang:
+   META_APP_ID
+   META_APP_SECRET
+   Jika source code menggunakan nama variable berbeda, sesuaikan konfigurasi dengan code yang sebenarnya, jangan membuat variable duplikat tanpa alasan.
+8. Restart/reload service agar environment baru terbaca.
+9. Jalankan diagnosis Facebook provider.
+10. Pastikan status berubah dari:
+    META APP ID: MISSING
+    META APP SECRET: MISSING
+    menjadi configured/available.
+11. Jangan membuat fake credential, fake token, fake Page, atau fake Facebook success.
+12. Jangan mengubah kode Facebook yang sudah ada jika sebenarnya masalahnya hanya `.env`.
+13. Setelah credential terbaca, lanjutkan konfigurasi OAuth Facebook yang memang sudah tersedia di code.
+14. Gunakan flow OAuth resmi yang sudah dibuat oleh project.
+15. Jangan menggunakan Facebook username/password automation.
+16. Jangan mengarang endpoint atau permission.
+17. Jika OAuth membutuhkan redirect/callback URL, tampilkan URL yang BENAR-BENAR digunakan aplikasi dan cek apakah konfigurasi callback tersebut sudah sesuai.
+18. Jika ada konfigurasi Meta Developer yang masih kurang, jelaskan tepat apa yang kurang.
+19. Jangan berhenti hanya karena Facebook Live Verification belum bisa dilakukan jika credential/API configuration sudah bisa diverifikasi secara lokal.
+20. Setelah perubahan konfigurasi selesai, jalankan:
+    - typecheck
+    - lint
+    - test
+    - build
+    sesuai script yang tersedia di repository.
+
+GIT:
+
+- Jangan commit `.env`.
+- Jangan commit secret.
+- Jika hanya perubahan environment/config lokal dan tidak ada perubahan source code, TIDAK perlu membuat commit.
+- Jangan melakukan commit kosong.
+- Jangan push jika tidak ada perubahan code/documentation.
+- Jika memang ada perubahan code yang benar-benar diperlukan, periksa diff dan pastikan tidak ada secret sebelum commit/push.
+- Jika ada perubahan yang diperlukan, langsung commit dan push ke branch aktif.
+- Jangan force push.
+
+LAPORAN AKHIR:
+
+META_APP_ID: CONFIGURED / MISSING
+META_APP_SECRET: CONFIGURED / MISSING
+FACEBOOK PROVIDER: CONFIGURED / NOT CONFIGURED
+FACEBOOK OAUTH: READY / NOT READY
+CALLBACK CONFIGURATION: READY / NEEDS CONFIGURATION
+MANUAL UPLOAD: PASS / FAIL
+DOWNLOADER: PASS / FAIL
+MEDIA READY: PASS / FAIL
+COMPOSE: PASS / FAIL
+QUEUE: PASS / FAIL
+WORKER: PASS / FAIL
+SCHEDULER: PASS / FAIL
+TYPECHECK: PASS / FAIL
+LINT: PASS / FAIL
+TEST: PASS / FAIL
+BUILD: PASS / FAIL
+
+GIT STATUS:
+COMMIT:
+PUSH STATUS:
+
+Jika semua konfigurasi Meta sudah terbaca, langsung lanjutkan ke langkah berikutnya yang diperlukan untuk menghubungkan Facebook Page melalui OAuth. Jangan bertanya ulang mengenai credential yang sudah saya masukkan.
 
 ````
 # 
