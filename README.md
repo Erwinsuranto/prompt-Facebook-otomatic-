@@ -64,7 +64,1077 @@
 ````
 # Prompt: Web E2E — Manual Upload & Downloader → Facebook Page
 ```
+LANJUT PROJECT CONTENT PILOT — PHASE QUEUE MANAGER
 
+Kondisi repository saat ini:
+
+Content Pilot sudah memiliki publishing flow yang benar dan sudah diverifikasi end-to-end.
+
+VERIFIED:
+
+- Web Manual Upload → PASS
+- Downloader → Web → PASS
+- Shared Media Upload Flow → PASS
+- Media Finalize → PASS
+- Media Ready Guard → PASS
+- Compose → PASS
+- Queue → PASS
+- Worker → PASS
+- Facebook Page Reels → PASS
+- Graph API Verification → PASS
+- Typecheck → PASS
+- Lint → PASS
+- Test → PASS
+- Build → PASS
+- Git remote sudah verified
+
+Flow yang sudah terbukti:
+
+Manual upload
+→ media pipeline
+→ media ready
+→ compose
+→ publish request
+→ queue
+→ worker
+→ Facebook upload
+→ published
+→ history/status
+
+Downloader:
+
+Downloader
+→ ingestion
+→ shared media pipeline
+→ media ready
+→ compose
+→ queue
+→ worker
+→ Facebook publish
+
+JANGAN merusak atau mengganti publishing flow yang sudah PASS.
+
+==================================================
+TUJUAN PHASE INI
+==================================================
+
+Sekarang fokus pada:
+
+QUEUE MANAGER
+
+Tujuannya membuat halaman/interface Queue Manager benar-benar berguna untuk mengelola publishing jobs yang sudah ada.
+
+Queue Manager harus menggunakan data publishing job yang sebenarnya dari backend/database.
+
+JANGAN membuat dummy queue.
+
+JANGAN membuat fake status.
+
+JANGAN membuat status yang hanya berasal dari frontend.
+
+JANGAN membuat mock worker.
+
+==================================================
+ATURAN PALING PENTING
+==================================================
+
+1. Audit implementasi queue yang sekarang terlebih dahulu.
+
+2. Baca code yang sudah ada sebelum mengubah apa pun.
+
+3. Jangan mengganti arsitektur queue yang sudah bekerja jika tidak diperlukan.
+
+4. Jangan mengubah Facebook publishing flow kecuali benar-benar diperlukan untuk Queue Manager.
+
+5. Jangan mengubah Media Upload / Downloader flow.
+
+6. Jangan membuat duplicate queue system.
+
+7. Jangan membuat queue kedua hanya untuk UI.
+
+8. Queue Manager harus membaca publishing jobs yang sama yang digunakan worker.
+
+9. Status UI harus berasal dari state backend/database yang sebenarnya.
+
+10. Semua action harus melalui API/backend yang benar.
+
+11. Tidak boleh ada fake success.
+
+12. Tidak boleh ada fake progress.
+
+13. Tidak boleh menampilkan job sebagai published jika backend belum menyatakan published.
+
+==================================================
+AUDIT TERLEBIH DAHULU
+==================================================
+
+Sebelum coding:
+
+Periksa:
+
+- PublishingJob model
+- PublishingAttempt model jika ada
+- queue implementation
+- worker
+- API route publishing
+- API route status
+- database schema
+- status transition
+- retry logic
+- error handling
+- existing Queue page
+- dashboard queue overview
+- history
+- polling/refresh mechanism
+- job identifiers
+- provider/destination relationship
+
+Cari apakah queue sekarang menggunakan:
+
+- Redis
+- database queue
+- BullMQ
+- custom queue
+- worker polling
+- atau mekanisme existing lainnya.
+
+Jangan mengganti teknologi queue tanpa alasan.
+
+==================================================
+QUEUE STATUS MODEL
+==================================================
+
+Pertahankan status yang sudah digunakan repository.
+
+Jika repository sudah memiliki status seperti:
+
+queued
+processing
+uploading
+publishing
+published
+failed
+cancelled
+retrying
+
+gunakan status existing.
+
+JANGAN membuat status baru hanya untuk mempercantik UI.
+
+Jika status existing berbeda, ikuti status yang benar-benar digunakan backend.
+
+UI harus memetakan status backend secara konsisten.
+
+==================================================
+QUEUE MANAGER UI
+==================================================
+
+Buat Queue Manager yang responsive untuk mobile dan desktop.
+
+Target tampilan:
+
+QUEUE MANAGER
+
+Header:
+
+Queue Manager
+
+[Refresh]
+
+Summary:
+
+Queued
+Processing
+Publishing
+Published
+Failed
+
+Summary harus berasal dari data sebenarnya.
+
+Contoh:
+
+Queued: 3
+Processing: 1
+Publishing: 1
+Failed: 2
+
+Jangan hardcode angka.
+
+==================================================
+FILTER
+==================================================
+
+Tambahkan filter jika sesuai dengan API existing:
+
+Status:
+
+All
+Queued
+Processing
+Uploading
+Publishing
+Published
+Failed
+Cancelled
+
+Destination:
+
+All
+Facebook Page A
+Facebook Page B
+dst.
+
+Content type:
+
+All
+Reels
+Video
+Photo
+Post
+
+Source:
+
+All
+Manual
+Downloader
+
+Jika data source memang tersedia.
+
+Jika backend belum memiliki field tertentu, jangan membuat fake field.
+
+Implementasikan field hanya jika memang dapat ditentukan secara reliable.
+
+==================================================
+JOB CARD
+==================================================
+
+Setiap publishing job tampil sebagai card/list item.
+
+Minimal informasi:
+
+- media thumbnail jika tersedia
+- filename/title
+- caption ringkas
+- destination
+- platform
+- content type
+- status
+- created time
+- scheduled time jika ada
+- published time jika ada
+- attempt count jika tersedia
+- last error jika failed
+
+Contoh:
+
+--------------------------------
+
+Content Pilot Web Downloader Test
+
+Facebook
+Yourdreels
+
+Reels
+
+Published
+
+Published:
+25 Aug 2026 12:05
+
+Attempts: 1
+
+--------------------------------
+
+Untuk failed:
+
+--------------------------------
+
+Paket Data Murah
+
+Facebook
+Yourdreels
+
+Reels
+
+Failed
+
+Attempts: 2
+
+Error:
+<safe error message>
+
+[Retry]
+
+--------------------------------
+
+==================================================
+STATUS DETAIL
+==================================================
+
+Ketika user membuka job:
+
+Tampilkan detail lengkap job.
+
+Contoh:
+
+Job ID
+Media
+Platform
+Destination
+Content Type
+Status
+Created
+Scheduled
+Started
+Completed
+Attempt Count
+
+Publishing Attempts:
+
+Attempt #1
+Status
+Started
+Finished
+Error
+
+Attempt #2
+Status
+Started
+Finished
+Error
+
+Jangan menampilkan:
+
+- access token
+- refresh token
+- Authorization header
+- secret
+- raw credential
+- sensitive provider response
+
+==================================================
+ERROR HANDLING
+==================================================
+
+Error harus aman.
+
+Jangan menampilkan raw provider response kepada user.
+
+Gunakan safe error message.
+
+Contoh:
+
+Backend:
+
+VALIDATION_ERROR
+
+UI:
+
+"Media tidak memenuhi persyaratan Facebook."
+
+Backend:
+
+PERMISSION_DENIED
+
+UI:
+
+"Akun tidak memiliki permission untuk melakukan publishing."
+
+Backend:
+
+RATE_LIMITED
+
+UI:
+
+"Platform sedang membatasi request. Job akan dicoba kembali sesuai retry policy."
+
+Backend:
+
+MEDIA_NOT_READY
+
+UI:
+
+"Media masih diproses. Tunggu sampai media siap."
+
+Jika error code sudah memiliki mapping di repository, gunakan mapping existing.
+
+Jangan membuat mapping yang bertentangan dengan backend.
+
+==================================================
+RETRY
+==================================================
+
+Implement tombol:
+
+[Retry]
+
+Tetapi hanya untuk job yang memang dapat di-retry.
+
+Bedakan:
+
+Temporary error:
+
+- timeout
+- network error
+- rate limit
+- temporary provider error
+
+→ retry boleh.
+
+Permanent error:
+
+- invalid token
+- permission denied
+- invalid destination
+- unsupported media
+- validation error
+
+→ jangan otomatis retry tanpa memperbaiki penyebab.
+
+Jika backend sudah mempunyai retry policy, gunakan policy tersebut.
+
+JANGAN membuat retry hanya di frontend.
+
+Retry harus membuat backend/queue melakukan pekerjaan sebenarnya.
+
+Setelah retry:
+
+failed
+→ retrying/queued
+→ worker
+→ publishing
+→ published / failed
+
+Status harus benar-benar berasal dari backend.
+
+==================================================
+CANCEL JOB
+==================================================
+
+Jika queue architecture saat ini memungkinkan cancellation:
+
+Tambahkan:
+
+[Cancel]
+
+Untuk job yang masih:
+
+queued
+scheduled
+atau status lain yang memang aman dibatalkan.
+
+Jangan izinkan cancel terhadap job yang sudah published.
+
+Jangan membuat cancellation palsu.
+
+Jika cancellation belum aman pada worker architecture saat ini, jangan memaksakan implementasi.
+
+Dokumentasikan sebagai:
+
+NOT AVAILABLE YET
+
+daripada membuat fitur yang tidak benar.
+
+==================================================
+DELETE JOB
+==================================================
+
+Jangan langsung menambahkan delete job jika dapat merusak audit/history.
+
+Pertahankan history publishing.
+
+Jika perlu menghapus dari active queue:
+
+gunakan konsep yang aman seperti cancellation/archive jika architecture mendukung.
+
+Jangan menghapus database record hanya karena user menekan tombol.
+
+==================================================
+REFRESH / LIVE STATUS
+==================================================
+
+Queue Manager harus dapat memperbarui status.
+
+Jika repository sudah memiliki polling/live status:
+
+gunakan mekanisme tersebut.
+
+Jika belum:
+
+implementasikan polling ringan hanya jika memang diperlukan.
+
+Jangan melakukan polling terlalu agresif.
+
+Contoh:
+
+5–10 detik untuk active jobs.
+
+Job yang sudah:
+
+published
+failed
+cancelled
+
+tidak perlu terus dipolling.
+
+Pastikan tidak terjadi:
+
+- memory leak
+- duplicate requests
+- polling setelah halaman ditutup
+- request terus berjalan tanpa batas
+
+==================================================
+DASHBOARD QUEUE OVERVIEW
+==================================================
+
+Dashboard sudah memiliki:
+
+Queue Overview
+
+Pastikan angka/status Queue Overview menggunakan sumber data yang sama dengan Queue Manager.
+
+Jangan memiliki dua sumber queue berbeda.
+
+Contoh:
+
+Dashboard:
+
+Queued 3
+Processing 1
+Failed 2
+
+Queue Manager harus membaca data yang sama.
+
+Jika Queue Manager menunjukkan:
+
+Queued 3
+
+tetapi Dashboard menunjukkan:
+
+Queued 0
+
+maka perbaiki data source, bukan sekadar UI.
+
+==================================================
+HISTORY
+==================================================
+
+Jangan merusak History.
+
+History harus tetap menyimpan hasil publishing.
+
+Contoh:
+
+Queue:
+
+queued
+→ processing
+→ publishing
+→ published
+
+Setelah published:
+
+History tetap dapat menampilkan:
+
+destination
+content type
+status
+externalId
+permalink
+published time
+
+Jika gagal:
+
+History dapat menampilkan:
+
+failed
+error code
+safe error message
+attempt count
+
+Gunakan struktur existing jika sudah ada.
+
+==================================================
+WORKER INTEGRATION
+==================================================
+
+Queue Manager tidak boleh menjalankan publishing sendiri.
+
+Flow harus tetap:
+
+Queue Manager
+→ backend action
+→ queue
+→ worker
+→ provider
+→ Facebook API
+
+Bukan:
+
+Queue Manager
+→ Facebook API langsung
+
+Jangan memindahkan provider logic ke frontend.
+
+==================================================
+API
+==================================================
+
+Audit API existing.
+
+Gunakan endpoint existing jika sudah mencukupi.
+
+Jika belum mencukupi, tambahkan endpoint minimal yang diperlukan.
+
+Contoh konsep:
+
+GET /api/publishing/jobs
+
+GET /api/publishing/jobs/:id
+
+POST /api/publishing/jobs/:id/retry
+
+POST /api/publishing/jobs/:id/cancel
+
+Tetapi:
+
+JANGAN menganggap endpoint di atas sudah ada.
+
+Periksa repository terlebih dahulu.
+
+Ikuti naming convention API yang sudah digunakan project.
+
+==================================================
+LIST API
+==================================================
+
+Jika membuat/menyempurnakan endpoint list job:
+
+dukung jika sesuai architecture:
+
+pagination
+status filter
+destination filter
+content type filter
+sorting
+
+Default sorting:
+
+newest jobs first
+
+Jangan mengambil seluruh database jika jumlah job dapat menjadi besar.
+
+Gunakan pagination jika architecture database mendukung.
+
+==================================================
+SECURITY
+==================================================
+
+Pastikan user hanya dapat melihat dan mengelola job miliknya sendiri.
+
+Contoh:
+
+User A
+
+tidak boleh:
+
+- melihat job User B
+- retry job User B
+- cancel job User B
+- melihat media User B
+- melihat destination User B
+
+Semua authorization harus diverifikasi backend.
+
+Jangan mengandalkan filtering frontend.
+
+==================================================
+MULTI DESTINATION
+==================================================
+
+Pastikan Queue Manager tetap mendukung:
+
+1 media
+→ multiple destinations
+→ multiple publishing jobs
+
+Contoh:
+
+Video A
+
+Facebook Page A
+→ Job 001
+→ published
+
+Facebook Page B
+→ Job 002
+→ failed
+
+YouTube Channel A
+→ Job 003
+→ queued
+
+Jangan menggabungkan ketiganya menjadi satu job.
+
+==================================================
+PROVIDER INDEPENDENCE
+==================================================
+
+Queue Manager harus platform-independent.
+
+Jangan membuat:
+
+FacebookQueueManager
+
+Gunakan:
+
+Publishing Queue
+
+Provider hanya salah satu property job.
+
+Contoh:
+
+provider = facebook
+
+nantinya:
+
+provider = youtube
+
+provider = instagram
+
+provider = tiktok
+
+Queue Manager tidak perlu diubah ketika provider baru ditambahkan.
+
+==================================================
+MEDIA SOURCE
+==================================================
+
+Queue Manager harus dapat menangani job dari:
+
+Manual Upload
+
+dan:
+
+Downloader
+
+Keduanya harus masuk ke publishing job yang sama.
+
+Jangan membuat:
+
+ManualQueue
+
+DownloaderQueue
+
+Gunakan:
+
+PublishingQueue
+
+Source cukup menjadi metadata jika memang sudah tersedia.
+
+==================================================
+MOBILE UI
+==================================================
+
+Project digunakan dari mobile.
+
+Pastikan Queue Manager nyaman pada layar kecil.
+
+Jangan membuat tabel desktop yang sulit digunakan di mobile.
+
+Gunakan card/list responsive.
+
+Informasi penting harus terlihat:
+
+- title
+- destination
+- status
+- time
+- error jika gagal
+- action
+
+Action jangan terlalu kecil.
+
+==================================================
+EMPTY STATE
+==================================================
+
+Jika tidak ada queue:
+
+Tampilkan:
+
+"No publishing jobs"
+
+atau teks yang sesuai design system existing.
+
+Tambahkan penjelasan singkat.
+
+Jangan menampilkan fake job.
+
+==================================================
+LOADING STATE
+==================================================
+
+Gunakan loading state ketika data sedang diambil.
+
+Jangan langsung menampilkan:
+
+Queued: 0
+
+sebelum request selesai jika itu dapat disalahartikan sebagai data sebenarnya.
+
+Gunakan skeleton/loading state sesuai design system.
+
+==================================================
+ERROR STATE
+==================================================
+
+Jika API queue gagal:
+
+Tampilkan error yang jelas.
+
+Contoh:
+
+"Unable to load publishing queue."
+
+[Retry]
+
+Jangan menampilkan stack trace.
+
+Jangan menampilkan raw backend error.
+
+==================================================
+PERFORMANCE
+==================================================
+
+Perhatikan:
+
+- database query
+- pagination
+- N+1 query
+- thumbnail loading
+- polling
+- duplicate API calls
+- unnecessary rerender
+
+Jangan melakukan query besar hanya untuk menghitung summary.
+
+Gunakan aggregation/query yang sesuai jika diperlukan.
+
+==================================================
+TESTING
+==================================================
+
+Tambahkan/ubah test sesuai architecture existing.
+
+Minimal test:
+
+1. Queue list berhasil
+2. Empty queue
+3. Status filter
+4. Destination filter jika tersedia
+5. Job detail
+6. Failed job menampilkan safe error
+7. Retry hanya untuk job yang valid
+8. Permanent error tidak retry sembarangan
+9. Cancel hanya untuk job yang dapat dibatalkan
+10. User isolation
+11. Multi-destination jobs
+12. Manual upload job muncul
+13. Downloader job muncul
+14. Published job muncul
+15. Queue summary benar
+
+Jangan menghapus test existing.
+
+==================================================
+REGRESSION TEST
+==================================================
+
+SANGAT PENTING:
+
+Setelah perubahan Queue Manager, ulangi regression test terhadap flow yang sebelumnya PASS.
+
+Minimal:
+
+Manual Upload
+→ Media Ready
+→ Compose
+→ Publish
+→ Queue
+→ Worker
+→ Facebook Reels
+→ History
+
+Dan:
+
+Downloader
+→ Media Ingestion
+→ Media Ready
+→ Compose
+→ Publish
+→ Queue
+→ Worker
+→ Facebook Reels
+→ History
+
+Jangan menganggap Queue Manager selesai jika publishing regression rusak.
+
+==================================================
+VALIDATION
+==================================================
+
+Sebelum selesai:
+
+1. typecheck
+2. lint
+3. unit tests
+4. API tests
+5. build
+6. inspect UI
+7. inspect database queries
+8. inspect authorization
+9. inspect queue integration
+10. regression test manual upload
+11. regression test downloader
+12. regression test Facebook Reels
+
+==================================================
+GIT
+==================================================
+
+Sebelum commit:
+
+git status
+
+Periksa diff.
+
+Pastikan:
+
+- tidak ada secret
+- tidak ada token
+- tidak ada password
+- tidak ada credential
+- tidak ada file test sensitif
+- tidak ada perubahan unrelated
+
+Commit dengan message:
+
+feat(queue): add publishing queue manager
+
+Push ke branch aktif.
+
+Jangan force push.
+
+Setelah push:
+
+verifikasi remote.
+
+==================================================
+LARANGAN
+==================================================
+
+JANGAN:
+
+- menghapus publishing flow
+- mengganti worker tanpa alasan
+- mengganti queue technology tanpa alasan
+- membuat dummy jobs
+- membuat fake status
+- membuat fake retry
+- membuat fake cancellation
+- bypass authorization
+- menampilkan token
+- menampilkan raw Facebook response
+- mengubah Facebook API flow hanya untuk UI
+- membuat Facebook-specific Queue Manager
+- membuat Downloader queue terpisah
+- membuat Manual Upload queue terpisah
+- menghapus history
+- menghapus test existing
+- melakukan massive refactor
+- mengubah schema besar tanpa kebutuhan
+- commit secret
+- force push
+
+==================================================
+HASIL AKHIR YANG WAJIB DILAPORKAN
+==================================================
+
+Tampilkan:
+
+QUEUE MANAGER STATUS:
+PASS / FAIL
+
+API:
+PASS / FAIL
+
+WORKER INTEGRATION:
+PASS / FAIL
+
+RETRY:
+PASS / NOT IMPLEMENTED / FAIL
+
+CANCEL:
+PASS / NOT IMPLEMENTED / FAIL
+
+USER AUTHORIZATION:
+PASS / FAIL
+
+MANUAL UPLOAD REGRESSION:
+PASS / FAIL
+
+DOWNLOADER REGRESSION:
+PASS / FAIL
+
+FACEBOOK REELS REGRESSION:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+==================================================
+STOP CONDITION
+==================================================
+
+Jika semua verification PASS:
+
+STOP.
+
+Jangan lanjut ke Scheduler, Analytics, YouTube, Instagram, TikTok, atau fitur lain.
+
+Laporkan hasil dan tunggu instruksi berikutnya.
+
+Jika ada test gagal:
+
+Jangan menyatakan PASS.
+
+Cari akar masalah, perbaiki, ulangi test, kemudian laporkan hasil sebenarnya.
 
 ````
 # Prompt: Web E2E — Manual Upload & Downloader → Facebook Page
