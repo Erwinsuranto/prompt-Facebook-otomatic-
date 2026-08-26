@@ -35,10 +35,1332 @@
 
 
 ````
-# 
+# Phase 3 — Media, Downloader & Storage Pipelin
 ```
 
+LANJUTKAN PROJECT CONTENT PILOT.
 
+Phase 0 dan Phase 2 sebelumnya sudah selesai dan terverifikasi.
+Jangan mengulang pekerjaan yang sudah PASS.
+
+SEKARANG IMPLEMENTASIKAN HANYA:
+
+PHASE 3 — MEDIA, DOWNLOADER & STORAGE PIPELINE
+
+Jangan lanjut ke Phase 4/5.
+Jangan implement publishing Facebook terlebih dahulu.
+Jangan membuat fake Facebook publish.
+Fokus pada media, downloader, storage, destination isolation, dan pipeline READY.
+
+==================================================
+1. ATURAN UTAMA
+==================================================
+
+Sebelum coding:
+
+1. Audit kembali implementasi Phase 1 dan Phase 2 yang sudah ada.
+2. Jangan mengganti architecture yang sudah berjalan tanpa alasan.
+3. Jangan membuat duplicate model/service/page.
+4. Gunakan abstraction yang sudah dibuat.
+5. Jangan menghapus fitur yang sudah PASS.
+6. Jangan membuat mock/fake success.
+7. Semua data harus benar-benar tersimpan di database/storage.
+8. Semua operasi media harus aman dan destination-scoped.
+
+Jika ada bagian Phase 1/2 yang ternyata belum benar-benar terimplementasi, perbaiki hanya bagian yang memang menjadi dependency Phase 3.
+
+STOP jika ditemukan masalah architecture besar yang menyebabkan Phase 3 tidak aman untuk dilanjutkan. Jelaskan masalahnya terlebih dahulu.
+
+==================================================
+2. DESTINATION WORKSPACE ADALAH KONTEKS UTAMA
+==================================================
+
+Project TIDAK boleh mempunyai satu halaman Downloader global yang mencampur semua Page.
+
+Setiap Destination mempunyai workspace sendiri.
+
+Contoh:
+
+Facebook Account
+├── Page A
+│   └── Workspace Page A
+│       ├── Dashboard
+│       ├── Downloader
+│       ├── Storage
+│       ├── Publish
+│       ├── Queue
+│       ├── Schedule
+│       └── History
+│
+├── Page B
+│   └── Workspace Page B
+│       ├── Dashboard
+│       ├── Downloader
+│       ├── Storage
+│       ├── Publish
+│       ├── Queue
+│       ├── Schedule
+│       └── History
+│
+└── Page C
+    └── Workspace Page C
+        ├── Dashboard
+        ├── Downloader
+        ├── Storage
+        ├── Publish
+        ├── Queue
+        ├── Schedule
+        └── History
+
+Phase 3 fokus pada:
+
+Downloader
+Storage
+Media Library
+Media Detail
+Destination isolation
+
+Tetapi struktur workspace harus sudah benar supaya Phase berikutnya tidak perlu dibongkar lagi.
+
+==================================================
+3. DESTINATION ISOLATION
+==================================================
+
+Ini WAJIB.
+
+Setiap media yang masuk melalui Downloader harus memiliki destination context.
+
+Contoh:
+
+Downloader Page A
+→ download Video 1
+→ media.destination_id = Page A
+
+Downloader Page B
+→ download Video 2
+→ media.destination_id = Page B
+
+Page A tidak boleh melihat Video 2 di Storage Page A.
+
+Page B tidak boleh melihat Video 1 di Storage Page B.
+
+Jangan mengandalkan frontend filter saja.
+
+Isolation harus dilakukan di backend/database query.
+
+Semua query media harus menggunakan destination scope.
+
+Contoh konsep:
+
+getMedia(destinationId)
+
+bukan:
+
+getAllMedia()
+
+lalu frontend melakukan filter.
+
+Backend harus memastikan user juga berhak mengakses destination tersebut.
+
+Logical security:
+
+User
+→ PlatformConnection
+→ Destination
+→ Media
+
+User tidak boleh mengakses Media milik Destination lain hanya dengan mengganti destination ID pada URL/API request.
+
+Jika:
+
+GET /destinations/page-A/media
+
+maka backend harus memverifikasi:
+
+1. destination exists
+2. destination belongs to authenticated user
+3. media belongs to destination
+
+Jika tidak:
+
+404 atau 403 sesuai pola security project.
+
+Jangan membocorkan keberadaan destination milik user lain.
+
+==================================================
+4. MEDIA MODEL
+==================================================
+
+Gunakan Media sebagai entity generik.
+
+Minimal data:
+
+Media
+- id
+- user_id jika diperlukan oleh architecture
+- destination_id
+- source_type
+- source_url/source_id jika relevan
+- filename
+- original_filename
+- mime_type
+- file_size
+- duration
+- width
+- height
+- storage_key
+- thumbnail_key jika tersedia
+- checksum/hash
+- status
+- metadata
+- created_at
+- updated_at
+
+Jangan membuat model:
+
+FacebookVideo
+PageVideo
+DownloaderVideo
+
+sebagai entity utama.
+
+Media harus platform-independent.
+
+Contoh:
+
+Media 001
+destination = Page A
+source_type = downloader
+
+Media 002
+destination = Page A
+source_type = manual
+
+Media 003
+destination = Page B
+source_type = downloader
+
+==================================================
+5. SOURCE TYPE
+==================================================
+
+Gunakan source type yang jelas.
+
+Minimal:
+
+manual
+downloader
+
+Jika architecture membutuhkan:
+
+import
+api
+other
+
+boleh ditambahkan.
+
+Jangan membuat source type terlalu banyak tanpa kebutuhan.
+
+Source metadata harus dapat menjawab:
+
+- media berasal dari mana
+- kapan masuk
+- URL/source ID jika tersedia
+- siapa yang memasukkan
+- destination mana
+
+==================================================
+6. MEDIA STATUS
+==================================================
+
+Gunakan status yang jelas.
+
+Minimal:
+
+DOWNLOADING
+PROCESSING
+READY
+FAILED
+DELETED
+
+Jika diperlukan:
+
+QUEUED
+
+tetapi jangan membuat status publishing di Media jika status tersebut sebenarnya milik PublishingJob.
+
+PENTING:
+
+Media READY berarti file sudah tersedia dan tervalidasi sehingga dapat digunakan pipeline berikutnya.
+
+Media FAILED berarti proses media gagal.
+
+Publishing status nanti tetap berada di PublishingJob.
+
+Jangan mencampur:
+
+Media status
+dengan
+PublishingJob status.
+
+==================================================
+7. STORAGE ABSTRACTION
+==================================================
+
+Storage harus platform-independent.
+
+Jangan menyimpan file hanya berdasarkan Page ID secara hardcoded.
+
+Gunakan storage abstraction.
+
+Contoh konsep:
+
+StorageService
+
+- upload()
+- get()
+- delete()
+- exists()
+- generateUrl() jika diperlukan
+
+Storage key harus aman dan tidak mudah bentrok.
+
+Contoh konsep:
+
+media/{userId}/{destinationId}/{mediaId}/original.ext
+
+thumbnail:
+
+media/{userId}/{destinationId}/{mediaId}/thumbnail.jpg
+
+Struktur final sesuaikan dengan storage provider yang benar-benar digunakan.
+
+Jangan menyimpan file dengan nama user sebagai identifier utama.
+
+Media ID harus menjadi identifier utama.
+
+==================================================
+8. FILE SECURITY
+==================================================
+
+Validasi:
+
+- MIME type
+- extension
+- file size
+- file signature/magic bytes jika memungkinkan
+- path traversal
+- filename sanitization
+
+Jangan percaya:
+
+Content-Type dari browser
+atau
+extension filename saja.
+
+Filename user hanya metadata.
+
+Storage path harus dibuat oleh server.
+
+Jangan membiarkan user menentukan storage_key secara bebas.
+
+==================================================
+9. MANUAL UPLOAD
+==================================================
+
+Implementasikan manual upload ke workspace Destination.
+
+Flow:
+
+Destination Workspace
+→ Storage
+→ Upload
+→ pilih file
+→ upload
+→ processing
+→ validation
+→ READY
+→ muncul di Media Library
+
+Upload dari Page A:
+
+Page A
+→ Upload
+→ Media.destination_id = Page A
+
+Upload dari Page B:
+
+Page B
+→ Upload
+→ Media.destination_id = Page B
+
+Jangan membuat upload global yang tidak memiliki destination context.
+
+UI harus menampilkan Page/Destination aktif dengan jelas.
+
+Contoh:
+
+Page A
+Storage
+
+[ Upload Video ]
+
+Destination:
+Facebook Page A
+
+Video:
+[..............]
+
+[Upload]
+
+==================================================
+10. DOWNLOADER
+==================================================
+
+Downloader harus berada di workspace Destination.
+
+Contoh:
+
+Page A
+→ Downloader
+→ masukkan source URL
+→ Download
+
+hasil:
+
+Media
+destination_id = Page A
+source_type = downloader
+
+Jika Downloader Page B:
+
+Media
+destination_id = Page B
+
+Jangan hanya menyimpan downloader result sebagai file fisik tanpa record database.
+
+Setiap download harus menghasilkan Media record yang dapat dilacak.
+
+Minimal:
+
+media.id
+destination_id
+source_type
+source_url/source_id
+filename
+storage_key
+status
+created_at
+
+==================================================
+11. DOWNLOADER IDENTITY
+==================================================
+
+Downloader harus memiliki identity/idempotency yang jelas.
+
+Jika source platform memberikan video ID atau source ID, simpan.
+
+Contoh:
+
+source_type = downloader
+source_id = <external video id>
+
+Jika source ID tidak tersedia, gunakan kombinasi metadata yang aman seperti checksum/source URL sesuai kebutuhan.
+
+Tujuan:
+
+Sistem dapat mendeteksi duplicate download.
+
+Jangan menggunakan filename sebagai unique identity.
+
+==================================================
+12. DUPLICATE DETECTION
+==================================================
+
+Implementasikan duplicate detection dengan hati-hati.
+
+Minimal pertimbangkan:
+
+- external source ID
+- checksum
+- source URL
+
+Namun jangan membuat satu checksum global yang menyebabkan video yang sama tidak dapat digunakan oleh dua Destination.
+
+Contoh:
+
+Video X didownload ke Page A.
+
+Kemudian Video X juga ingin digunakan di Page B.
+
+Ini HARUS tetap dapat dilakukan.
+
+Jadi:
+
+Duplicate detection harus mencegah duplicate yang tidak diinginkan,
+tetapi tidak merusak destination isolation atau reuse media.
+
+Jika media benar-benar shared secara internal di masa depan, gunakan abstraction yang benar.
+
+Untuk Phase 3, tetap prioritaskan destination-scoped media sesuai architecture yang sudah disepakati.
+
+==================================================
+13. MEDIA LIBRARY
+==================================================
+
+Setiap workspace memiliki Media Library sendiri.
+
+Contoh:
+
+Page A
+→ Storage
+
+Menampilkan hanya:
+
+Media Page A
+
+Page B
+→ Storage
+
+Menampilkan hanya:
+
+Media Page B
+
+UI Media Library minimal:
+
+- thumbnail/preview
+- filename
+- status
+- source
+- size
+- duration
+- created time
+- actions
+
+Actions dapat meliputi:
+
+View
+Delete
+Retry jika FAILED
+
+Jangan menampilkan tombol publish sebagai fitur aktif jika Facebook publishing Phase 5 belum selesai.
+
+Boleh tampilkan:
+
+Publish
+Coming in Phase 5
+
+atau tombol disabled jika sesuai design.
+
+==================================================
+14. MEDIA DETAIL
+==================================================
+
+Buat Media Detail yang menunjukkan:
+
+- preview video
+- filename
+- source type
+- source URL/source ID jika tersedia
+- destination
+- status
+- file size
+- duration
+- resolution
+- created at
+- updated at
+- checksum jika memang perlu ditampilkan
+- processing/error information
+
+Jangan menampilkan credential atau secret.
+
+==================================================
+15. DELETE MEDIA
+==================================================
+
+Delete harus aman.
+
+Jangan hanya menghapus database record lalu meninggalkan file.
+
+Jangan hanya menghapus file lalu meninggalkan database record.
+
+Flow harus mempertimbangkan:
+
+database
++
+storage
+
+Jika soft delete digunakan oleh architecture:
+
+status = DELETED
+
+dan storage cleanup dapat dilakukan secara aman.
+
+Jangan menghapus media yang sedang dipakai job aktif tanpa aturan yang jelas.
+
+Jika belum ada PublishingJob production di Phase 3, tetap desain service agar aman ketika Phase 5 nanti sudah ada.
+
+==================================================
+16. DOWNLOADER QUEUE
+==================================================
+
+Jika downloader membutuhkan proses asynchronous:
+
+Downloader request
+→ Downloader Job
+→ Worker
+→ Download
+→ Store
+→ Validate
+→ Media READY
+
+Jangan memaksa download besar berjalan langsung dalam HTTP request jika dapat menyebabkan timeout.
+
+Gunakan queue/worker yang sudah tersedia jika memang sudah dibuat pada Phase 1/2.
+
+Namun jangan membuat queue architecture kedua.
+
+Gunakan queue infrastructure existing.
+
+==================================================
+17. MEDIA PIPELINE
+==================================================
+
+Target pipeline:
+
+Manual Upload ──────┐
+                    │
+                    v
+                 Media
+                    │
+                    v
+               Processing
+                    │
+                    v
+                 Validate
+                    │
+                    v
+                  READY
+                    │
+                    v
+             Future Scheduler
+                    │
+                    v
+            PublishingJob
+                    │
+                    v
+                 Queue
+                    │
+                    v
+                 Worker
+
+Downloader ─────────┘
+
+Untuk Phase 3:
+
+Pipeline berhenti di READY.
+
+Jangan implement publishing otomatis dulu.
+
+==================================================
+18. DAILY SLOT
+==================================================
+
+JANGAN implement Phase 4 sekarang.
+
+Tetapi struktur Media harus siap digunakan oleh scheduler.
+
+Downloader harus menyimpan:
+
+created_at
+destination_id
+media_id
+sequence-compatible identity
+
+Jangan membuat daily slot logic sekarang kecuali dependency minimal benar-benar diperlukan.
+
+Daily slot akan dibuat pada Phase 4.
+
+==================================================
+19. SEQUENCE
+==================================================
+
+Jangan membuat sequence harian.
+
+Nomor sequence nantinya harus dapat berjalan terus.
+
+Contoh:
+
+Hari 1:
+Video 1
+Video 2
+Video 3
+
+Hari 2:
+Video 4
+Video 5
+Video 6
+
+Jika kapasitas hari pertama 4 tetapi hanya ada 3 video:
+
+Hari 1:
+08:00 Video 1
+11:00 Video 2
+14:00 Video 3
+17:00 kosong
+
+Jika Video baru masuk setelah hari pertama selesai:
+
+Video baru = Video 4
+
+bukan Video 1 lagi.
+
+Phase 3 tidak perlu membuat scheduler final,
+tetapi jangan membuat struktur data yang memaksa sequence reset setiap hari.
+
+==================================================
+20. PAGE / WORKSPACE NAVIGATION
+==================================================
+
+UI harus memiliki Destination/Workspace switcher.
+
+Contoh:
+
+[ Facebook Page A ▼ ]
+
+Menu:
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+
+Jika user memilih:
+
+[ Facebook Page B ]
+
+context berubah menjadi Page B.
+
+Semua halaman di workspace menggunakan destination context tersebut.
+
+Contoh route konseptual:
+
+/destinations/:destinationId/dashboard
+/destinations/:destinationId/downloader
+/destinations/:destinationId/storage
+/destinations/:destinationId/publish
+/destinations/:destinationId/queue
+/destinations/:destinationId/schedule
+/destinations/:destinationId/history
+
+Gunakan pola routing yang sesuai dengan framework existing.
+
+Jangan memaksakan URL tersebut jika framework mempunyai convention berbeda.
+
+Yang WAJIB adalah destination context dan backend isolation.
+
+==================================================
+21. ACCOUNT vs DESTINATION
+==================================================
+
+Jangan mencampur:
+
+Facebook Account
+dengan
+Facebook Page.
+
+Contoh:
+
+Account:
+Facebook Login A
+
+Destinations:
+Page A
+Page B
+Page C
+
+Downloader Page A harus memakai:
+
+destination_id = Page A
+
+bukan hanya:
+
+account_id = Facebook Login A
+
+Karena satu account dapat memiliki banyak Page.
+
+==================================================
+22. STORAGE ISOLATION
+==================================================
+
+Storage Page A dan Page B harus terpisah secara logical.
+
+Contoh:
+
+Page A:
+
+Storage
+→ Video 1
+→ Video 2
+→ Video 3
+
+Page B:
+
+Storage
+→ Video 4
+→ Video 5
+
+Page A tidak boleh melihat Video 4.
+
+Page B tidak boleh melihat Video 1.
+
+Ini berlaku:
+
+frontend
+backend
+database query
+API
+storage access
+
+Jangan hanya menyembunyikan item melalui frontend.
+
+==================================================
+23. API
+==================================================
+
+Buat API yang sesuai dengan architecture existing.
+
+Minimal capability:
+
+Create/upload media
+List media
+Get media detail
+Delete media
+Create downloader job
+Get downloader job/status
+
+Semua endpoint harus authenticated.
+
+Semua endpoint destination-scoped.
+
+Contoh konsep:
+
+POST /destinations/:destinationId/media/upload
+
+GET /destinations/:destinationId/media
+
+GET /destinations/:destinationId/media/:mediaId
+
+DELETE /destinations/:destinationId/media/:mediaId
+
+POST /destinations/:destinationId/downloader
+
+GET /destinations/:destinationId/downloader/:jobId
+
+Sesuaikan naming dengan API conventions existing.
+
+==================================================
+24. AUTHORIZATION
+==================================================
+
+Setiap request harus memeriksa:
+
+Authenticated User
+→ owns/accesses Destination
+→ accesses Media
+→ performs action
+
+Jangan percaya destinationId yang dikirim client.
+
+Jangan percaya userId yang dikirim client.
+
+User identity harus berasal dari authentication/session/token server-side.
+
+==================================================
+25. ERROR HANDLING
+==================================================
+
+Error harus jelas.
+
+Contoh:
+
+Invalid destination
+Unauthorized
+Forbidden
+Media not found
+Unsupported file
+File too large
+Download failed
+Storage failure
+Processing failed
+Duplicate detected
+
+Jangan mengembalikan stack trace ke production UI.
+
+Error internal dicatat di server/log system sesuai architecture.
+
+==================================================
+26. UI STATES
+==================================================
+
+Semua UI harus mempunyai:
+
+Loading
+Empty
+Success
+Error
+
+Media Library kosong:
+
+"Belum ada media"
+
+Downloader sedang berjalan:
+
+"Downloading..."
+
+Media processing:
+
+"Processing..."
+
+READY:
+
+"Ready"
+
+FAILED:
+
+"Failed"
+
+Jangan menggunakan fake progress jika backend tidak menyediakan progress nyata.
+
+==================================================
+27. TESTING
+==================================================
+
+Tambahkan test untuk:
+
+1. User dapat upload media ke Destination A.
+2. Media masuk dengan destination_id A.
+3. User dapat melihat media A.
+4. User tidak dapat melihat media B dari workspace A.
+5. User tidak dapat mengakses destination user lain.
+6. Downloader membuat media record.
+7. Downloader menyimpan source metadata.
+8. Media berubah menjadi READY setelah pipeline sukses.
+9. Failed download menghasilkan status FAILED.
+10. Duplicate detection bekerja sesuai aturan.
+11. Delete membersihkan/menandai media dengan benar.
+12. Storage key aman.
+13. Invalid MIME ditolak.
+14. File terlalu besar ditolak.
+15. Path traversal ditolak.
+16. API authorization bekerja.
+17. Workspace switcher menggunakan destination context yang benar.
+
+Jangan menghapus test existing.
+
+Semua regression test existing harus tetap PASS.
+
+==================================================
+28. SECURITY TEST
+==================================================
+
+Periksa khusus:
+
+- IDOR
+- unauthorized destination access
+- cross-user media access
+- cross-destination media access
+- path traversal
+- malicious filename
+- invalid MIME
+- oversized upload
+- SSRF jika downloader menerima URL
+- unsafe redirect
+- arbitrary storage path
+- credential leakage
+- log leakage
+
+Downloader URL harus divalidasi sesuai threat model.
+
+Jika downloader mengambil URL remote, jangan langsung fetch arbitrary internal IP/private network.
+
+Minimal pertimbangkan proteksi SSRF.
+
+==================================================
+29. DATABASE
+==================================================
+
+Jika schema database perlu perubahan:
+
+1. Buat migration.
+2. Jangan menghapus data existing.
+3. Jangan destructive migration tanpa kebutuhan.
+4. Gunakan foreign key yang benar.
+5. Tambahkan index untuk query yang sering digunakan.
+
+Minimal index yang kemungkinan dibutuhkan:
+
+destination_id
+status
+created_at
+source_type
+
+Jika unique constraint digunakan, pastikan tidak menyebabkan media yang sama tidak dapat dipakai untuk destination berbeda.
+
+==================================================
+30. STORAGE
+==================================================
+
+Jika project menggunakan local storage sekarang:
+
+buat StorageService abstraction agar nanti dapat dipindahkan ke:
+
+S3
+Cloudflare R2
+MinIO
+provider S3-compatible lainnya
+
+tanpa mengubah Media business logic.
+
+Jangan hardcode business logic ke filesystem.
+
+==================================================
+31. UI STRUCTURE
+==================================================
+
+Jangan membuat satu halaman besar yang berisi:
+
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+
+sekaligus.
+
+Gunakan halaman/modul terpisah dalam workspace.
+
+Contoh:
+
+Page A
+├── Dashboard
+├── Downloader
+├── Storage
+├── Publish
+├── Queue
+├── Schedule
+└── History
+
+Phase 3 hanya perlu mengaktifkan:
+
+Dashboard dasar
+Downloader
+Storage
+
+Publish/Queue/Schedule/History dapat berupa placeholder yang jelas jika belum diimplementasikan.
+
+Jangan membuat placeholder seolah-olah fitur sudah aktif.
+
+==================================================
+32. DASHBOARD WORKSPACE
+==================================================
+
+Jika Dashboard workspace sudah tersedia, gunakan.
+
+Jika belum, buat minimal dashboard untuk destination tersebut.
+
+Tampilkan informasi seperti:
+
+Destination:
+Facebook Page A
+
+Media:
+12
+
+Ready:
+8
+
+Processing:
+2
+
+Failed:
+2
+
+Recent Media
+
+Downloader status
+
+Jangan membuat analytics palsu.
+
+==================================================
+33. FACEBOOK PUBLISHING
+==================================================
+
+JANGAN implementasikan Facebook publishing pada phase ini.
+
+JANGAN memanggil Graph API publish.
+
+JANGAN membuat fake published status.
+
+Media READY hanya berarti media siap.
+
+Publishing akan dilakukan pada Phase 5.
+
+==================================================
+34. FACEBOOK LIVE VERIFICATION
+==================================================
+
+Tidak perlu menjalankan live publishing verification pada Phase 3.
+
+Jika environment belum memiliki:
+
+META_APP_ID
+META_APP_SECRET
+OAuth credential
+
+jangan membuat fake credential.
+
+Jangan commit secret.
+
+Phase 3 dapat diverifikasi tanpa live Facebook publishing.
+
+==================================================
+35. DOCUMENTATION
+==================================================
+
+Update documentation yang relevan.
+
+Minimal:
+
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/ROADMAP.md
+docs/UI_DESIGN.md
+docs/PLATFORM_MODULES.md
+
+Jika ada dokumentasi media/storage yang memang diperlukan, buat dengan nama yang konsisten.
+
+Dokumentasikan:
+
+- Media model
+- Storage abstraction
+- Downloader pipeline
+- Destination isolation
+- Workspace architecture
+- Media status
+- source metadata
+- duplicate detection
+- security
+- API flow
+
+Jangan membuat duplicate documentation jika file existing sudah mempunyai bagian tersebut.
+
+==================================================
+36. ACCEPTANCE CRITERIA
+==================================================
+
+Phase 3 dianggap selesai hanya jika:
+
+AC-01
+Manual upload berhasil.
+
+AC-02
+Media tersimpan di database.
+
+AC-03
+Media file tersimpan di storage.
+
+AC-04
+Media mempunyai destination_id.
+
+AC-05
+Media Library Page A hanya menampilkan media Page A.
+
+AC-06
+Media Library Page B hanya menampilkan media Page B.
+
+AC-07
+Backend melakukan destination authorization.
+
+AC-08
+User tidak dapat melakukan IDOR terhadap destination/media.
+
+AC-09
+Downloader membuat Media record.
+
+AC-10
+Downloader menyimpan source metadata.
+
+AC-11
+Media pipeline dapat menghasilkan READY.
+
+AC-12
+Failed pipeline menghasilkan FAILED.
+
+AC-13
+Duplicate detection bekerja.
+
+AC-14
+Storage path aman.
+
+AC-15
+Upload validation bekerja.
+
+AC-16
+SSRF protection diperiksa jika downloader menggunakan remote URL.
+
+AC-17
+Delete media aman.
+
+AC-18
+Existing regression test tetap PASS.
+
+AC-19
+Typecheck PASS.
+
+AC-20
+Lint PASS.
+
+AC-21
+Test PASS.
+
+AC-22
+Build PASS.
+
+AC-23
+Git tidak mengandung secret.
+
+==================================================
+37. GIT
+==================================================
+
+Setelah implementation selesai:
+
+1. git status
+2. inspect diff
+3. search secret
+4. typecheck
+5. lint
+6. test
+7. build
+
+Pastikan tidak ada:
+
+META_APP_SECRET
+access token
+refresh token
+password
+API key
+credential
+
+yang masuk Git.
+
+Kemudian commit.
+
+Commit message:
+
+feat: implement media downloader and storage pipeline
+
+Push ke branch yang sedang digunakan.
+
+Jangan force push.
+
+Setelah push:
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+==================================================
+38. FINAL REPORT
+==================================================
+
+Setelah selesai tampilkan:
+
+PHASE 3 STATUS
+
+MEDIA PIPELINE:
+PASS / FAIL
+
+MANUAL UPLOAD:
+PASS / FAIL
+
+DOWNLOADER:
+PASS / FAIL
+
+STORAGE:
+PASS / FAIL
+
+DESTINATION ISOLATION:
+PASS / FAIL
+
+AUTHORIZATION:
+PASS / FAIL
+
+DUPLICATE DETECTION:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash>
+
+PUSH STATUS:
+SUCCESS / FAILED / NOT NEEDED
+
+REMOTE VERIFIED:
+YES / NO
+
+NEXT RECOMMENDED PHASE:
+PHASE 4 — DAILY SLOT & AUTO-PUBLISHING SCHEDULER
+
+==================================================
+STOP CONDITION
+==================================================
+
+SETELAH PHASE 3 SELESAI:
+
+STOP.
+
+Jangan implement Phase 4.
+
+Jangan implement Facebook publishing.
+
+Jangan implement YouTube.
+
+Jangan implement Instagram.
+
+Jangan implement TikTok.
+
+Jangan menambahkan fitur di luar scope Phase 3.
+
+Jika ada masalah, laporkan masalah sebenarnya.
+
+Jangan membuat fake PASS.
+
+Kerjakan berdasarkan repository yang benar-benar ada sekarang.
 ````
 # Authentication & Account/Destination Management
 ```
