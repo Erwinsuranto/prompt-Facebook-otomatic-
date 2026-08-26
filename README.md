@@ -136,9 +136,1303 @@
 
 
 ````
-# 
+# Phase 5 — Facebook Provider & Publishing.
 ```
+PHASE 5 — FACEBOOK PROVIDER & PUBLISHING
 
+Kita lanjutkan project Content Pilot dari kondisi repository TERAKHIR.
+
+JANGAN mengulang pekerjaan Phase 0–4 yang sudah selesai.
+JANGAN merombak architecture yang sudah ada hanya karena ingin membuat versi sendiri.
+Audit implementasi yang sudah ada terlebih dahulu dan lanjutkan dari struktur aktual repository.
+
+==================================================
+TUJUAN PHASE 5
+==================================================
+
+Implementasikan Facebook sebagai provider publishing pertama dengan architecture yang sudah dibuat sebelumnya.
+
+Facebook harus tetap menjadi PROVIDER, bukan core system.
+
+Core system tidak boleh dipenuhi logic khusus Facebook.
+
+Target:
+
+User
+ → Facebook Account
+   → multiple Facebook Pages
+     → masing-masing Page memiliki Destination Workspace
+       → Downloader
+       → Storage
+       → Publish
+       → Queue
+       → Schedule
+       → History
+
+Setiap Page harus terisolasi berdasarkan destination_id.
+
+==================================================
+ATURAN WAJIB
+==================================================
+
+1. Jangan membuat fake Facebook success.
+2. Jangan membuat fake PUBLISHED.
+3. Jangan menggunakan username/password Facebook automation.
+4. Gunakan official Meta/Facebook API.
+5. Jangan mengarang endpoint atau permission.
+6. Sebelum implementasi endpoint yang belum jelas, lakukan verifikasi dokumentasi resmi Meta.
+7. Jika suatu kemampuan belum dapat diverifikasi, tandai NEEDS VERIFICATION dan jangan menganggapnya tersedia.
+8. Jangan commit META_APP_SECRET, access token, refresh token, API key, password, cookie, atau credential lain.
+9. Jangan menaruh secret di source code.
+10. Jangan mengubah .env.example menjadi berisi secret nyata.
+11. Jangan menghapus fitur Phase 1–4 yang sudah bekerja.
+12. Jangan membuat duplicate scheduler, queue, storage, atau destination system.
+13. Gunakan service/core yang sudah ada.
+14. Facebook-specific logic harus berada di Facebook provider/module.
+15. Jangan membuat seluruh Facebook integration menjadi satu giant file.
+16. Jangan mengubah platform-independent core menjadi Facebook-specific.
+17. Jangan melakukan destructive migration.
+18. Jangan menghapus data existing.
+19. Jangan mengubah schema existing tanpa migration yang jelas dan diperlukan.
+20. Jangan melakukan fake live verification.
+21. Jangan mengklaim Facebook publishing LIVE jika credential/provider configuration belum tersedia.
+22. Setelah implementation selesai, lakukan typecheck, lint, test, build, dan pemeriksaan Git.
+23. STOP setelah Phase 5 selesai.
+
+==================================================
+LANGKAH 1 — AUDIT IMPLEMENTASI PHASE 1–4
+==================================================
+
+Sebelum coding, periksa repository aktual.
+
+Periksa:
+
+- provider registry
+- platform abstraction
+- destination model
+- PlatformConnection
+- Facebook provider jika sudah ada
+- authentication
+- OAuth callback
+- account discovery
+- destination discovery
+- destination workspace
+- media
+- storage
+- downloader
+- publishing job
+- queue
+- worker
+- scheduler
+- daily slot
+- sequence
+- retry
+- idempotency
+- history
+- audit log
+- UI workspace
+- existing Facebook routes
+- existing Meta configuration
+- database migrations
+- environment configuration
+- tests
+- documentation
+
+Jangan membuat ulang sesuatu yang sudah ada.
+
+Buat keputusan:
+
+EXISTS AND REUSE
+EXISTS BUT NEEDS EXTENSION
+MISSING AND MUST CREATE
+NOT NEEDED
+
+Laporkan secara singkat sebelum implementation.
+
+==================================================
+LANGKAH 2 — VERIFIKASI META/FACEBOOK API
+==================================================
+
+Gunakan dokumentasi resmi Meta sebagai sumber utama.
+
+Verifikasi kondisi API yang benar-benar digunakan oleh repository saat ini.
+
+Minimal periksa:
+
+- Meta App configuration
+- OAuth flow
+- redirect URI
+- access token
+- Page access token jika memang diperlukan oleh flow
+- Page discovery
+- Page ID
+- Page name
+- Page connection
+- Page permission
+- video publishing
+- Reels publishing
+- photo publishing
+- text/link publishing jika memang masuk scope Phase 5
+- publishing status
+- error response
+- token expiration
+- permission errors
+- rate limits
+- upload requirements
+
+Jangan memperluas scope hanya karena API mendukung banyak fitur.
+
+Prioritas Phase 5:
+
+1. Facebook account connection
+2. Page discovery
+3. Destination connection
+4. Video publishing capability yang sudah diverifikasi
+5. Publishing status
+6. Error handling
+7. Queue integration
+8. History
+
+Reels atau content type lain hanya implementasikan jika memang sudah jelas dari architecture dan dokumentasi resmi.
+
+Jika sebuah endpoint/permission berubah atau tidak dapat diverifikasi:
+
+MARK:
+
+NEEDS VERIFICATION
+
+Jangan membuat implementasi palsu.
+
+==================================================
+LANGKAH 3 — FACEBOOK PROVIDER ARCHITECTURE
+==================================================
+
+Pastikan Facebook berada di provider/module sendiri.
+
+Gunakan struktur yang sesuai repository aktual.
+
+Contoh konsep:
+
+platforms/
+  facebook/
+    auth/
+    accounts/
+    destinations/
+    publishing/
+    media/
+    api/
+    facebook.provider.ts
+
+Tetapi JANGAN memaksakan struktur tersebut jika repository sudah mempunyai struktur modular yang lebih baik.
+
+Facebook provider minimal harus bertanggung jawab terhadap:
+
+- authentication integration
+- account information
+- destination discovery
+- destination validation
+- capability reporting
+- media validation
+- publishing
+- status mapping
+- provider error mapping
+
+Core tetap bertanggung jawab terhadap:
+
+- users
+- media
+- publishing jobs
+- queue
+- scheduler
+- retry policy
+- history
+- audit
+- authorization
+- destination isolation
+
+==================================================
+LANGKAH 4 — FACEBOOK ACCOUNT
+==================================================
+
+Pastikan satu User dapat memiliki banyak PlatformConnection.
+
+Contoh:
+
+User A
+ ├── Facebook Account 1
+ │    ├── Page A
+ │    └── Page B
+ │
+ └── Facebook Account 2
+      ├── Page C
+      └── Page D
+
+Jangan membuat:
+
+user.facebookAccount
+
+sebagai satu-satunya account.
+
+Gunakan model:
+
+User
+ → PlatformConnection[]
+ → Destination[]
+
+Jika existing database sudah mendukung ini, REUSE.
+
+==================================================
+LANGKAH 5 — FACEBOOK PAGE DISCOVERY
+==================================================
+
+Setelah Facebook account berhasil terhubung:
+
+1. Ambil destination/page yang memang dapat diakses oleh connection tersebut melalui official API.
+2. Simpan metadata yang diperlukan.
+3. Jangan menyimpan credential secara plaintext.
+4. Jangan membuat Page secara manual jika API dapat melakukan discovery.
+5. Jangan menampilkan Page yang tidak dapat digunakan.
+6. Simpan provider/platform identifier yang diperlukan.
+7. Pastikan destination dimiliki oleh PlatformConnection yang benar.
+8. Jangan mencampurkan Page milik account lain.
+
+Minimal konsep Destination:
+
+- id
+- platform_id
+- platform_connection_id
+- external_id
+- name
+- type
+- status
+- metadata
+- created_at
+- updated_at
+
+Sesuaikan dengan schema existing.
+
+==================================================
+LANGKAH 6 — DESTINATION WORKSPACE
+==================================================
+
+Ini SANGAT PENTING.
+
+Setiap Facebook Page memiliki workspace sendiri.
+
+Contoh:
+
+Facebook Account
+ ├── Page A
+ │    └── Workspace A
+ │         ├── Dashboard
+ │         ├── Downloader
+ │         ├── Storage
+ │         ├── Publish
+ │         ├── Queue
+ │         ├── Schedule
+ │         └── History
+ │
+ └── Page B
+      └── Workspace B
+           ├── Dashboard
+           ├── Downloader
+           ├── Storage
+           ├── Publish
+           ├── Queue
+           ├── Schedule
+           └── History
+
+Semua query dan mutation harus scoped berdasarkan destination_id.
+
+Contoh:
+
+GET /api/destinations/:destinationId/media
+
+GET /api/destinations/:destinationId/queue
+
+GET /api/destinations/:destinationId/schedule
+
+GET /api/destinations/:destinationId/history
+
+POST /api/destinations/:destinationId/publish
+
+Gunakan route existing jika sudah ada.
+
+Jangan membuat duplicate API jika endpoint generic existing sudah dapat digunakan.
+
+==================================================
+DESTINATION ISOLATION
+==================================================
+
+WAJIB dites:
+
+Page A tidak boleh melihat:
+
+- media Page B
+- queue Page B
+- schedule Page B
+- history Page B
+- publishing job Page B
+
+Page A juga tidak boleh membuat publishing job untuk Page B hanya dengan mengganti destination_id di request.
+
+Backend harus melakukan ownership/authorization check.
+
+Jangan hanya mengandalkan filter frontend.
+
+Frontend filter saja TIDAK CUKUP.
+
+==================================================
+LANGKAH 7 — FACEBOOK CAPABILITY
+==================================================
+
+Facebook provider harus melaporkan capability yang benar-benar tersedia.
+
+Contoh:
+
+facebook.capabilities()
+
+→ video
+→ reels
+→ photo
+→ text_post
+→ scheduling
+
+Tetapi hanya masukkan capability yang benar-benar diverifikasi dan diimplementasikan.
+
+Jangan hardcode capability yang belum tersedia.
+
+Jika Phase 5 hanya mengimplementasikan video:
+
+Facebook:
+
+video = AVAILABLE
+reels = NOT_IMPLEMENTED / NEEDS VERIFICATION
+photo = NOT_IMPLEMENTED
+text_post = NOT_IMPLEMENTED
+scheduling = CORE SCHEDULER READY / PROVIDER SUPPORT NEEDS VERIFICATION
+
+Gunakan status yang jelas.
+
+==================================================
+LANGKAH 8 — MEDIA VALIDATION
+==================================================
+
+Sebelum publishing:
+
+PublishingJob
+ → provider = facebook
+ → destination = Page A
+ → media = Media X
+
+Facebook provider melakukan validation sesuai requirement resmi.
+
+Periksa hal yang relevan seperti:
+
+- MIME type
+- file exists
+- storage availability
+- file size
+- duration
+- dimensions
+- media type
+- provider capability
+
+Jangan melakukan validasi berdasarkan angka yang belum diverifikasi.
+
+Jika requirement tidak diketahui:
+
+NEEDS VERIFICATION
+
+Jangan mengarang batasan.
+
+==================================================
+LANGKAH 9 — PUBLISHING JOB
+==================================================
+
+Gunakan PublishingJob yang sudah dibuat pada phase sebelumnya.
+
+Jangan membuat FacebookJob baru jika PublishingJob generik sudah tersedia.
+
+Contoh:
+
+PublishingJob:
+
+id
+destination_id
+media_id
+provider
+sequence_number
+scheduled_at
+schedule_source
+status
+attempt_count
+created_at
+updated_at
+
+Sesuaikan schema existing.
+
+Facebook provider menerima job generik tersebut.
+
+Flow:
+
+PublishingJob
+      ↓
+Queue
+      ↓
+Worker
+      ↓
+Provider Registry
+      ↓
+Facebook Provider
+      ↓
+Meta API
+      ↓
+Provider Response
+      ↓
+PublishingJob status
+      ↓
+History
+
+==================================================
+LANGKAH 10 — PUBLISH NOW
+==================================================
+
+Implementasikan publish now melalui pipeline yang sama.
+
+Flow:
+
+User memilih:
+
+Page A
+Video A
+Publish Now
+
+↓
+
+Create PublishingJob
+
+↓
+
+Queue
+
+↓
+
+Worker
+
+↓
+
+Facebook Provider
+
+↓
+
+Meta API
+
+↓
+
+status
+
+Jangan langsung memanggil Meta API dari frontend.
+
+Frontend → API → PublishingJob → Queue → Worker → Provider.
+
+==================================================
+LANGKAH 11 — SCHEDULED PUBLISHING
+==================================================
+
+Gunakan scheduler Phase 4 yang sudah ada.
+
+Jangan membuat scheduler Facebook baru.
+
+Flow:
+
+Video
+ ↓
+Destination Page A
+ ↓
+Schedule
+ ↓
+Daily Slot System
+ ↓
+scheduled_at
+ ↓
+PublishingJob
+ ↓
+Queue
+ ↓
+Worker
+ ↓
+Facebook Provider
+ ↓
+Meta API
+
+Jika scheduled_at belum waktunya:
+
+job tidak boleh dipublish.
+
+Jika waktunya sudah tiba:
+
+scheduler/worker memproses job.
+
+==================================================
+LANGKAH 12 — SEQUENCE
+==================================================
+
+Pertahankan aturan Phase 4.
+
+Sequence TIDAK reset setiap hari.
+
+Contoh:
+
+Hari 1:
+
+08:00 Video 1
+11:00 Video 2
+14:00 Video 3
+17:00 kosong
+
+Hari 2:
+
+08:00 Video 4
+11:00 Video 5
+
+Jika downloader memasukkan Video 4 setelah hari pertama selesai:
+
+Video tersebut tetap sequence 4.
+
+Jangan mengubah menjadi Video 1.
+
+Jangan menggunakan kembali sequence yang sudah pernah digunakan.
+
+==================================================
+LANGKAH 13 — DOWNLOADER
+==================================================
+
+Downloader yang sudah ada harus tetap masuk ke media pipeline.
+
+Contoh:
+
+Facebook Downloader
+ ↓
+Media
+ ↓
+destination_id = Page A
+ ↓
+READY
+ ↓
+Auto Scheduler
+ ↓
+PublishingJob
+
+Jika downloader dilakukan pada Page B:
+
+destination_id = Page B
+
+Jangan sampai media Page A masuk ke Page B.
+
+Jika media dari downloader memiliki external/source identifier:
+
+simpan metadata tersebut.
+
+Minimal konsep:
+
+source_type
+source_id / source_url jika aman
+source_metadata
+created_at
+
+Jangan menggunakan filename sebagai identifier utama.
+
+==================================================
+LANGKAH 14 — STORAGE
+==================================================
+
+Storage harus tetap generic.
+
+Facebook provider tidak boleh memiliki storage system sendiri.
+
+Media:
+
+storage
+ ↓
+Media
+ ↓
+Facebook provider membaca media melalui abstraction existing.
+
+Jika provider membutuhkan file/stream:
+
+gunakan storage abstraction.
+
+Jangan membuat path filesystem hardcoded di Facebook provider.
+
+==================================================
+LANGKAH 15 — PUBLISHING STATUS
+==================================================
+
+Gunakan status generik yang sudah ada.
+
+Contoh:
+
+draft
+queued
+scheduled
+processing
+uploading
+publishing
+published
+failed
+cancelled
+retrying
+
+Mapping provider harus jelas.
+
+Contoh:
+
+Meta success
+→ published
+
+Temporary provider error
+→ retrying / failed sesuai retry policy
+
+Permanent permission error
+→ failed
+
+Jangan menganggap request HTTP 200 saja sebagai published jika API memiliki asynchronous processing/status.
+
+Jika Meta API menghasilkan media/post identifier:
+
+simpan identifier provider yang diperlukan.
+
+Jangan menyimpan token/secret sebagai metadata.
+
+==================================================
+LANGKAH 16 — ERROR HANDLING
+==================================================
+
+Pisahkan:
+
+TEMPORARY
+
+- timeout
+- network error
+- temporary Meta API failure
+- rate limit
+- transient server error
+
+→ retry sesuai policy.
+
+PERMANENT
+
+- invalid token
+- permission denied
+- invalid destination
+- unsupported media
+- invalid request
+- account disconnected
+
+→ failed.
+
+Error harus memiliki:
+
+- provider
+- provider error code jika tersedia
+- safe error message
+- attempt
+- timestamp
+- retryable
+- raw provider metadata hanya jika aman
+
+Jangan memasukkan access token atau secret ke log.
+
+==================================================
+LANGKAH 17 — RETRY & IDEMPOTENCY
+==================================================
+
+Gunakan retry/idempotency mechanism Phase 4.
+
+Jangan membuat duplicate publish ketika worker restart.
+
+Contoh:
+
+Worker mulai publish
+ ↓
+process crash
+ ↓
+worker restart
+ ↓
+job diproses ulang
+
+Sistem harus memiliki guard agar tidak sembarangan membuat duplicate publishing.
+
+Gunakan identifier/idempotency strategy yang sudah tersedia.
+
+Jika provider mendukung idempotency mechanism, gunakan sesuai dokumentasi.
+
+Jika tidak mendukung:
+
+gunakan local publishing state dan provider response tracking sesuai architecture.
+
+Jangan mengklaim exactly-once delivery jika sebenarnya hanya at-least-once.
+
+==================================================
+LANGKAH 18 — UI FACEBOOK ACCOUNT
+==================================================
+
+Jika UI Accounts sudah ada, gunakan existing page.
+
+Tambahkan hanya yang diperlukan.
+
+Contoh:
+
+Accounts
+
+Facebook
+  Connected
+
+  Account information
+
+  Pages:
+    Page A     Connected
+    Page B     Connected
+    Page C     Connected
+
+Actions:
+
+Connect
+Reconnect
+Refresh Pages
+Disconnect
+
+Jangan membuat fake connected status.
+
+Jika OAuth belum benar-benar dikonfigurasi:
+
+tampilkan status yang jujur.
+
+==================================================
+LANGKAH 19 — PAGE WORKSPACE UI
+==================================================
+
+Destination switcher harus jelas.
+
+Contoh:
+
+[ Facebook Page A ▼ ]
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+
+Jika user memilih:
+
+[ Facebook Page B ▼ ]
+
+seluruh data harus berpindah ke:
+
+destination_id = Page B
+
+Bukan hanya mengganti nama Page di UI.
+
+Backend harus ikut berubah context.
+
+==================================================
+LANGKAH 20 — PUBLISH UI
+==================================================
+
+Publish page harus menggunakan destination context aktif.
+
+Contoh:
+
+Destination:
+Facebook Page A
+
+Media:
+Video A
+
+Caption:
+[........................]
+
+Schedule:
+
+( ) Publish Now
+( ) Schedule
+
+Jika Schedule:
+
+Date
+Time
+
+[Publish]
+
+Sebelum membuat job:
+
+backend melakukan:
+
+- authorization
+- destination ownership
+- media ownership
+- capability validation
+- scheduling validation
+- duplicate/idempotency check
+
+Jangan percaya destination_id yang dikirim frontend.
+
+==================================================
+LANGKAH 21 — HISTORY
+==================================================
+
+History harus scoped destination.
+
+Page A:
+
+Video 1 → Published
+Video 2 → Failed
+
+Page B:
+
+Video 3 → Published
+
+Page A tidak boleh melihat history Page B melalui endpoint normal.
+
+History harus dapat menunjukkan:
+
+- media
+- sequence
+- destination
+- status
+- scheduled_at
+- published_at
+- provider
+- error jika failed
+- attempt count
+
+Jangan menampilkan access token.
+
+==================================================
+LANGKAH 22 — AUDIT LOG
+==================================================
+
+Gunakan audit log existing.
+
+Catat event penting:
+
+- Facebook connection
+- reconnect
+- disconnect
+- destination discovery
+- destination refresh
+- publish request
+- schedule request
+- cancel
+- retry
+- provider failure
+
+Jangan memasukkan secret.
+
+==================================================
+LANGKAH 23 — TEST WAJIB
+==================================================
+
+Tambahkan/update tests sesuai architecture existing.
+
+Minimal test:
+
+1. Facebook provider registration
+2. Facebook capability detection
+3. account connection
+4. destination discovery
+5. destination ownership
+6. destination isolation
+7. media validation
+8. publishing job creation
+9. publish now
+10. scheduled publish
+11. queue processing
+12. retryable error
+13. permanent error
+14. failed publish
+15. successful publish mapping
+16. duplicate/idempotency protection
+17. Page A tidak dapat mengakses Page B
+18. Page B tidak dapat mengakses Page A
+19. sequence tidak reset
+20. scheduler tetap destination-scoped
+
+Untuk integration/live Facebook test:
+
+JANGAN membuat fake credential.
+
+Jika environment tidak memiliki:
+
+META_APP_ID
+META_APP_SECRET
+redirect URI yang valid
+Facebook connection
+
+maka:
+
+LIVE FACEBOOK VERIFICATION: NOT RUN
+
+dan jelaskan alasannya.
+
+Jangan mengubah menjadi PASS.
+
+Unit/integration tests yang tidak membutuhkan credential tetap harus dijalankan.
+
+==================================================
+LANGKAH 24 — ENVIRONMENT
+==================================================
+
+Periksa .env.example dan konfigurasi existing.
+
+Jika variabel berikut memang dibutuhkan oleh implementation:
+
+META_APP_ID
+META_APP_SECRET
+META_REDIRECT_URI
+
+dokumentasikan nama variabel yang benar sesuai code.
+
+Jangan memasukkan nilai secret nyata.
+
+Contoh:
+
+META_APP_ID=your_meta_app_id
+META_APP_SECRET=your_meta_app_secret
+META_REDIRECT_URI=https://example.com/api/connections/facebook/callback
+
+Sesuaikan dengan architecture actual.
+
+.env harus tetap ignored oleh Git.
+
+Pastikan:
+
+git status
+
+tidak menunjukkan .env sebagai file yang akan di-commit.
+
+Jangan pernah mencetak nilai secret ke terminal report.
+
+==================================================
+LANGKAH 25 — SECURITY REVIEW
+==================================================
+
+Periksa:
+
+- OAuth state validation
+- CSRF protection
+- callback validation
+- token encryption
+- authorization
+- destination ownership
+- media ownership
+- SSRF
+- upload validation
+- MIME validation
+- file size validation
+- secret logging
+- error logging
+- rate limiting
+- session security
+
+Jika ada security gap yang ditemukan:
+
+jangan sembunyikan.
+
+Laporkan:
+
+SECURITY GAP
+SEVERITY
+CURRENT BEHAVIOR
+RECOMMENDED FIX
+
+Perbaiki jika masih dalam scope Phase 5 dan aman.
+
+Jika tidak aman untuk diperbaiki sekarang:
+
+dokumentasikan sebagai follow-up.
+
+==================================================
+LANGKAH 26 — DOCUMENTATION
+==================================================
+
+Update documentation existing, jangan membuat duplicate.
+
+Minimal perbarui jika relevan:
+
+docs/ARCHITECTURE.md
+docs/PLATFORM_MODULES.md
+docs/DATABASE.md
+docs/ROADMAP.md
+docs/UI_DESIGN.md
+docs/research/facebook-api.md
+
+Dokumentasikan:
+
+- Facebook provider
+- account connection
+- Page discovery
+- destination workspace
+- publishing flow
+- queue flow
+- status mapping
+- retry
+- error mapping
+- security
+- environment variables
+- known limitations
+- verification status
+
+Jangan menulis "Facebook publishing fully verified" jika live credential belum tersedia.
+
+==================================================
+LANGKAH 27 — JANGAN MENGGANGGU PHASE 4
+==================================================
+
+Setelah Facebook provider masuk:
+
+Pastikan:
+
+Daily Slot:
+PASS
+
+Sequence:
+PASS
+
+Queue:
+PASS
+
+Retry:
+PASS
+
+Idempotency:
+PASS
+
+Destination Isolation:
+PASS
+
+Downloader:
+PASS
+
+Storage:
+PASS
+
+History:
+PASS
+
+Jangan menghapus atau mengganti logic Phase 4 yang sudah bekerja hanya agar Facebook provider lebih mudah dibuat.
+
+Jika ditemukan bug existing:
+
+perbaiki hanya jika memang diperlukan untuk Phase 5.
+
+Dokumentasikan perubahan.
+
+==================================================
+LANGKAH 28 — TYPECHECK / LINT / TEST / BUILD
+==================================================
+
+Setelah implementation:
+
+1. typecheck
+2. lint
+3. test
+4. build
+
+Semua harus dijalankan menggunakan command yang benar dari repository.
+
+Jangan menebak command jika package.json/scripts tersedia.
+
+Jika ada test existing yang gagal:
+
+bedakan:
+
+- regression akibat perubahan Phase 5
+- failure existing
+- environment failure
+- credential-dependent test
+
+Jangan menonaktifkan test hanya agar PASS.
+
+Jangan menghapus test.
+
+==================================================
+LANGKAH 29 — GIT REVIEW
+==================================================
+
+Sebelum commit:
+
+git status
+
+Periksa diff.
+
+Pastikan tidak ada:
+
+- .env
+- secret
+- token
+- credential
+- password
+- private key
+- temporary file
+- debug dump
+- unrelated modification
+
+Jangan commit secret.
+
+Jangan membuat commit kosong.
+
+Jangan force push.
+
+==================================================
+LANGKAH 30 — COMMIT & PUSH
+==================================================
+
+Jika semua pemeriksaan aman:
+
+commit dengan message yang jelas, misalnya:
+
+feat: add facebook provider publishing
+
+atau gunakan commit message yang lebih tepat berdasarkan perubahan aktual.
+
+Push ke branch yang sedang digunakan.
+
+Setelah push:
+
+verifikasi remote.
+
+Jika push gagal:
+
+JANGAN mengatakan SUCCESS.
+
+Laporkan error sebenarnya.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Setelah selesai tampilkan laporan ringkas tetapi lengkap:
+
+PHASE 5 STATUS
+
+Facebook Provider:
+PASS / PARTIAL / BLOCKED
+
+Facebook Authentication:
+PASS / NOT CONFIGURED / NEEDS VERIFICATION
+
+Page Discovery:
+PASS / BLOCKED
+
+Destination Workspace:
+PASS
+
+Destination Isolation:
+PASS
+
+Media Pipeline:
+PASS
+
+Publishing Job:
+PASS
+
+Queue:
+PASS
+
+Scheduler:
+PASS
+
+Retry:
+PASS
+
+Idempotency:
+PASS
+
+History:
+PASS
+
+Security:
+PASS / NEEDS REVIEW
+
+Tests:
+PASS (jumlah test)
+
+Typecheck:
+PASS
+
+Lint:
+PASS
+
+Build:
+PASS
+
+Facebook Live Verification:
+PASS / NOT RUN
+
+Jika NOT RUN, jelaskan alasan singkat tanpa membuat fake success.
+
+==================================================
+GIT FINAL STATUS
+==================================================
+
+Tampilkan:
+
+GIT STATUS: CLEAN
+COMMIT: <actual commit hash>
+BRANCH: <actual branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+Jika ada error Git, tampilkan status sebenarnya.
+
+==================================================
+NEXT RECOMMENDED PHASE
+==================================================
+
+Setelah Phase 5 selesai, jangan langsung coding Phase 6.
+
+Tentukan berdasarkan kondisi repository apakah berikutnya:
+
+PHASE 6 — Queue & Worker Hardening
+
+atau phase lain yang lebih tepat.
+
+Jelaskan alasan singkat.
+
+==================================================
+STOP CONDITION
+==================================================
+
+STOP setelah Phase 5 selesai.
+
+Jangan lanjut Phase 6.
+
+Jangan membuat provider YouTube.
+Jangan membuat provider Instagram.
+Jangan membuat provider TikTok.
+Jangan membuat analytics.
+Jangan membuat automation baru di luar scope.
+Jangan melakukan fake Facebook publishing.
+Jangan membuat fake PUBLISHED.
+
+Kerjakan hanya Facebook Provider & Publishing sesuai architecture existing.
+
+Jika ada requirement yang belum dapat diverifikasi, tandai dengan jelas:
+
+NEEDS VERIFICATION
+
+Jika credential Meta belum tersedia di environment:
+
+jangan membuat credential palsu.
+
+Implementasikan code yang aman untuk environment tersebut dan lakukan live verification hanya jika credential resmi memang tersedia.
+
+STOP.
 
 ````
 # Phase 4 — Daily Slot & Auto-Publishing Scheduler.
