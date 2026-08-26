@@ -133,7 +133,1008 @@
 ````
 # 
 ```
+LANJUTKAN PROJECT CONTENT PILOT.
 
+PHASE 5 SUDAH SELESAI. JANGAN MENGULANG PHASE 1–5.
+
+SEBELUM LANJUT CODING, AUDIT REPOSITORY TERAKHIR DAN SESUAIKAN IMPLEMENTASI DENGAN ARSITEKTUR YANG SUDAH ADA.
+
+==================================================
+FOKUS SEKARANG — GOOGLE DRIVE STORAGE
+==================================================
+
+Kita ingin menjadikan Google Drive sebagai STORAGE PROVIDER PERTAMA Content Pilot.
+
+Jangan implementasikan S3, R2, Dropbox, OneDrive, MinIO, atau storage provider lain dulu.
+
+Namun architecture WAJIB menggunakan abstraction agar provider lain dapat ditambahkan nanti tanpa membongkar Media Pipeline.
+
+Target:
+
+StorageProvider
+└── GoogleDriveStorage
+
+Provider masa depan:
+
+- S3
+- Cloudflare R2
+- MinIO
+- VPS/Local
+- Dropbox
+- OneDrive
+
+Belum perlu diimplementasikan.
+
+==================================================
+1. AUDIT TERLEBIH DAHULU
+==================================================
+
+Periksa implementasi existing:
+
+- Media
+- Storage
+- Downloader
+- Destination
+- Workspace
+- Facebook Account
+- Facebook Page
+- PublishingJob
+- Queue
+- Scheduler
+- OAuth
+- environment configuration
+- database
+- existing storage service
+- existing Google/Microsoft/cloud integration jika ada
+
+Jangan membuat duplicate service/model.
+
+Jika StorageProvider sudah ada:
+
+REUSE.
+
+Jika belum:
+
+buat abstraction minimal yang benar.
+
+==================================================
+2. GOOGLE DRIVE SEBAGAI PRIMARY STORAGE
+==================================================
+
+Google Drive bukan hanya backup.
+
+Google Drive menjadi media storage utama pada fase ini.
+
+Flow:
+
+Downloader / Manual Upload
+        ↓
+Media Pipeline
+        ↓
+Google Drive
+        ↓
+Media READY
+        ↓
+Scheduler
+        ↓
+PublishingJob
+        ↓
+Queue
+        ↓
+Worker
+        ↓
+Facebook Provider
+
+Database Content Pilot tetap menjadi source of truth untuk:
+
+- media status
+- destination
+- publishing status
+- schedule
+- queue
+- history
+
+Jangan menjadikan folder/nama file Google Drive sebagai source of truth.
+
+==================================================
+3. DESTINATION-SCOPED STORAGE
+==================================================
+
+Setiap Page/Destination memiliki storage scope sendiri.
+
+Contoh:
+
+Facebook Account
+├── Page A
+│   └── Workspace A
+│       └── Google Drive
+│
+└── Page B
+    └── Workspace B
+        └── Google Drive
+
+Page A tidak boleh melihat media Page B.
+
+Page B tidak boleh melihat media Page A.
+
+Backend wajib melakukan authorization.
+
+Jangan hanya melakukan filter di frontend.
+
+==================================================
+4. GOOGLE DRIVE FOLDER STRUCTURE
+==================================================
+
+Gunakan struktur logical:
+
+Content Pilot/
+├── Page A/
+│   ├── Incoming/
+│   ├── Ready/
+│   ├── Published/
+│   └── Failed/
+│
+└── Page B/
+    ├── Incoming/
+    ├── Ready/
+    ├── Published/
+    └── Failed/
+
+Namun jangan bergantung pada folder untuk menentukan status.
+
+Status utama tetap berada di database.
+
+Google Drive folder ID harus disimpan sebagai provider-specific metadata/reference.
+
+Jangan menggunakan filename sebagai identifier utama.
+
+==================================================
+5. MEDIA MODEL
+==================================================
+
+Pastikan Media tetap platform-independent.
+
+Minimal:
+
+Media
+- id
+- destination_id
+- source_type
+- source_id/source_url jika tersedia
+- filename
+- mime_type
+- file_size
+- duration
+- width
+- height
+- checksum jika tersedia
+- status
+- created_at
+- updated_at
+
+Jangan membuat:
+
+FacebookVideo
+GoogleDriveVideo
+DownloaderVideo
+
+sebagai model utama.
+
+==================================================
+6. STORAGE MODEL
+==================================================
+
+Jika belum ada model yang tepat, gunakan konsep:
+
+StorageConnection
+- id
+- provider
+- owner/user scope
+- status
+- credentials/reference
+- metadata
+- created_at
+- updated_at
+
+StorageObject
+- id
+- media_id
+- destination_id
+- storage_connection_id
+- provider_object_id
+- path/folder reference
+- status
+- metadata
+- created_at
+- updated_at
+
+Sesuaikan dengan schema existing.
+
+Jangan membuat tabel duplicate jika model existing sudah mencukupi.
+
+==================================================
+7. GOOGLE DRIVE AUTHENTICATION
+==================================================
+
+Research dan gunakan Google Drive API/OAuth resmi.
+
+Verifikasi:
+
+- OAuth authorization
+- callback
+- state validation
+- access token
+- refresh token
+- token expiration
+- reconnect
+- revoke/disconnect
+- required scopes
+
+Jangan mengarang OAuth scope.
+
+Jangan menyimpan token plaintext jika architecture security mengharuskan encryption.
+
+Jangan memasukkan token ke log.
+
+Jangan memasukkan token ke Git.
+
+Jika credential Google belum tersedia:
+
+implementasikan integration dengan aman tetapi:
+
+GOOGLE DRIVE LIVE VERIFICATION:
+NOT RUN
+
+Jangan membuat fake connected status.
+
+==================================================
+8. GOOGLE DRIVE API
+==================================================
+
+Gunakan official Google Drive API.
+
+Verifikasi kemampuan:
+
+- create folder
+- find folder
+- upload file
+- resumable upload
+- list files
+- get metadata
+- download/stream
+- update/move file
+- delete file
+- permission/access
+- quota/error handling
+
+Jangan mengarang endpoint.
+
+Jika kemampuan tertentu belum diverifikasi:
+
+NEEDS VERIFICATION
+
+==================================================
+9. STORAGE PROVIDER ABSTRACTION
+==================================================
+
+Buat interface generik sesuai architecture existing.
+
+Minimal capability:
+
+- connect
+- disconnect
+- createFolder
+- ensureFolder
+- upload
+- download/stream
+- getMetadata
+- list
+- move/update
+- delete
+- exists
+
+Jangan membuat method yang tidak dibutuhkan hanya untuk terlihat lengkap.
+
+Provider-specific implementation:
+
+GoogleDriveStorage
+
+Core tidak boleh memanggil Google Drive API secara langsung.
+
+Contoh:
+
+MediaService
+→ StorageProvider
+→ GoogleDriveStorage
+→ Google Drive API
+
+Bukan:
+
+MediaService
+→ GoogleDrive API
+
+==================================================
+10. DOWNLOADER
+==================================================
+
+Downloader existing harus menggunakan storage abstraction.
+
+Flow:
+
+Downloader
+→ Media
+→ GoogleDriveStorage.upload()
+→ StorageObject
+→ Media READY
+
+Downloader tidak boleh memiliki logic Google Drive langsung.
+
+Manual upload juga harus menggunakan flow yang sama.
+
+==================================================
+11. MANUAL UPLOAD
+==================================================
+
+Workspace Page A:
+
+Storage
+→ Upload
+
+File:
+
+video1.mp4
+
+Flow:
+
+Upload
+→ validation
+→ Media record
+→ Google Drive Incoming
+→ processing
+→ Ready
+→ database status READY
+
+Page B harus masuk ke folder/storage scope Page B.
+
+==================================================
+12. IMPORT DARI GOOGLE DRIVE
+==================================================
+
+Google Drive juga harus dapat menjadi SOURCE MEDIA.
+
+Contoh:
+
+Google Drive
+→ pilih file
+→ Import
+→ Content Pilot Media
+→ READY
+→ Scheduler
+
+Jika file sudah berada di Google Drive yang terhubung:
+
+jangan mengunduh ulang tanpa alasan.
+
+Simpan provider_object_id.
+
+Jika architecture memungkinkan streaming langsung, gunakan abstraction yang aman.
+
+Jika pipeline membutuhkan local processing:
+
+gunakan temporary download/cache lalu proses ke storage sesuai architecture.
+
+Jangan membuat duplicate media tanpa alasan.
+
+==================================================
+13. GOOGLE DRIVE MEDIA LIBRARY
+==================================================
+
+Storage Page A harus menampilkan media yang memang terkait Page A.
+
+UI minimal:
+
+- thumbnail
+- filename
+- status
+- size
+- duration
+- source
+- created time
+- actions
+
+Actions:
+
+View
+Import
+Delete
+Retry jika FAILED
+
+Jangan menampilkan media Page lain.
+
+==================================================
+14. MEDIA ID VS GOOGLE DRIVE ID
+==================================================
+
+WAJIB dibedakan.
+
+Contoh:
+
+Content Pilot:
+
+media_id =
+cp-media-123
+
+Google Drive:
+
+provider_object_id =
+1AbCdEf...
+
+Jangan menggunakan Google Drive file ID sebagai Media ID.
+
+Media harus tetap platform/storage-independent.
+
+==================================================
+15. STORAGE DELETION
+==================================================
+
+Delete Media harus aman.
+
+Jangan hanya:
+
+DELETE database record
+
+tanpa menangani file Google Drive.
+
+Jangan hanya:
+
+DELETE Google Drive file
+
+tanpa menangani database.
+
+Gunakan service abstraction.
+
+Pertimbangkan:
+
+- soft delete
+- storage cleanup
+- active publishing job
+- history
+
+Jangan menghapus media yang sedang digunakan job aktif tanpa aturan.
+
+==================================================
+16. STORAGE ERROR
+==================================================
+
+Tangani:
+
+- authentication expired
+- permission denied
+- quota exceeded
+- file not found
+- upload failure
+- download failure
+- network timeout
+- Google API error
+- rate limit
+
+Bedakan:
+
+temporary
+dan
+permanent.
+
+Temporary dapat retry.
+
+Permanent harus meminta reconnect/fix configuration.
+
+==================================================
+17. RETRY & IDEMPOTENCY
+==================================================
+
+Upload harus idempotent jika memungkinkan.
+
+Jika worker restart ketika upload sedang berlangsung:
+
+jangan membuat file duplicate tanpa kontrol.
+
+Gunakan:
+
+- media_id
+- storage operation ID
+- checksum
+- provider object ID
+
+sesuai architecture.
+
+Jangan mengklaim exactly-once jika implementasinya tidak benar-benar menjamin itu.
+
+==================================================
+18. SECURITY
+==================================================
+
+WAJIB periksa:
+
+- OAuth state
+- CSRF
+- token encryption
+- secret handling
+- destination isolation
+- storage authorization
+- path traversal
+- filename sanitization
+- MIME validation
+- file size
+- SSRF jika remote URL digunakan
+- Google Drive permission handling
+- log leakage
+
+Jangan mengembalikan access/refresh token ke frontend.
+
+Jangan memasukkan token ke error response.
+
+==================================================
+19. GOOGLE DRIVE ACCOUNT UI
+==================================================
+
+Tambahkan/gunakan halaman Storage Settings sesuai UI existing.
+
+Contoh:
+
+Storage
+
+Google Drive
+Status: Connected
+
+[Connect]
+[Reconnect]
+[Disconnect]
+
+Connected account:
+user@example.com
+
+Jangan menampilkan token.
+
+Jika belum connected:
+
+Google Drive
+Status: Not Connected
+
+[Connect Google Drive]
+
+Status harus berasal dari backend nyata.
+
+Jangan fake.
+
+==================================================
+20. DESTINATION STORAGE SETTINGS
+==================================================
+
+Setiap Page dapat menentukan Google Drive storage connection/folder scope.
+
+Contoh:
+
+Page A
+
+Storage:
+Google Drive
+
+Folder:
+Content Pilot / Page A
+
+Page B:
+
+Storage:
+Google Drive
+
+Folder:
+Content Pilot / Page B
+
+Jika satu Google Drive account digunakan untuk beberapa Page:
+
+tetap pisahkan folder berdasarkan destination.
+
+==================================================
+21. STORAGE POLICY
+==================================================
+
+Siapkan struktur untuk policy per Destination:
+
+- primary storage
+- retention
+- delete after publish
+- keep original
+- keep thumbnail
+
+Untuk sekarang:
+
+PRIMARY STORAGE:
+Google Drive
+
+Jangan implement backup provider.
+
+Jika policy belum diperlukan oleh existing architecture, dokumentasikan sebagai future capability dan jangan membuat complexity berlebihan.
+
+==================================================
+22. SCHEDULER
+==================================================
+
+Jangan membuat scheduler baru.
+
+Gunakan scheduler Phase 4.
+
+Media:
+
+READY
+
+↓
+
+Scheduler
+
+↓
+
+PublishingJob
+
+Google Drive hanya menjadi storage layer.
+
+Jangan mencampur:
+
+storage status
+dengan
+publishing status.
+
+==================================================
+23. FACEBOOK PROVIDER
+==================================================
+
+Jangan mengubah Facebook provider hanya untuk membuat Google Drive bekerja.
+
+Facebook provider mendapatkan media melalui Media/Storage abstraction.
+
+Flow:
+
+PublishingJob
+→ MediaService
+→ StorageProvider
+→ GoogleDriveStorage
+→ stream/file
+→ FacebookProvider
+→ Meta API
+
+Jangan:
+
+FacebookProvider
+→ Google Drive API
+
+==================================================
+24. QUEUE / WORKER
+==================================================
+
+Jangan membuat queue baru.
+
+Gunakan queue existing.
+
+Flow:
+
+Media READY
+→ Scheduler
+→ PublishingJob
+→ Queue
+→ Worker
+→ Provider
+
+Google Drive operations harus aman terhadap worker restart.
+
+==================================================
+25. TESTING
+==================================================
+
+Minimal test:
+
+1. Google Drive provider registration.
+2. OAuth state validation.
+3. Google Drive connection.
+4. Connection status.
+5. Reconnect.
+6. Disconnect.
+7. Folder creation.
+8. Destination folder isolation.
+9. Upload file.
+10. StorageObject creation.
+11. Media READY.
+12. Import existing Drive file.
+13. List media.
+14. Metadata retrieval.
+15. Download/stream.
+16. Delete.
+17. Permission error.
+18. Token expired.
+19. Quota error.
+20. Temporary network failure.
+21. Retry.
+22. Idempotent upload.
+23. Page A cannot access Page B media.
+24. Page B cannot access Page A media.
+25. Google Drive ID never becomes Media ID.
+26. Existing Phase 1–5 tests remain PASS.
+
+Jika live Google OAuth credential tidak tersedia:
+
+GOOGLE DRIVE LIVE TEST:
+NOT RUN
+
+Jangan membuat fake PASS.
+
+Unit tests tetap harus dijalankan.
+
+==================================================
+26. DOCUMENTATION
+==================================================
+
+Update documentation existing.
+
+Minimal:
+
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/PLATFORM_MODULES.md
+docs/ROADMAP.md
+docs/UI_DESIGN.md
+
+Jika storage documentation sudah ada, update file tersebut.
+
+Dokumentasikan:
+
+- Google Drive provider
+- OAuth
+- storage abstraction
+- folder structure
+- destination isolation
+- Media/StorageObject relationship
+- import
+- upload
+- delete
+- retry
+- error handling
+- security
+- known limitations
+
+Jangan membuat duplicate documentation.
+
+==================================================
+27. ENVIRONMENT
+==================================================
+
+Jika implementation membutuhkan environment variables:
+
+tambahkan hanya nama variable ke .env.example.
+
+Jangan masukkan credential nyata.
+
+Contoh placeholder sesuai architecture actual.
+
+Pastikan .env tetap ignored.
+
+Jangan mencetak secret saat testing/reporting.
+
+==================================================
+28. GIT
+==================================================
+
+Sebelum commit:
+
+git status
+inspect diff
+secret scan
+typecheck
+lint
+test
+build
+
+Pastikan tidak ada:
+
+- Google OAuth secret
+- client secret
+- access token
+- refresh token
+- META_APP_SECRET
+- password
+- API key
+
+Commit hanya perubahan yang berkaitan dengan Google Drive Storage.
+
+Gunakan commit message yang sesuai, misalnya:
+
+feat: add google drive storage provider
+
+Push ke branch yang sedang digunakan.
+
+Jangan force push.
+
+Setelah push:
+
+GIT STATUS: CLEAN
+COMMIT: <actual hash>
+BRANCH: <actual branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+==================================================
+29. ACCEPTANCE CRITERIA
+==================================================
+
+Phase ini dianggap selesai jika:
+
+AC-01
+StorageProvider abstraction tersedia/reused.
+
+AC-02
+GoogleDriveStorage tersedia.
+
+AC-03
+Google Drive OAuth aman.
+
+AC-04
+Google Drive connection status nyata.
+
+AC-05
+Destination dapat memiliki Google Drive storage scope.
+
+AC-06
+Page A dan Page B terisolasi.
+
+AC-07
+Manual upload bekerja melalui Google Drive provider.
+
+AC-08
+Downloader bekerja melalui Google Drive provider.
+
+AC-09
+Import dari Google Drive bekerja jika credential/API tersedia.
+
+AC-10
+Media tetap platform-independent.
+
+AC-11
+Google Drive file ID bukan Media ID.
+
+AC-12
+StorageObject menyimpan provider reference.
+
+AC-13
+Delete aman.
+
+AC-14
+Retry/idempotency ditangani.
+
+AC-15
+Token tidak bocor.
+
+AC-16
+Typecheck PASS.
+
+AC-17
+Lint PASS.
+
+AC-18
+Test PASS.
+
+AC-19
+Build PASS.
+
+AC-20
+Git CLEAN.
+
+AC-21
+Push SUCCESS.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan:
+
+GOOGLE DRIVE STORAGE STATUS:
+PASS / PARTIAL / BLOCKED
+
+STORAGE ABSTRACTION:
+PASS / FAIL
+
+GOOGLE OAUTH:
+PASS / NOT CONFIGURED / NEEDS VERIFICATION
+
+UPLOAD:
+PASS / FAIL
+
+IMPORT:
+PASS / FAIL / NOT VERIFIED
+
+DOWNLOADER:
+PASS / FAIL
+
+DESTINATION ISOLATION:
+PASS / FAIL
+
+MEDIA INTEGRATION:
+PASS / FAIL
+
+DELETE:
+PASS / FAIL
+
+RETRY:
+PASS / FAIL
+
+IDEMPOTENCY:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash>
+
+PUSH:
+SUCCESS / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+LIVE GOOGLE DRIVE TEST:
+PASS / NOT RUN
+
+Jika live test tidak dijalankan karena credential belum tersedia, katakan secara jujur.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Google Drive Storage selesai:
+
+STOP.
+
+Jangan implementasikan:
+
+- S3
+- Cloudflare R2
+- Dropbox
+- OneDrive
+- MinIO
+- storage provider lain
+- provider sosial baru
+- YouTube
+- Instagram
+- TikTok
+
+Jangan membuat fake Google Drive connection.
+
+Jangan membuat fake upload success.
+
+Jangan membuat fake file ID.
+
+Jangan mengubah status menjadi READY jika file sebenarnya belum berhasil tersimpan/tervalidasi.
+
+Fokus hanya pada:
+
+GOOGLE DRIVE STORAGE PROVIDER
+
+dan integrasinya dengan Media/Downloader/Workspace yang sudah ada.
+
+Kerjakan berdasarkan repository aktual, bukan asumsi.
 
 ````
 # Phase 5 — Facebook Provider & Publishing.
