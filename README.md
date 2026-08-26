@@ -30,10 +30,1499 @@
 
 
 ````
-# 
+# Phase 4 — Daily Slot & Auto-Publishing Scheduler.
 ```
 
+LANJUTKAN PROJECT CONTENT PILOT.
 
+PHASE 3 SUDAH SELESAI DAN SUDAH DI-PUSH.
+
+Jangan mengulang Phase 3.
+Jangan mengubah architecture yang sudah PASS kecuali memang diperlukan sebagai dependency Phase 4.
+
+STATUS TERAKHIR:
+- Build: PASS
+- Git: CLEAN
+- Commit: 107ba52
+- Push: SUCCESS
+- Remote verified: YES
+- Migration media duplicate index sudah diterapkan
+- Facebook Live publishing belum diverifikasi dan JANGAN disentuh pada phase ini
+
+==================================================
+PHASE 4 — DAILY SLOT & AUTO-PUBLISHING SCHEDULER
+==================================================
+
+Fokus phase ini hanya pada:
+
+1. Daily Slot Configuration
+2. Destination/Workspace scoped scheduling
+3. Automatic slot allocation
+4. Global sequence
+5. Next-day rollover
+6. Manual schedule override
+7. Queue integration foundation
+8. Retry/idempotency foundation
+9. Schedule persistence
+10. Scheduler worker
+11. Scheduler history/status
+12. Tests
+13. Documentation
+
+Jangan implement Facebook publishing production pada phase ini.
+
+Jangan membuat fake Facebook publish.
+
+==================================================
+1. KONSEP UTAMA
+==================================================
+
+Setiap Facebook Page/Destination mempunyai workspace dan konfigurasi scheduler sendiri.
+
+Contoh:
+
+Facebook Account
+├── Page A
+│   ├── Downloader
+│   ├── Storage
+│   ├── Publish
+│   ├── Queue
+│   ├── Schedule
+│   └── History
+│
+└── Page B
+    ├── Downloader
+    ├── Storage
+    ├── Publish
+    ├── Queue
+    ├── Schedule
+    └── History
+
+Scheduler Page A tidak boleh mengambil konfigurasi atau slot Page B.
+
+Scheduler Page B tidak boleh mengambil konfigurasi atau slot Page A.
+
+Semua scheduling configuration harus mempunyai destination_id.
+
+==================================================
+2. DAILY SLOT CONFIGURATION
+==================================================
+
+Setiap Destination memiliki pengaturan:
+
+- enabled
+- timezone
+- max_videos_per_day
+- daily_slots
+
+Contoh:
+
+Destination:
+Facebook Page A
+
+Auto Publishing:
+ON
+
+Timezone:
+Asia/Jakarta
+
+Maximum videos per day:
+4
+
+Daily slots:
+
+08:00
+11:00
+14:00
+17:00
+
+Konfigurasi tersebut hanya berlaku untuk Page A.
+
+Page B dapat memiliki:
+
+Maximum:
+2
+
+Slots:
+09:00
+19:00
+
+Jangan membuat satu konfigurasi global untuk semua Page.
+
+==================================================
+3. SLOT HARUS TERSIMPAN
+==================================================
+
+Daily slot bukan hanya array frontend.
+
+Simpan konfigurasi secara persistent di database.
+
+Contoh konsep:
+
+SchedulingSettings
+- id
+- destination_id
+- enabled
+- timezone
+- max_videos_per_day
+- created_at
+- updated_at
+
+DailySlot
+- id
+- scheduling_settings_id
+- slot_time
+- enabled
+- sequence/order
+
+Sesuaikan dengan architecture/database existing.
+
+Jangan membuat tabel baru jika struktur existing sudah dapat menangani konsep tersebut dengan benar.
+
+==================================================
+4. TIMEZONE
+==================================================
+
+Timezone wajib menjadi bagian dari scheduler configuration.
+
+Contoh:
+
+Asia/Jakarta
+
+Semua perhitungan:
+
+- hari
+- tanggal
+- slot
+- next available time
+- rollover
+
+harus menggunakan timezone Destination.
+
+Jangan menggunakan timezone VPS/server secara langsung sebagai timezone bisnis.
+
+Contoh:
+
+Server UTC
+
+Destination:
+Asia/Jakarta
+
+Scheduler tetap menghitung:
+
+08:00 Asia/Jakarta
+
+bukan:
+
+08:00 UTC.
+
+Gunakan library timezone yang sudah sesuai dengan stack project.
+
+==================================================
+5. MAX VIDEOS PER DAY
+==================================================
+
+Contoh:
+
+max_videos_per_day = 4
+
+dan slots:
+
+08:00
+11:00
+14:00
+17:00
+
+Maka maksimum normal per hari adalah 4.
+
+Namun jangan hanya mengandalkan max_videos_per_day.
+
+Scheduler harus memastikan slot aktual juga tidak bentrok.
+
+Jika konfigurasi:
+
+max_videos_per_day = 4
+
+tetapi hanya ada 3 slot aktif:
+
+08:00
+12:00
+18:00
+
+maka sistem tidak boleh membuat slot ke-4 yang tidak ada.
+
+Slot aktif adalah sumber waktu publikasi.
+
+Jika max_videos_per_day lebih besar daripada jumlah slot aktif, gunakan jumlah slot yang benar-benar tersedia.
+
+Jika max_videos_per_day lebih kecil daripada jumlah slot aktif, hanya gunakan sejumlah slot sesuai limit.
+
+Contoh:
+
+max = 2
+
+slots:
+08:00
+11:00
+14:00
+17:00
+
+maka hanya:
+
+08:00
+11:00
+
+yang digunakan untuk auto allocation.
+
+==================================================
+6. CONTOH UTAMA
+==================================================
+
+Configuration:
+
+Maximum:
+4 video/hari
+
+Slots:
+
+08:00
+11:00
+14:00
+17:00
+
+Jika downloader memasukkan:
+
+Video 1
+Video 2
+Video 3
+Video 4
+Video 5
+
+maka:
+
+HARI 1
+
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → Video 4
+
+HARI 2
+
+08:00 → Video 5
+
+Video 5 TIDAK boleh kembali menjadi Video 1.
+
+==================================================
+7. JIKA HARI PERTAMA HANYA ADA 3 VIDEO
+==================================================
+
+Contoh:
+
+Hari 1 hanya memiliki:
+
+Video 1
+Video 2
+Video 3
+
+maka:
+
+08:00 → Video 1
+11:00 → Video 2
+14:00 → Video 3
+17:00 → kosong
+
+Kemudian hari berikutnya user memasukkan:
+
+Video 4
+
+maka Video 4 menggunakan slot berikutnya berdasarkan aturan scheduler.
+
+Jika hari pertama sudah selesai, Video 4:
+
+Hari 2
+08:00 → Video 4
+
+Jangan mengisi kembali slot Hari 1 yang sudah lewat.
+
+==================================================
+8. SEQUENCE GLOBAL
+==================================================
+
+Sequence tidak boleh reset setiap hari.
+
+Contoh:
+
+Hari 1:
+Video 1
+Video 2
+Video 3
+
+Hari 2:
+Video 4
+Video 5
+Video 6
+
+Hari 3:
+Video 7
+Video 8
+
+Jangan:
+
+Hari 1:
+1,2,3
+
+Hari 2:
+1,2,3
+
+Sequence harus terus bertambah.
+
+Sequence harus persistent di database.
+
+Jangan menghitung sequence hanya dari frontend.
+
+Jangan menggunakan filename sebagai sequence.
+
+==================================================
+9. SEQUENCE VS MEDIA ID VS JOB ID
+==================================================
+
+Bedakan:
+
+media_id
+sequence_number
+publishing_job_id
+
+Contoh:
+
+media_id:
+uuid-abc
+
+sequence_number:
+17
+
+publishing_job_id:
+uuid-job-xyz
+
+Jangan menggunakan salah satunya sebagai pengganti yang lain.
+
+==================================================
+10. AUTO ALLOCATION
+==================================================
+
+Ketika Media berstatus READY dan auto publishing aktif:
+
+Media
+→ destination
+→ scheduling settings
+→ cari slot tersedia
+→ pilih slot paling awal yang valid
+→ buat PublishingJob
+→ scheduled_at disimpan
+→ status Scheduled
+
+Contoh:
+
+Sekarang:
+10:00
+
+Slot hari ini:
+08:00
+11:00
+14:00
+17:00
+
+Slot 08:00 sudah lewat.
+
+Maka media baru:
+
+11:00
+
+Jika 11:00 sudah terisi:
+
+14:00
+
+Jika semua slot hari ini sudah penuh:
+
+Hari berikutnya
+08:00
+
+Jangan menjadwalkan pada waktu yang sudah lewat.
+
+==================================================
+11. SCHEDULED_AT
+==================================================
+
+PublishingJob harus menyimpan scheduled_at aktual.
+
+Contoh:
+
+scheduled_at:
+2026-08-27T08:00:00+07:00
+
+Jangan hanya menyimpan:
+
+day = 2
+slot = 1
+
+Scheduler membutuhkan waktu aktual untuk worker.
+
+Konsep:
+
+PublishingJob
+- id
+- destination_id
+- media_id
+- sequence_number
+- scheduled_at
+- schedule_source
+- status
+- created_at
+- updated_at
+
+==================================================
+12. SCHEDULE SOURCE
+==================================================
+
+Bedakan:
+
+AUTO
+MANUAL
+
+AUTO:
+
+scheduler menentukan waktu berdasarkan daily slot.
+
+MANUAL:
+
+user menentukan waktu sendiri.
+
+Jika manual override diberikan:
+
+schedule_source = MANUAL
+
+dan scheduler tidak boleh memindahkan job tersebut ke slot otomatis kecuali user memang meminta reschedule.
+
+==================================================
+13. MANUAL SCHEDULE OVERRIDE
+==================================================
+
+User dapat memilih:
+
+Schedule manually
+
+Contoh:
+
+Video 7
+
+Manual:
+2026-08-29 20:30
+
+Maka:
+
+schedule_source = MANUAL
+scheduled_at = 2026-08-29 20:30
+
+Auto scheduler tidak boleh mengganti waktu tersebut.
+
+Jika waktu manual bentrok, tampilkan error/warning yang jelas.
+
+Jangan diam-diam memindahkan waktu user.
+
+==================================================
+14. RESCHEDULING
+==================================================
+
+Perubahan konfigurasi scheduler tidak boleh sembarangan memindahkan job yang sudah final.
+
+Minimal aturan:
+
+PUBLISHED:
+tidak boleh berubah.
+
+PROCESSING:
+tidak boleh dipindahkan.
+
+PUBLISHING:
+tidak boleh dipindahkan.
+
+QUEUED:
+hanya dipindahkan jika aturan reschedule mengizinkan.
+
+SCHEDULED:
+dapat dihitung ulang jika user secara eksplisit melakukan reschedule atau konfigurasi memang memiliki aturan rescheduling.
+
+DRAFT:
+boleh dihitung ulang.
+
+Jangan membuat perubahan konfigurasi global otomatis mengacak semua schedule yang sudah dibuat.
+
+==================================================
+15. CONFIGURATION CHANGE
+==================================================
+
+Contoh awal:
+
+08:00
+11:00
+14:00
+17:00
+
+Kemudian user mengubah menjadi:
+
+09:00
+13:00
+18:00
+
+Jangan langsung memindahkan semua job yang sudah:
+
+published
+queued
+processing
+publishing
+
+Dokumentasikan aturan rescheduling.
+
+Jika job belum final dan memang diperbolehkan untuk reschedule, gunakan aturan yang konsisten.
+
+==================================================
+16. DESTINATION ISOLATION
+==================================================
+
+WAJIB.
+
+Page A:
+
+max = 4
+slots = 08:00,11:00,14:00,17:00
+
+Page B:
+
+max = 2
+slots = 09:00,19:00
+
+Jika Page A mempunyai:
+
+Video 1
+Video 2
+Video 3
+
+Scheduler Page B tidak boleh menghitung ketiga video tersebut.
+
+Semua query harus scoped:
+
+destination_id
+
+Bukan:
+
+SELECT semua scheduled jobs
+
+lalu filter di frontend.
+
+==================================================
+17. CROSS DESTINATION SECURITY
+==================================================
+
+User tidak boleh mengubah:
+
+destination_id
+
+pada request lalu mengakses scheduler destination lain.
+
+Backend harus memeriksa:
+
+authenticated user
+→ destination ownership/access
+→ scheduler configuration
+→ media ownership
+→ publishing job ownership
+
+Jangan percaya destination_id dari client tanpa authorization check.
+
+==================================================
+18. QUEUE INTEGRATION
+==================================================
+
+Phase 4 harus menyiapkan integrasi:
+
+Scheduler
+→ PublishingJob
+→ Queue
+→ Worker
+
+Tetapi jangan melakukan Facebook publishing production.
+
+Ketika scheduled_at sudah tiba:
+
+PublishingJob dapat berubah:
+
+SCHEDULED
+→ QUEUED
+
+Kemudian queue/worker mengambil job.
+
+Jika provider Facebook belum dikonfigurasi untuk live publish:
+
+jangan membuat fake PUBLISHED.
+
+Gunakan status yang benar seperti:
+
+QUEUED
+FAILED
+BLOCKED
+WAITING_FOR_PROVIDER
+
+sesuai architecture existing.
+
+==================================================
+19. SCHEDULER WORKER
+==================================================
+
+Scheduler harus aman jika dijalankan berulang.
+
+Contoh worker dijalankan setiap menit.
+
+Job yang sama tidak boleh dibuat berkali-kali.
+
+Gunakan idempotency.
+
+Jika scheduler memeriksa job yang sama 10 kali:
+
+tetap satu PublishingJob.
+
+Jangan menghasilkan:
+
+Job 001
+Job 002
+Job 003
+
+untuk satu media yang sama hanya karena scheduler dipanggil berulang.
+
+==================================================
+20. IDEMPOTENCY
+==================================================
+
+Gunakan unique/idempotency constraint yang sesuai.
+
+Konsep:
+
+destination_id
++
+media_id
++
+schedule intent
+
+harus mencegah duplicate auto job.
+
+Namun jangan membuat constraint yang menghalangi:
+
+manual reschedule
+retry
+atau publishing ke destination berbeda.
+
+Gunakan architecture yang tepat berdasarkan model existing.
+
+==================================================
+21. RETRY
+==================================================
+
+Bedakan:
+
+temporary error
+permanent error
+
+Temporary:
+
+- timeout
+- network error
+- temporary provider error
+- rate limit
+
+Permanent:
+
+- invalid destination
+- invalid credentials
+- permission error
+- unsupported media
+
+Retry tidak boleh membuat PublishingJob baru untuk setiap attempt.
+
+Tetap satu PublishingJob.
+
+Buat PublishingAttempt terpisah jika model tersebut sudah tersedia.
+
+Contoh:
+
+Job 100
+Attempt 1 → failed
+Attempt 2 → failed
+Attempt 3 → success
+
+==================================================
+22. CANCELLATION
+==================================================
+
+User dapat membatalkan scheduled job sebelum diproses.
+
+Contoh:
+
+SCHEDULED
+→ CANCELLED
+
+Setelah CANCELLED:
+
+scheduler tidak boleh mengirim job tersebut ke queue.
+
+Jangan menghapus history hanya karena job dibatalkan.
+
+==================================================
+23. EMPTY DAY
+==================================================
+
+Jika tidak ada video pada hari tertentu:
+
+tidak perlu membuat dummy job.
+
+Contoh:
+
+Hari 1:
+Video 1
+Video 2
+Video 3
+
+Slot ke-4 kosong.
+
+Jangan membuat:
+
+Video NULL
+Job kosong
+Fake media
+
+==================================================
+24. BULK DOWNLOAD
+==================================================
+
+Jika user download:
+
+Video 1
+Video 2
+Video 3
+Video 4
+Video 5
+Video 6
+
+dengan auto publishing aktif:
+
+scheduler harus menentukan slot berdasarkan urutan media masuk/created time.
+
+Contoh:
+
+Video 1 → hari 1 08:00
+Video 2 → hari 1 11:00
+Video 3 → hari 1 14:00
+Video 4 → hari 1 17:00
+Video 5 → hari 2 08:00
+Video 6 → hari 2 11:00
+
+Jangan bergantung pada urutan tampilan frontend.
+
+==================================================
+25. DOWNLOAD BERURUTAN
+==================================================
+
+Jika downloader selesai:
+
+Video 1
+→ READY
+→ schedule
+
+kemudian:
+
+Video 2
+→ READY
+→ schedule
+
+Maka slot harus tetap konsisten.
+
+Race condition harus diperhatikan jika beberapa downloader selesai hampir bersamaan.
+
+Gunakan transaction/locking/unique constraint yang sesuai.
+
+==================================================
+26. RACE CONDITION
+==================================================
+
+Wajib test kondisi:
+
+dua worker mencoba menjadwalkan dua media secara bersamaan.
+
+Jangan sampai:
+
+Video 1 → 08:00
+Video 2 → 08:00
+
+jika slot hanya boleh satu job.
+
+Gunakan database transaction/locking atau mekanisme concurrency yang sesuai.
+
+==================================================
+27. SCHEDULE PAGE
+==================================================
+
+Buat Schedule page per Destination.
+
+Contoh:
+
+Facebook Page A
+→ Schedule
+
+Tampilkan:
+
+Today
+Tomorrow
+Upcoming
+
+Contoh:
+
+TODAY
+
+08:00
+Video 1
+Scheduled
+
+11:00
+Video 2
+Scheduled
+
+14:00
+Video 3
+Scheduled
+
+17:00
+Empty
+
+TOMORROW
+
+08:00
+Video 4
+Scheduled
+
+Jangan menampilkan schedule destination lain.
+
+==================================================
+28. CALENDAR / LIST
+==================================================
+
+Jika architecture existing sudah memiliki calendar component, gunakan.
+
+Jika belum, gunakan UI sederhana terlebih dahulu.
+
+Minimal:
+
+date
+time
+media
+sequence
+status
+schedule source
+
+Tidak perlu membuat calendar kompleks jika tidak dibutuhkan.
+
+==================================================
+29. SETTINGS UI
+==================================================
+
+Pada workspace Destination:
+
+Settings
+→ Auto Publishing
+
+Contoh:
+
+Auto Publishing
+[ ON ]
+
+Timezone
+[ Asia/Jakarta ]
+
+Maximum Videos Per Day
+[ 4 ]
+
+Daily Slots
+
+[ 08:00 ] [ enabled ]
+[ 11:00 ] [ enabled ]
+[ 14:00 ] [ enabled ]
+[ 17:00 ] [ enabled ]
+
+[ Add Slot ]
+
+[ Save Settings ]
+
+Konfigurasi harus benar-benar tersimpan.
+
+Jangan membuat UI dummy.
+
+==================================================
+30. SLOT VALIDATION
+==================================================
+
+Validasi:
+
+- timezone valid
+- max_videos_per_day >= 1 jika enabled
+- slot time valid
+- slot tidak duplicate
+- slot berada dalam format yang benar
+- jumlah slot konsisten
+- tidak ada slot invalid
+
+Jika:
+
+08:00
+08:00
+
+tolak duplicate.
+
+Jika:
+
+25:99
+
+tolak.
+
+==================================================
+31. SLOT ORDER
+==================================================
+
+Simpan slot dalam urutan waktu.
+
+Contoh user memasukkan:
+
+17:00
+08:00
+14:00
+11:00
+
+scheduler harus mengurutkan:
+
+08:00
+11:00
+14:00
+17:00
+
+Jangan mengandalkan urutan input frontend.
+
+==================================================
+32. DAILY LIMIT VS SLOTS
+==================================================
+
+Contoh:
+
+max_videos_per_day = 3
+
+slots:
+
+08:00
+11:00
+14:00
+17:00
+
+Gunakan:
+
+08:00
+11:00
+14:00
+
+Slot 17:00 tidak digunakan untuk auto allocation karena limit = 3.
+
+Jika max berubah menjadi 4:
+
+slot 17:00 mulai tersedia untuk job baru yang belum final sesuai aturan rescheduling.
+
+Jangan memindahkan job published.
+
+==================================================
+33. SEQUENCE ALLOCATION
+==================================================
+
+Sequence harus atomik.
+
+Jika dua media masuk bersamaan:
+
+Media A
+Media B
+
+jangan sampai keduanya mendapat:
+
+sequence = 10
+
+Gunakan database mechanism yang aman.
+
+Sequence harus unique sesuai scope yang sudah dipilih architecture.
+
+Jika sequence memang global per destination:
+
+destination A:
+1,2,3...
+
+destination B:
+1,2,3...
+
+Jangan membuat sequence global seluruh sistem jika kebutuhan bisnis sebenarnya per Destination.
+
+Gunakan keputusan architecture yang konsisten:
+
+sequence_number adalah urutan content pada Destination.
+
+==================================================
+34. HISTORY
+==================================================
+
+Schedule history minimal dapat menunjukkan:
+
+- media
+- sequence
+- scheduled_at
+- created_at
+- source AUTO/MANUAL
+- status
+- destination
+
+Jika reschedule terjadi, simpan audit/history yang sesuai.
+
+Jangan menghapus history lama secara diam-diam.
+
+==================================================
+35. AUDIT LOG
+==================================================
+
+Jika AuditLog sudah tersedia, gunakan untuk:
+
+- scheduler settings changed
+- slot added
+- slot removed
+- auto publishing enabled/disabled
+- manual schedule
+- reschedule
+- cancellation
+
+Contoh:
+
+User mengubah:
+
+max videos:
+4 → 5
+
+Audit:
+
+SCHEDULING_SETTINGS_UPDATED
+
+Jangan log token/secret.
+
+==================================================
+36. DATABASE
+==================================================
+
+Audit database existing sebelum migration.
+
+Jangan membuat duplicate table/model.
+
+Jika model existing sudah dapat digunakan:
+
+update model tersebut.
+
+Jika migration diperlukan:
+
+- buat migration
+- jangan hapus data
+- jangan destructive migration tanpa kebutuhan
+- foreign key benar
+- index benar
+- unique constraint benar
+
+Pertimbangkan index:
+
+destination_id
+scheduled_at
+status
+sequence_number
+
+Gunakan nama migration mengikuti convention repository.
+
+==================================================
+37. API
+==================================================
+
+Minimal capability:
+
+GET scheduler settings
+UPDATE scheduler settings
+LIST daily slots
+CREATE/update/delete slot
+LIST scheduled jobs
+CREATE manual schedule
+CANCEL scheduled job
+RESCHEDULE jika diperbolehkan
+
+Gunakan route convention existing.
+
+Semua endpoint:
+
+authenticated
+destination-scoped
+authorized
+
+==================================================
+38. AUTO SCHEDULING TRIGGER
+==================================================
+
+Auto scheduling dapat dipicu ketika:
+
+Media → READY
+
+Jika:
+
+auto publishing = ON
+
+maka scheduler mencoba mencari slot.
+
+Jika:
+
+auto publishing = OFF
+
+media tetap READY dan tidak otomatis dijadwalkan.
+
+User tetap dapat melakukan manual schedule jika fitur tersebut tersedia.
+
+==================================================
+39. DISABLE AUTO PUBLISHING
+==================================================
+
+Jika user mematikan:
+
+Auto Publishing OFF
+
+Jangan menghapus media.
+
+Jangan menghapus history.
+
+Jangan membatalkan job yang sudah published.
+
+Untuk scheduled job yang sudah ada, gunakan aturan yang jelas dan aman.
+
+Default:
+
+existing scheduled jobs tetap scheduled kecuali user memilih "cancel upcoming schedules".
+
+Jangan melakukan destructive action diam-diam.
+
+==================================================
+40. RE-ENABLE AUTO PUBLISHING
+==================================================
+
+Jika sebelumnya OFF kemudian ON:
+
+media READY yang belum memiliki PublishingJob dapat dipertimbangkan untuk auto scheduling.
+
+Media yang sudah memiliki job tidak boleh mendapatkan duplicate job.
+
+==================================================
+41. SCHEDULED MEDIA LOCK
+==================================================
+
+Jika media sudah memiliki scheduled PublishingJob:
+
+scheduler tidak boleh membuat job kedua secara otomatis.
+
+Jika user ingin jadwal baru:
+
+gunakan reschedule/edit existing job.
+
+==================================================
+42. UI DESTINATION CONTEXT
+==================================================
+
+Setiap halaman scheduler harus menampilkan:
+
+Facebook Page:
+Page A
+
+sehingga user tahu sedang mengatur Page mana.
+
+Jika user berpindah:
+
+Page A → Page B
+
+semua:
+
+settings
+slots
+schedule
+queue
+
+harus berubah mengikuti Page B.
+
+==================================================
+43. SECURITY
+==================================================
+
+Periksa:
+
+- IDOR
+- cross-destination access
+- unauthorized schedule modification
+- unauthorized cancellation
+- user isolation
+- race conditions
+- duplicate jobs
+- timezone manipulation
+- invalid scheduled time
+- scheduling in the past
+- secret leakage
+
+Jangan mempercayai:
+
+destination_id
+media_id
+job_id
+
+dari client tanpa authorization.
+
+==================================================
+44. FACEBOOK PUBLISHING
+==================================================
+
+JANGAN melakukan Facebook publishing production pada Phase 4.
+
+Scheduler hanya menghasilkan:
+
+PublishingJob
+
+dan mengatur:
+
+scheduled_at
+status
+queue state
+
+Jika provider belum tersedia:
+
+jangan mengubah status menjadi PUBLISHED.
+
+Jangan membuat fake Graph API response.
+
+==================================================
+45. TESTING
+==================================================
+
+Minimal test:
+
+1. Create scheduler settings.
+2. Update scheduler settings.
+3. Add daily slot.
+4. Delete daily slot.
+5. Duplicate slot ditolak.
+6. Invalid time ditolak.
+7. Timezone disimpan.
+8. Page A mempunyai scheduler sendiri.
+9. Page B mempunyai scheduler sendiri.
+10. Page A tidak dapat membaca scheduler Page B.
+11. Auto scheduling OFF tidak membuat job.
+12. Auto scheduling ON membuat job ketika media READY.
+13. Slot pertama yang tersedia dipilih.
+14. Slot yang sudah lewat dilewati.
+15. Slot penuh berpindah ke hari berikutnya.
+16. Sequence tidak reset.
+17. Sequence unique.
+18. Hari pertama hanya 3 video tetap menyisakan slot kosong.
+19. Video berikutnya masuk hari berikutnya.
+20. max_videos_per_day dihormati.
+21. Manual schedule override bekerja.
+22. Manual schedule tidak diganti auto scheduler.
+23. Scheduled job dapat dibatalkan.
+24. Cancelled job tidak masuk queue.
+25. Scheduler idempotent.
+26. Dua worker tidak mendapatkan slot yang sama.
+27. Duplicate PublishingJob dicegah.
+28. Retry tidak membuat job baru.
+29. Existing regression test tetap PASS.
+30. Typecheck PASS.
+31. Lint PASS.
+32. Test PASS.
+33. Build PASS.
+
+==================================================
+46. DOCUMENTATION
+==================================================
+
+Update dokumentasi yang sudah ada.
+
+Minimal:
+
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/ROADMAP.md
+docs/UI_DESIGN.md
+
+Jika dokumentasi scheduler sudah ada, update file tersebut.
+
+Dokumentasikan:
+
+- daily slot
+- timezone
+- max videos per day
+- sequence
+- rollover
+- auto scheduling
+- manual override
+- rescheduling
+- cancellation
+- idempotency
+- concurrency
+- destination isolation
+
+Jangan membuat duplicate documentation.
+
+==================================================
+47. GIT
+==================================================
+
+Setelah selesai:
+
+git status
+inspect diff
+secret scan
+typecheck
+lint
+test
+build
+
+Pastikan tidak ada:
+
+- API key
+- access token
+- refresh token
+- META_APP_SECRET
+- password
+- credential
+
+di commit.
+
+Commit:
+
+feat: implement daily slot auto publishing scheduler
+
+Push ke branch yang sedang digunakan.
+
+Jangan force push.
+
+Setelah push:
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS
+REMOTE VERIFIED: YES
+
+==================================================
+48. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+PHASE 4 STATUS
+
+SCHEDULER SETTINGS:
+PASS / FAIL
+
+DAILY SLOT:
+PASS / FAIL
+
+TIMEZONE:
+PASS / FAIL
+
+MAX VIDEOS PER DAY:
+PASS / FAIL
+
+AUTO ALLOCATION:
+PASS / FAIL
+
+SEQUENCE:
+PASS / FAIL
+
+NEXT-DAY ROLLOVER:
+PASS / FAIL
+
+MANUAL OVERRIDE:
+PASS / FAIL
+
+RESCHEDULING:
+PASS / FAIL
+
+CANCELLATION:
+PASS / FAIL
+
+IDEMPOTENCY:
+PASS / FAIL
+
+CONCURRENCY:
+PASS / FAIL
+
+DESTINATION ISOLATION:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / FAIL
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / NOT CLEAN
+
+COMMIT:
+<hash>
+
+PUSH:
+SUCCESS / FAILED / NOT NEEDED
+
+REMOTE VERIFIED:
+YES / NO
+
+NEXT RECOMMENDED PHASE:
+PHASE 5 — FACEBOOK PROVIDER & PUBLISHING
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Phase 4 selesai:
+
+STOP.
+
+Jangan implement Phase 5.
+
+Jangan melakukan Facebook publishing production.
+
+Jangan menambahkan YouTube.
+Jangan menambahkan Instagram.
+Jangan menambahkan TikTok.
+
+Jangan membuat fitur di luar scope.
+
+Jika ada masalah architecture, laporkan masalah sebenarnya.
+
+Jangan membuat fake PASS.
+
+Kerjakan berdasarkan repository yang benar-benar ada sekarang.
 ````
 # Phase 3 — Media, Downloader & Storage Pipelin
 ```
