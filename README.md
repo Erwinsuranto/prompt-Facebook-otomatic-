@@ -40,9 +40,1176 @@
 
 
 ````
-# 
+# Authentication & Account/Destination Management
 ```
+Kita lanjutkan project Content Pilot dari kondisi repository TERAKHIR.
 
+JANGAN mengulang Phase 0.
+JANGAN membongkar architecture yang sudah PASS.
+JANGAN membuat ulang fitur yang sudah selesai.
+JANGAN membuat fake Facebook success.
+JANGAN menggunakan credential palsu.
+JANGAN menghapus fitur existing yang sudah bekerja.
+
+Kondisi terakhir repository sudah memiliki fondasi:
+
+- Facebook Provider: PASS
+- Destination Workspace / Isolation: PASS
+- Media Pipeline: PASS
+- Downloader: PASS
+- Publish / Queue / Worker: PASS
+- Scheduler: PASS
+- Daily Slot: PASS
+- Sequence: PASS
+- Retry: PASS
+- Idempotency: PASS
+- History: PASS
+- Regression: PASS
+- Typecheck: PASS
+- Lint: PASS
+- Test: PASS
+- Build: PASS
+- Git: CLEAN
+- Push: SUCCESS
+- Remote verified: YES
+
+Facebook Live Verification dapat tetap NOT RUN apabila credential/provider configuration live memang belum tersedia di environment. Jangan membuat fake credential atau fake verification hanya untuk mengubah status menjadi PASS.
+
+==================================================
+TUJUAN PHASE BERIKUTNYA
+==================================================
+
+Sekarang lanjutkan ke:
+
+PHASE 2 — AUTHENTICATION & ACCOUNT / DESTINATION MANAGEMENT
+
+Tujuan phase ini adalah membuat fondasi yang benar untuk:
+
+User
+→ Platform Account / Connection
+→ Destination
+→ Destination Workspace
+
+Sistem TIDAK boleh hanya mendukung satu Facebook account atau satu Facebook Page.
+
+Arsitektur harus siap untuk:
+
+User
+├── Facebook Account 1
+│   ├── Page A
+│   ├── Page B
+│   └── Page C
+│
+├── Facebook Account 2
+│   ├── Page D
+│   └── Page E
+│
+├── YouTube Account
+│   ├── Channel A
+│   └── Channel B
+│
+└── platform lain di masa depan
+
+Facebook tetap hanya provider pertama.
+
+Core system tetap platform-independent.
+
+==================================================
+ATURAN UTAMA
+==================================================
+
+1. Audit kondisi repository TERKINI terlebih dahulu sebelum coding.
+
+2. Jangan membuat architecture baru jika architecture existing sudah memenuhi requirement.
+
+3. Gunakan implementation existing yang sudah PASS.
+
+4. Jangan melakukan massive refactor.
+
+5. Jangan menghapus test existing.
+
+6. Jangan menurunkan jumlah test.
+
+7. Semua test yang sudah PASS harus tetap PASS setelah perubahan.
+
+8. Jangan membuat mock/fake Facebook OAuth yang terlihat seperti OAuth sungguhan.
+
+9. Gunakan Facebook/Meta official OAuth/API.
+
+10. Jangan commit:
+   - access token
+   - refresh token
+   - META_APP_SECRET
+   - API key
+   - password
+   - cookie
+   - session secret
+   - credential lainnya
+
+11. Environment variable tetap berada di environment server dan tidak boleh dimasukkan ke Git.
+
+12. Jika `.env` sudah tersedia di VPS, gunakan environment tersebut.
+    Jangan memindahkan secret ke source code.
+
+13. Jangan mengubah secret yang sudah diberikan user.
+
+14. Jangan meminta user mengulang secret jika tidak diperlukan.
+
+15. Jika sebuah credential/configuration memang belum tersedia, tandai sebagai NEEDS CONFIGURATION.
+
+16. Jangan membuat fake success hanya agar test hijau.
+
+==================================================
+BAGIAN 1 — AUDIT EXISTING AUTHENTICATION
+==================================================
+
+Sebelum coding, periksa:
+
+- existing authentication
+- user model
+- session model
+- authorization
+- API authentication
+- Facebook provider
+- Meta OAuth flow
+- PlatformConnection
+- Destination
+- database schema
+- existing workspace/destination isolation
+- existing UI
+- existing routes
+- existing tests
+
+Cari apakah sudah ada:
+
+- Facebook OAuth start endpoint
+- Facebook OAuth callback
+- token storage
+- connection status
+- Page discovery
+- destination creation
+- destination listing
+- disconnect
+- reconnect
+- workspace switcher
+
+Jika sudah ada, jangan buat duplicate.
+
+Perbaiki implementation existing jika memang belum lengkap.
+
+==================================================
+BAGIAN 2 — DATA MODEL
+==================================================
+
+Pastikan model data dapat mendukung multi-account dan multi-destination.
+
+Konsep minimal:
+
+User
+
+Platform
+
+PlatformConnection
+
+Destination
+
+DestinationWorkspace / logical workspace
+
+Media
+
+PublishingJob
+
+Schedule
+
+PublishingAttempt
+
+AuditLog
+
+Jika repository sudah memiliki entity dengan nama berbeda tetapi fungsi sama, gunakan existing entity tersebut.
+
+Jangan membuat duplicate entity hanya karena nama berbeda.
+
+==================================================
+PLATFORM
+==================================================
+
+Platform harus generik.
+
+Contoh:
+
+facebook
+youtube
+instagram
+tiktok
+x
+pinterest
+linkedin
+
+Platform registry harus memungkinkan provider ditambahkan tanpa mengubah core publishing architecture.
+
+==================================================
+PLATFORM CONNECTION
+==================================================
+
+PlatformConnection harus mewakili koneksi account user ke platform.
+
+Minimal konsep:
+
+PlatformConnection
+
+- id
+- user_id
+- platform_id / provider
+- external_account_id
+- account_name
+- status
+- access token reference / encrypted token storage
+- token expiry jika tersedia
+- created_at
+- updated_at
+- last_connected_at
+- metadata jika diperlukan
+
+Jangan menyimpan secret plaintext jika architecture repository sudah memiliki secure/encrypted storage.
+
+Token jangan ditampilkan di UI.
+
+Token jangan masuk log.
+
+Token jangan masuk error message.
+
+==================================================
+DESTINATION
+==================================================
+
+Destination harus generik.
+
+Contoh:
+
+Facebook Page
+YouTube Channel
+Instagram Account
+TikTok Account
+
+Minimal konsep:
+
+Destination
+
+- id
+- platform_connection_id
+- external_id
+- name
+- type
+- status
+- metadata
+- created_at
+- updated_at
+
+Destination harus selalu terkait dengan PlatformConnection.
+
+Jangan membuat Page hanya berdasarkan nama.
+
+Gunakan external ID sebagai identifier utama untuk destination integration.
+
+==================================================
+MULTI DESTINATION
+==================================================
+
+Satu user dapat memiliki banyak destination.
+
+Contoh:
+
+User A
+
+Facebook Account
+→ Page A
+→ Page B
+→ Page C
+
+Jika user memiliki Facebook Account lain:
+
+Facebook Account 2
+→ Page D
+→ Page E
+
+Semua harus dapat hidup bersamaan.
+
+Jangan overwrite Page lama ketika akun Facebook kedua di-connect.
+
+Jangan menggunakan satu global:
+
+FACEBOOK_PAGE_ID
+
+sebagai konfigurasi utama.
+
+Destination harus database-driven.
+
+==================================================
+DESTINATION WORKSPACE
+==================================================
+
+Setiap destination memiliki workspace sendiri.
+
+Contoh:
+
+Page A
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+
+Page B
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+
+Page A tidak boleh membaca data Page B secara tidak sengaja.
+
+Semua query yang destination-scoped harus menggunakan destination_id atau relation yang aman.
+
+Contoh:
+
+GET /api/destinations/:destinationId/media
+
+GET /api/destinations/:destinationId/queue
+
+GET /api/destinations/:destinationId/schedule
+
+GET /api/destinations/:destinationId/history
+
+Tetapi jangan membuat route duplicate jika route existing sudah memiliki pola yang benar.
+
+Backend harus menjadi sumber isolation.
+
+JANGAN hanya melakukan filter di frontend.
+
+==================================================
+WORKSPACE SWITCHER
+==================================================
+
+UI harus memiliki Destination / Workspace Switcher.
+
+Contoh:
+
+Current Workspace:
+
+[ Facebook Page A ▼ ]
+
+Dropdown:
+
+Facebook
+  Page A
+  Page B
+  Page C
+
+YouTube
+  Channel A
+  Channel B
+
+Saat user memilih destination:
+
+- Dashboard berubah ke destination tersebut
+- Downloader menggunakan destination tersebut
+- Storage menggunakan destination tersebut
+- Publish menggunakan destination tersebut
+- Queue menggunakan destination tersebut
+- Schedule menggunakan destination tersebut
+- History menggunakan destination tersebut
+
+Jangan membuat data workspace hanya berdasarkan state frontend.
+
+Destination ID harus ikut dalam request ke backend.
+
+Backend tetap melakukan authorization dan isolation.
+
+==================================================
+FACEBOOK OAUTH
+==================================================
+
+Gunakan official Meta/Facebook OAuth flow.
+
+Jangan menggunakan:
+
+- username/password automation
+- browser scraping
+- cookie injection
+- fake OAuth
+- fake access token
+
+Flow yang diinginkan:
+
+User
+→ Accounts
+→ Connect Facebook
+→ Meta authorization
+→ callback
+→ exchange authorization code
+→ secure token storage
+→ retrieve available Pages
+→ create/update Destination records
+→ user kembali ke Accounts / Destination selection
+
+Jika existing implementation sudah memiliki callback:
+
+/api/connections/facebook/callback
+
+gunakan dan perbaiki jika diperlukan.
+
+Jangan membuat callback duplicate.
+
+==================================================
+OAUTH CONFIGURATION
+==================================================
+
+Environment configuration harus mendukung minimal:
+
+META_APP_ID
+META_APP_SECRET
+
+Jika aplikasi membutuhkan redirect URL atau public base URL, gunakan konfigurasi existing yang sudah sesuai architecture.
+
+Jangan hardcode:
+
+META_APP_ID
+META_APP_SECRET
+redirect URI
+
+ke source code.
+
+Pastikan `.env` tetap di-ignore Git.
+
+Setelah perubahan:
+
+periksa:
+
+git status
+git diff
+
+Pastikan secret tidak ikut.
+
+==================================================
+CALLBACK / REDIRECT
+==================================================
+
+Pastikan OAuth callback memiliki redirect URI yang konsisten.
+
+Jangan mengasumsikan localhost adalah production URL.
+
+Support configuration seperti:
+
+development
+staging
+production
+
+Gunakan base URL/configuration yang sesuai environment.
+
+Jika existing documentation menyebut SSH tunnel localhost untuk development, jangan mengubah production menjadi localhost.
+
+Dokumentasikan:
+
+- development callback
+- production callback
+- Meta Dashboard configuration yang diperlukan
+
+Jangan memasukkan secret ke documentation.
+
+==================================================
+FACEBOOK PAGE DISCOVERY
+==================================================
+
+Setelah OAuth berhasil:
+
+1. Ambil Page yang memang dapat diakses oleh connection.
+2. Parse Page ID.
+3. Parse Page name.
+4. Simpan destination.
+5. Jangan duplicate destination jika sudah ada.
+6. Jika Page sudah ada tetapi metadata berubah, update metadata yang aman.
+7. Jangan menghapus Page lama hanya karena tidak muncul dalam satu discovery response.
+8. Status destination harus jelas.
+
+Contoh:
+
+Facebook Account
+→ Page A
+→ Page B
+→ Page C
+
+Setiap Page menjadi Destination tersendiri.
+
+==================================================
+RECONNECT
+==================================================
+
+Accounts UI harus dapat menunjukkan:
+
+Connected
+Needs Reconnect
+Disconnected
+Configuration Required
+Error
+
+Jika token expired/invalid:
+
+status harus dapat berubah menjadi:
+
+Needs Reconnect
+
+Jangan otomatis menghapus destination dan history hanya karena connection bermasalah.
+
+History publishing harus tetap ada.
+
+Media harus tetap ada.
+
+Schedule yang belum dipublish harus memiliki status yang jelas.
+
+==================================================
+DISCONNECT
+==================================================
+
+Disconnect harus aman.
+
+Pisahkan:
+
+Disconnect Platform Connection
+
+dan:
+
+Delete Destination
+
+Jangan menghapus data publishing history secara otomatis hanya karena user disconnect.
+
+Jika ada destructive action:
+
+- tampilkan confirmation
+- jelaskan konsekuensinya
+- jangan melakukan cascading delete berbahaya
+
+Jika requirement belum menentukan delete behavior, jangan mengarang.
+Dokumentasikan sebagai open decision.
+
+==================================================
+AUTHORIZATION
+==================================================
+
+User A tidak boleh melihat:
+
+- connection milik User B
+- destination milik User B
+- media milik User B
+- publishing job milik User B
+- schedule milik User B
+- history milik User B
+
+Authorization harus dicek backend.
+
+Jangan hanya mengandalkan ID yang dikirim frontend.
+
+Contoh:
+
+GET /api/destinations/:id
+
+Backend harus memastikan:
+
+destination.user_id == current_user.id
+
+atau relation authorization yang setara.
+
+==================================================
+DESTINATION AUTHORIZATION
+==================================================
+
+Setiap operasi harus memastikan user memang memiliki destination tersebut.
+
+Contoh:
+
+User A request:
+
+POST /api/destinations/page-B/publish
+
+Jika Page B milik User B:
+
+→ 403/404 sesuai security policy.
+
+Jangan publish.
+
+Jangan return metadata sensitif.
+
+==================================================
+ACCOUNT UI
+==================================================
+
+Buat/rapikan halaman:
+
+Accounts
+
+Konsep:
+
+Connected Accounts
+
+[ Facebook ]
+Status: Connected
+
+2 Pages available
+
+[ Manage ]
+
+[ Disconnect ]
+
+Jika belum connected:
+
+[ Connect Facebook ]
+
+Jangan membuat UI seolah YouTube/Instagram sudah tersedia jika provider belum diimplementasikan.
+
+Platform yang belum tersedia:
+
+Coming Soon
+
+atau status capability yang sesuai.
+
+==================================================
+DESTINATION UI
+==================================================
+
+Buat halaman/section:
+
+Destinations
+
+Contoh:
+
+Facebook
+-------------------------
+Page A
+Connected
+[Open Workspace]
+
+Page B
+Connected
+[Open Workspace]
+
+Page C
+Needs Reconnect
+[Reconnect]
+
+Jangan menampilkan access token.
+
+==================================================
+WORKSPACE NAVIGATION
+==================================================
+
+Target:
+
+Destination Switcher
+→ Dashboard
+→ Downloader
+→ Storage
+→ Publish
+→ Queue
+→ Schedule
+→ History
+
+Semua halaman harus mengetahui destination context.
+
+Contoh URL dapat berupa:
+
+/d/:destinationId/dashboard
+/d/:destinationId/downloader
+/d/:destinationId/storage
+/d/:destinationId/publish
+/d/:destinationId/queue
+/d/:destinationId/schedule
+/d/:destinationId/history
+
+ATAU gunakan routing existing jika repository sudah memiliki pola yang lebih baik.
+
+Jangan memaksakan URL tersebut jika architecture existing berbeda.
+
+Yang wajib adalah:
+
+destination context harus eksplisit dan backend-scoped.
+
+==================================================
+DOWNLOADER
+==================================================
+
+Jangan mengubah logic downloader yang sudah PASS kecuali diperlukan agar destination context benar.
+
+Downloader harus menerima:
+
+destination_id
+
+atau context yang dapat diturunkan secara aman.
+
+Hasil downloader:
+
+Media
+→ source metadata
+→ destination scoped
+→ READY
+
+Jika downloader dijalankan dari Page A:
+
+media.destination_id = Page A
+
+Media tidak boleh otomatis masuk Page B.
+
+==================================================
+STORAGE
+==================================================
+
+Storage workspace harus destination-aware secara logical.
+
+Contoh:
+
+Page A
+→ Media 1
+→ Media 2
+
+Page B
+→ Media 3
+→ Media 4
+
+Jangan mencampur daftar media antar workspace.
+
+Jika media yang sama nanti digunakan untuk banyak destination melalui multi-destination publishing:
+
+core Media tetap satu.
+
+PublishingJob dibuat terpisah:
+
+Media X
+→ Job Page A
+→ Job Page B
+
+Jangan duplicate binary file tanpa alasan.
+
+==================================================
+DAILY SLOT
+==================================================
+
+Jangan merusak sistem Daily Slot yang sudah PASS.
+
+Konfigurasi tetap:
+
+max_videos_per_day
+timezone
+daily_slots
+
+Contoh:
+
+max = 4
+
+08:00
+11:00
+14:00
+17:00
+
+Sequence tidak reset ketika tanggal berganti.
+
+Jika Hari 1 hanya memiliki:
+
+Video 1
+Video 2
+Video 3
+
+slot keempat kosong.
+
+Jika video baru masuk setelah itu dan Hari 1 sudah selesai:
+
+Video 4
+→ slot berikutnya pada Hari 2
+
+Bukan kembali menjadi Video 1.
+
+Jika Hari 1 penuh:
+
+Video 5
+→ Hari 2 slot pertama.
+
+Semua allocation harus deterministic dan idempotent.
+
+Jangan mengubah schedule job yang sudah final/published.
+
+==================================================
+PUBLISHING JOB
+==================================================
+
+Tetap satu job per destination.
+
+Contoh:
+
+Media 100
+
+Page A
+→ Job A
+
+Page B
+→ Job B
+
+YouTube Channel A
+→ Job C
+
+Status independen.
+
+==================================================
+QUEUE / WORKER
+==================================================
+
+Jangan membangun queue baru jika queue existing sudah PASS.
+
+Gunakan queue existing.
+
+Worker mengambil PublishingJob.
+
+Worker mendapatkan:
+
+- provider
+- connection
+- destination
+- media
+- schedule
+- metadata
+
+Kemudian memanggil provider yang sesuai.
+
+==================================================
+TESTING
+==================================================
+
+Sebelum perubahan:
+
+jalankan test existing.
+
+Catat baseline.
+
+Setelah implementation:
+
+1. typecheck
+2. lint
+3. unit test
+4. integration test yang aman
+5. build
+
+Target:
+
+semua test existing tetap PASS.
+
+Tambahkan test untuk:
+
+1. User memiliki multiple Facebook Pages.
+2. User memiliki multiple Facebook connections.
+3. Destination tidak duplicate.
+4. Destination A tidak dapat diakses User B.
+5. Media Page A tidak muncul di Page B.
+6. Downloader Page A menghasilkan media scoped Page A.
+7. Queue Page A tidak mengambil job Page B.
+8. Schedule Page A tidak mengambil schedule Page B.
+9. History Page A tidak mencampur Page B.
+10. Workspace switcher mengirim destination context yang benar.
+11. OAuth callback memproses connection yang benar.
+12. Reconnect tidak menghapus history.
+13. Disconnect tidak menghapus media secara otomatis.
+14. Invalid destination ownership ditolak.
+15. Daily Slot existing tetap PASS.
+16. Sequence existing tetap tidak reset.
+17. Retry/idempotency existing tetap PASS.
+
+Jangan menghapus regression test yang sudah ada.
+
+==================================================
+LIVE FACEBOOK VERIFICATION
+==================================================
+
+Jika environment VPS sekarang sudah memiliki:
+
+META_APP_ID
+META_APP_SECRET
+
+dan konfigurasi OAuth lengkap:
+
+boleh lakukan real OAuth verification.
+
+Namun:
+
+JANGAN meminta user memberikan secret di chat.
+
+JANGAN mencetak secret.
+
+JANGAN memasukkan secret ke terminal output yang disimpan.
+
+JANGAN membuat fake Page.
+
+JANGAN membuat fake publish.
+
+Jika redirect URI belum dikonfigurasi di Meta Dashboard:
+
+laporkan sebagai:
+
+NEEDS CONFIGURATION
+
+dan lanjutkan verification yang aman tanpa fake success.
+
+==================================================
+DOCUMENTATION
+==================================================
+
+Update documentation yang relevan.
+
+Minimal:
+
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/UI_DESIGN.md
+docs/PLATFORM_MODULES.md
+docs/ROADMAP.md
+
+Tambahkan dokumentasi:
+
+### Account Architecture
+
+User
+→ PlatformConnection
+→ Destination
+→ Workspace
+
+### Destination Isolation
+
+Semua operasi destination-scoped.
+
+### OAuth
+
+Flow:
+
+Connect
+→ Authorize
+→ Callback
+→ Token storage
+→ Destination discovery
+
+### Reconnect
+
+Token invalid/expired
+→ Needs Reconnect
+→ OAuth ulang
+→ update connection
+→ destination/history tetap aman
+
+### Multi Account
+
+Satu user dapat memiliki multiple connections dan destinations.
+
+==================================================
+DATABASE MIGRATION
+==================================================
+
+Jika database schema perlu berubah:
+
+1. buat migration yang aman
+2. jangan menghapus data existing
+3. jangan destructive migration tanpa alasan
+4. gunakan foreign key yang tepat
+5. tambahkan index untuk query destination-scoped
+6. pastikan authorization query efisien
+
+Pertimbangkan index:
+
+user_id
+platform_connection_id
+destination_id
+external_id
+
+Jangan membuat unique constraint yang mencegah user memiliki beberapa account jika requirement memang mendukung multiple account.
+
+==================================================
+SECURITY REVIEW
+==================================================
+
+Setelah coding lakukan review:
+
+- secret tidak masuk Git
+- token tidak masuk log
+- token tidak masuk response API
+- user isolation benar
+- destination isolation benar
+- OAuth state/CSRF protection benar
+- callback validation benar
+- redirect URI validation benar
+- file upload security existing tetap PASS
+- SSRF protection existing tetap PASS
+- authorization backend benar
+
+Jika menemukan vulnerability:
+
+perbaiki sebelum commit.
+
+==================================================
+GIT
+==================================================
+
+Setelah semua selesai:
+
+1. git status
+2. git diff
+3. periksa secret
+4. jalankan test
+5. typecheck
+6. lint
+7. build
+8. commit
+9. push ke branch yang sedang digunakan
+10. verify remote
+
+Commit message:
+
+feat: implement account and destination management
+
+Jangan force push.
+
+Jangan commit secret.
+
+Jangan membuat empty commit.
+
+Jika tidak ada source change yang memang diperlukan, jangan membuat commit kosong.
+
+==================================================
+LAPORAN AKHIR
+==================================================
+
+Setelah selesai, tampilkan laporan ringkas tetapi lengkap:
+
+PHASE:
+Phase 2 — Authentication & Account / Destination Management
+
+AUDIT:
+PASS / FAIL
+
+ACCOUNT MANAGEMENT:
+PASS / PARTIAL / FAIL
+
+FACEBOOK OAUTH:
+PASS / NEEDS CONFIGURATION / NOT RUN
+
+MULTI ACCOUNT:
+PASS / FAIL
+
+MULTI DESTINATION:
+PASS / FAIL
+
+DESTINATION ISOLATION:
+PASS / FAIL
+
+WORKSPACE SWITCHER:
+PASS / FAIL
+
+DOWNLOADER ISOLATION:
+PASS / FAIL
+
+STORAGE ISOLATION:
+PASS / FAIL
+
+QUEUE ISOLATION:
+PASS / FAIL
+
+SCHEDULE ISOLATION:
+PASS / FAIL
+
+HISTORY ISOLATION:
+PASS / FAIL
+
+AUTHORIZATION:
+PASS / FAIL
+
+SECURITY:
+PASS / FAIL
+
+DAILY SLOT REGRESSION:
+PASS / FAIL
+
+SEQUENCE REGRESSION:
+PASS / FAIL
+
+RETRY / IDEMPOTENCY:
+PASS / FAIL
+
+TYPECHECK:
+PASS / FAIL
+
+LINT:
+PASS / FAIL
+
+TEST:
+PASS / <jumlah test>
+
+BUILD:
+PASS / FAIL
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS / NOT NEEDED / FAILED
+
+REMOTE VERIFIED:
+YES / NO
+
+Jika Facebook Live Verification tidak dapat dijalankan karena environment/Meta configuration, tuliskan alasan sebenarnya.
+
+JANGAN mengubah NOT RUN menjadi PASS hanya dengan mock.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Phase 2 selesai dan push berhasil:
+
+STOP.
+
+Jangan lanjut otomatis ke Phase 3.
+
+Jangan mulai fitur baru.
+
+Jangan implement YouTube.
+
+Jangan implement Instagram.
+
+Jangan implement TikTok.
+
+Jangan implement analytics.
+
+Jangan membuat fitur tambahan di luar scope Phase 2.
+
+Tujuan phase ini hanya:
+
+USER
+→ MULTIPLE ACCOUNTS
+→ MULTIPLE DESTINATIONS
+→ DESTINATION WORKSPACE
+→ SECURE OAUTH CONNECTION
+→ DESTINATION DISCOVERY
+→ DESTINATION ISOLATION
+→ ACCOUNT MANAGEMENT
+
+Fondasi Daily Slot, Downloader, Media Pipeline, Queue, Worker, Scheduler, Retry, Idempotency, dan History yang sudah PASS harus tetap dipertahankan.
+
+Jika menemukan masalah architecture selama implementation, perbaiki hanya yang benar-benar diperlukan dan dokumentasikan alasannya.
+
+STOP setelah laporan akhir dan remote verification.
 
 ````
 # Phase Facebook Publishing Hardening
