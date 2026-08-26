@@ -45,10 +45,1291 @@
 
 
 ````
-# 
+# Phase Facebook Publishing Hardening
 ```
 
+LANJUTKAN IMPLEMENTASI PROJECT CONTENT PILOT.
 
+Jangan mengulang audit Phase 0 yang sudah selesai.
+Jangan meminta konfirmasi kredit/approval.
+Jangan berhenti hanya karena ada hal kecil yang perlu diperbaiki.
+Kerjakan langsung sampai selesai, test, commit, dan push.
+
+==================================================
+KONTEKS PROJECT
+==================================================
+
+Project ini adalah Content Pilot, sebuah platform centralized content publishing.
+
+Facebook adalah provider pertama, tetapi CORE SYSTEM harus tetap platform-independent agar nantinya dapat mendukung:
+
+- Facebook
+- YouTube
+- Instagram
+- TikTok
+- X
+- Pinterest
+- LinkedIn
+- platform lain yang memiliki official publishing API.
+
+JANGAN membuat core menjadi Facebook-only.
+
+Phase 0 sebelumnya sudah menghasilkan architecture, documentation, destination isolation, workspace concept, media/publishing foundation, dan roadmap.
+
+Sekarang masuk ke implementasi berikutnya:
+
+PHASE:
+Facebook Publishing Hardening + Destination Workspace + Publishing Pipeline Integration
+
+Tujuan phase ini adalah membuat alur Facebook publishing benar-benar siap digunakan secara nyata tanpa merusak architecture yang sudah ada.
+
+==================================================
+ATURAN UTAMA
+==================================================
+
+1. Jangan membuang architecture existing yang sudah PASS.
+2. Jangan melakukan rewrite besar jika tidak diperlukan.
+3. Jangan membuat duplicate system.
+4. Jangan membuat fake Facebook success.
+5. Jangan menggunakan Facebook username/password automation.
+6. Gunakan official Facebook/Meta API.
+7. Jangan mengarang endpoint atau permission.
+8. Jika API tertentu berubah atau belum tersedia, research official documentation terlebih dahulu.
+9. Jangan memasukkan secret/token ke Git.
+10. Jangan commit .env.
+11. Jangan mematikan test existing.
+12. Jangan menghapus regression test.
+13. Jangan membuat test palsu hanya supaya PASS.
+14. Jangan menggunakan mock sebagai pengganti integration behavior yang sebenarnya jika environment memungkinkan verification.
+15. Unit test boleh menggunakan mock provider untuk logic internal.
+16. Integration test harus tetap membedakan antara:
+   - test internal
+   - test provider configuration
+   - live Facebook verification.
+17. Jika credential Facebook belum tersedia di VPS, jangan membuat fake success.
+18. Jika live credential tidak tersedia, tandai live verification sebagai NOT RUN / NEEDS CONFIGURATION, tetapi seluruh logic internal tetap harus ditest.
+19. Jangan berhenti hanya karena live credential tidak tersedia.
+20. Setelah implementasi selesai, lakukan git status, diff review, test, build, commit, push, dan remote verification.
+
+==================================================
+ARSITEKTUR WORKSPACE
+==================================================
+
+Konsep utama project sekarang adalah:
+
+USER
+ └── Platform Accounts
+      └── Destinations
+           └── Destination Workspace
+
+Contoh:
+
+Facebook Account
+├── Page A
+│   └── Workspace Page A
+│       ├── Dashboard
+│       ├── Downloader
+│       ├── Storage
+│       ├── Publish
+│       ├── Queue
+│       ├── Schedule
+│       └── History
+│
+├── Page B
+│   └── Workspace Page B
+│       ├── Dashboard
+│       ├── Downloader
+│       ├── Storage
+│       ├── Publish
+│       ├── Queue
+│       ├── Schedule
+│       └── History
+│
+└── Page C
+    └── Workspace Page C
+        ├── Dashboard
+        ├── Downloader
+        ├── Storage
+        ├── Publish
+        ├── Queue
+        ├── Schedule
+        └── History
+
+Workspace bukan berarti harus menjadi service terpisah.
+
+Workspace adalah logical scope yang terutama menggunakan:
+
+destination_id
+
+Semua operasi harus benar-benar destination-scoped.
+
+==================================================
+DESTINATION ISOLATION
+==================================================
+
+Ini WAJIB.
+
+Downloader Page A:
+
+→ hanya masuk ke media/storage Page A.
+
+Publish Page A:
+
+→ hanya dapat memilih destination Page A jika user berada di workspace Page A.
+
+Queue Page A:
+
+→ hanya memproses job Page A.
+
+Schedule Page A:
+
+→ hanya membuat schedule Page A.
+
+History Page A:
+
+→ hanya menampilkan history Page A.
+
+Page B tidak boleh melihat/mengambil queue Page A secara tidak sengaja.
+
+Backend harus melakukan authorization dan filtering berdasarkan destination_id.
+
+JANGAN hanya mengandalkan frontend filter.
+
+Frontend filter saja TIDAK dianggap isolation.
+
+Backend harus menolak akses cross-destination.
+
+Contoh:
+
+GET /api/destinations/:destinationId/media
+
+harus memastikan destination tersebut memang milik user/account yang sedang authenticated.
+
+Jika tidak:
+
+404 atau 403 sesuai pola API existing.
+
+Hal yang sama berlaku untuk:
+
+- media
+- downloader
+- storage
+- publish
+- queue
+- schedule
+- history
+- publishing jobs
+- attempts
+- settings.
+
+==================================================
+DESTINATION WORKSPACE SWITCHER
+==================================================
+
+Implementasikan atau sempurnakan workspace/destination switcher.
+
+User harus dapat memilih:
+
+Facebook Page A
+Facebook Page B
+Facebook Page C
+
+Saat berpindah Page:
+
+SEMUA CONTEXT HARUS BERGANTI.
+
+Contoh:
+
+/d/page-a/dashboard
+/d/page-a/downloader
+/d/page-a/storage
+/d/page-a/publish
+/d/page-a/queue
+/d/page-a/schedule
+/d/page-a/history
+
+Kemudian:
+
+/d/page-b/dashboard
+/d/page-b/downloader
+...
+
+Jika routing project menggunakan pola berbeda, ikuti pola existing.
+
+Jangan memaksakan URL tersebut jika tidak cocok dengan framework.
+
+Yang penting:
+
+destination context harus eksplisit.
+
+==================================================
+PUBLISH PAGE
+==================================================
+
+Buat/sesuaikan halaman Publish dalam workspace destination.
+
+Publish harus mengetahui destination saat ini.
+
+Contoh:
+
+CURRENT WORKSPACE:
+Facebook Page A
+
+User memilih media:
+
+Video 001
+
+Caption:
+...
+
+Publishing type:
+
+- Video
+- Reels
+- Photo
+- Text Post
+- fitur lain hanya jika provider capability mendukung.
+
+Destination:
+
+Facebook Page A
+
+Jangan menampilkan Page B sebagai destination default tanpa user memilihnya.
+
+Jika multi-destination publishing didukung, target tambahan harus secara eksplisit dipilih dan masing-masing menghasilkan PublishingJob terpisah.
+
+==================================================
+MEDIA
+==================================================
+
+Media adalah entity generik.
+
+Jangan membuat FacebookMedia sebagai storage utama.
+
+Minimal media tetap memiliki konsep:
+
+- id
+- filename
+- mime_type
+- size
+- duration
+- width
+- height
+- storage_key/location
+- thumbnail
+- source_type
+- source_id/source_url jika tersedia
+- created_at
+- status
+- metadata
+
+Source type minimal:
+
+manual
+downloader
+other
+
+Media downloader harus dapat dilacak dari sumbernya.
+
+Jika downloader mengambil video dari Facebook:
+
+simpan source metadata yang aman.
+
+Jangan menganggap source URL sebagai identifier utama.
+
+Media ID tetap menjadi identifier utama.
+
+==================================================
+DOWNLOADER
+==================================================
+
+Downloader harus terintegrasi dengan workspace.
+
+Jika user berada di:
+
+Facebook Page A
+
+dan melakukan downloader:
+
+video harus otomatis masuk ke:
+
+Page A Storage / Media Library
+
+bukan global tanpa destination context.
+
+Jika downloader memang menghasilkan media generik yang nantinya bisa dipakai beberapa destination, tetap simpan:
+
+source destination/context
+
+dan buat publishing job destination-specific saat dipublish.
+
+Jangan membuat downloader menggandakan file secara tidak perlu.
+
+==================================================
+STORAGE
+==================================================
+
+Storage harus terintegrasi dengan destination workspace.
+
+Tampilkan:
+
+- video
+- thumbnail
+- duration
+- size
+- source
+- created date
+- status
+- publishing status jika ada.
+
+Storage tidak boleh menampilkan media milik destination lain kecuali memang ada global library yang sengaja dirancang.
+
+Jika terdapat global media library:
+
+tetap pastikan destination-scoped view bekerja benar.
+
+==================================================
+FACEBOOK PROVIDER
+==================================================
+
+Facebook provider harus tetap berada di provider/module layer.
+
+Core tidak boleh berisi Facebook Graph API logic.
+
+Contoh konsep:
+
+Core
+→ Provider Registry
+→ Facebook Provider
+→ Facebook API Client
+→ Facebook publishing implementation
+
+Gunakan struktur existing project jika sudah tersedia.
+
+Jangan memindahkan seluruh code ke struktur baru jika existing structure sudah modular.
+
+==================================================
+FACEBOOK CONNECTION
+==================================================
+
+Gunakan official OAuth/API.
+
+Connection harus memiliki konsep:
+
+- provider
+- account identity
+- access token / encrypted credential reference
+- expiration jika tersedia
+- status
+- connected_at
+- last_verified_at
+- metadata aman.
+
+Jangan menyimpan secret plaintext jika architecture existing menyediakan encryption.
+
+Jangan memasukkan token ke logs.
+
+Jangan menampilkan token di UI.
+
+==================================================
+FACEBOOK PAGE DISCOVERY
+==================================================
+
+Setelah Facebook account connected:
+
+ambil Page/Destination yang memang dapat diakses oleh account tersebut menggunakan API resmi.
+
+Setiap Page menjadi:
+
+Destination
+
+Contoh:
+
+Destination:
+- id
+- platform = facebook
+- type = page
+- external_id
+- name
+- avatar/image jika tersedia
+- connection_id
+- status
+- metadata.
+
+External Page ID harus disimpan.
+
+Jangan menggunakan nama Page sebagai unique identifier.
+
+==================================================
+FACEBOOK PUBLISHING
+==================================================
+
+Implementasikan publishing menggunakan official Facebook/Meta API yang sesuai dengan capability yang telah diverifikasi.
+
+Minimal target:
+
+- video publishing
+- Reels publishing jika official API flow tersedia dan permission/configuration sesuai.
+
+Jangan menganggap semua content type tersedia.
+
+Gunakan provider capability.
+
+Contoh:
+
+FacebookProvider.capabilities():
+
+video
+reels
+photo
+text_post
+scheduling
+
+Hanya masukkan capability yang benar-benar didukung implementation dan API.
+
+==================================================
+PUBLISHING FLOW
+==================================================
+
+Flow:
+
+User memilih media
+        ↓
+validasi media
+        ↓
+pilih destination
+        ↓
+pilih publish now / schedule
+        ↓
+buat PublishingJob
+        ↓
+queue
+        ↓
+worker
+        ↓
+Facebook Provider
+        ↓
+Facebook API
+        ↓
+status update
+        ↓
+history
+
+Jangan langsung melakukan Facebook API call dari frontend.
+
+Frontend → Backend → Queue/Worker → Provider → Facebook API.
+
+==================================================
+PUBLISH NOW
+==================================================
+
+Jika user memilih Publish Now:
+
+buat job:
+
+status = queued
+
+kemudian worker memproses.
+
+Jangan menganggap queued berarti published.
+
+Status harus mengikuti lifecycle sebenarnya.
+
+Contoh:
+
+queued
+→ processing
+→ uploading
+→ publishing
+→ published
+
+Jika gagal:
+
+failed
+
+==================================================
+PUBLISHING STATUS
+==================================================
+
+PublishingJob minimal:
+
+- id
+- media_id
+- destination_id
+- provider
+- content_type
+- status
+- scheduled_at
+- published_at
+- created_at
+- updated_at
+- attempt_count
+- last_error_code
+- last_error_message
+- provider_post_id jika tersedia
+- provider_metadata jika aman.
+
+Jangan menyimpan access token di PublishingJob.
+
+==================================================
+PUBLISHING ATTEMPT
+==================================================
+
+Jika architecture mendukung PublishingAttempt:
+
+buat satu record setiap attempt.
+
+Minimal:
+
+- id
+- publishing_job_id
+- attempt_number
+- started_at
+- finished_at
+- status
+- error_code
+- error_message
+- provider_request/reference metadata yang aman.
+
+Jangan menyimpan token atau secret.
+
+==================================================
+IDEMPOTENCY
+==================================================
+
+Publishing harus idempotent.
+
+Jangan sampai worker retry lalu membuat post Facebook dua kali jika attempt pertama sebenarnya sudah berhasil tetapi response timeout.
+
+Gunakan strategy yang sesuai architecture:
+
+- provider post ID
+- idempotency key jika API mendukung
+- persisted attempt state
+- state transition guard
+- unique publishing job constraints.
+
+Jangan mengarang idempotency API Facebook jika tidak tersedia.
+
+Buat protection di application layer.
+
+==================================================
+RETRY
+==================================================
+
+Temporary errors:
+
+- timeout
+- network error
+- temporary provider error
+- rate limit
+
+→ retry dengan backoff.
+
+Permanent errors:
+
+- invalid credentials
+- permission denied
+- destination invalid
+- unsupported media
+- invalid request
+
+→ failed tanpa infinite retry.
+
+Simpan:
+
+attempt_count
+last_error_code
+last_error_message
+next_retry_at
+
+Jangan membuat infinite retry loop.
+
+==================================================
+QUEUE
+==================================================
+
+Queue harus menggunakan architecture existing.
+
+Jangan membuat queue kedua jika queue foundation sudah ada.
+
+PublishingJob:
+
+queued
+→ worker
+→ provider.
+
+Worker harus mengetahui:
+
+provider
+destination
+media
+content type
+schedule.
+
+Worker mengambil job lalu memanggil provider berdasarkan provider registry.
+
+Contoh:
+
+provider = facebook
+
+→ FacebookProvider.publish(job)
+
+==================================================
+SCHEDULER
+==================================================
+
+Jangan membuat scheduler khusus Facebook.
+
+Scheduler harus generik.
+
+Schedule selalu memiliki:
+
+destination_id
+publishing_job_id/media relation sesuai model existing
+scheduled_at
+timezone/context
+status.
+
+Scheduler tidak boleh mengambil schedule Page A ketika memproses Page B.
+
+==================================================
+DAILY SLOT SYSTEM
+==================================================
+
+Implementasikan atau integrasikan fondasi Daily Slot yang sudah dirancang sebelumnya.
+
+Contoh:
+
+Max videos/day = 4
+
+Slots:
+
+08:00
+11:00
+14:00
+17:00
+
+Jika downloader memasukkan:
+
+Video 1
+Video 2
+Video 3
+Video 4
+
+maka:
+
+Hari 1:
+08:00 Video 1
+11:00 Video 2
+14:00 Video 3
+17:00 Video 4
+
+Jika kemudian:
+
+Video 5
+
+maka:
+
+Hari 2:
+08:00 Video 5
+
+JANGAN RESET menjadi Video 1.
+
+Sequence harus terus berjalan.
+
+==================================================
+KASUS HARI TIDAK PENUH
+==================================================
+
+Contoh:
+
+Max videos/day = 4
+
+Hari pertama hanya ada:
+
+Video 1
+Video 2
+Video 3
+
+maka:
+
+Hari 1:
+08:00 Video 1
+11:00 Video 2
+14:00 Video 3
+17:00 kosong
+
+Jika Video 4 baru masuk setelah slot hari pertama berlalu:
+
+Video 4 → slot berikutnya yang tersedia di hari berikutnya.
+
+Hari 2:
+08:00 Video 4
+
+Bukan:
+
+Video 1 lagi.
+
+Sequence tidak pernah reset hanya karena tanggal berganti.
+
+==================================================
+SEQUENCE
+==================================================
+
+Bedakan:
+
+media_id
+sequence_number
+publishing_job_id
+
+sequence_number tidak boleh bergantung pada filename.
+
+sequence_number tidak reset setiap hari.
+
+Jangan recycle sequence number dari job yang pernah dibuat.
+
+Jika job gagal/cancelled:
+
+sequence tetap tidak boleh digunakan ulang sembarangan.
+
+Jika project existing sudah memiliki sequence implementation, pertahankan dan harden sesuai aturan ini.
+
+==================================================
+MANUAL SCHEDULE OVERRIDE
+==================================================
+
+User dapat memilih schedule manual untuk video tertentu.
+
+Contoh:
+
+Auto slot:
+08:00
+
+Tetapi user memilih:
+
+20:00
+
+Maka job tersebut menggunakan:
+
+schedule_source = manual
+
+dan scheduled_at = 20:00.
+
+Jangan biarkan auto scheduler menimpa manual schedule kecuali user memang mengubahnya.
+
+==================================================
+RESCHEDULING
+==================================================
+
+Jika konfigurasi daily slot berubah:
+
+contoh:
+
+4 video/day
+→ menjadi 3 video/day
+
+Jangan sembarangan mengubah job yang sudah:
+
+published
+processing
+publishing
+
+Perubahan konfigurasi hanya mempengaruhi schedule yang masih eligible untuk diubah sesuai rules.
+
+Job dengan schedule final harus aman.
+
+Manual schedule harus dihormati.
+
+==================================================
+TIMEZONE
+==================================================
+
+Daily slot harus memiliki timezone.
+
+Contoh:
+
+Asia/Jakarta
+
+Waktu UI harus jelas menggunakan timezone workspace/destination.
+
+Jangan menggunakan timezone VPS sebagai satu-satunya sumber kebenaran.
+
+Jika project existing sudah memiliki timezone provenance, pertahankan.
+
+Simpan waktu internal dalam format yang konsisten, idealnya UTC, lalu tampilkan berdasarkan timezone destination/workspace.
+
+==================================================
+QUEUE + DAILY SLOT
+==================================================
+
+Flow yang diinginkan:
+
+Downloader
+    ↓
+Media READY
+    ↓
+Destination Workspace
+    ↓
+Auto Scheduler
+    ↓
+Cari slot tersedia
+    ↓
+Buat PublishingJob
+    ↓
+scheduled
+    ↓
+Saat waktunya tiba
+    ↓
+queued
+    ↓
+Worker
+    ↓
+Facebook Provider
+    ↓
+Facebook API
+    ↓
+published / failed
+
+Jangan membuat media langsung published hanya karena scheduler berhasil.
+
+==================================================
+HISTORY
+==================================================
+
+History harus destination-scoped.
+
+Page A:
+
+hanya melihat history Page A.
+
+Page B:
+
+hanya melihat history Page B.
+
+History minimal menampilkan:
+
+- video/media
+- content type
+- destination
+- scheduled time
+- publish time
+- status
+- provider post ID jika tersedia
+- error jika gagal
+- attempts.
+
+==================================================
+DASHBOARD
+==================================================
+
+Dashboard workspace harus menunjukkan konteks Page aktif.
+
+Contoh:
+
+FACEBOOK
+Page A
+
+Today:
+
+Scheduled: 4
+Published: 2
+Queue: 1
+Failed: 1
+
+Storage:
+Ready: 10
+Processing: 1
+
+Jangan mencampur angka Page A dan Page B.
+
+Jika ada global dashboard, pisahkan dengan jelas dari workspace dashboard.
+
+==================================================
+SETTINGS PER DESTINATION
+==================================================
+
+Auto publishing settings harus destination-scoped.
+
+Minimal:
+
+enabled
+max_videos_per_day
+timezone
+daily_slots
+auto_publish_enabled
+
+Contoh:
+
+Page A:
+4 videos/day
+08:00
+11:00
+14:00
+17:00
+
+Page B:
+2 videos/day
+09:00
+18:00
+
+Keduanya tidak boleh saling mempengaruhi.
+
+==================================================
+API SECURITY
+==================================================
+
+Pastikan semua endpoint destination-aware.
+
+Jangan cukup:
+
+GET /api/media
+
+lalu frontend melakukan filter.
+
+Backend harus menerapkan scope.
+
+Audit seluruh endpoint baru dan existing yang berhubungan dengan:
+
+- destinations
+- media
+- downloader
+- publish
+- jobs
+- queue
+- schedule
+- history
+- settings.
+
+Cari kemungkinan IDOR/cross-destination access.
+
+Tambahkan regression test.
+
+==================================================
+TESTING
+==================================================
+
+Jangan hanya test happy path.
+
+Minimal test:
+
+1. Page A dapat melihat media Page A.
+2. Page A tidak dapat melihat media Page B.
+3. Page A dapat membuat publish job Page A.
+4. Page A tidak dapat membuat publish job untuk Page B tanpa explicit authorization.
+5. Downloader Page A menghasilkan destination_id Page A.
+6. Scheduler Page A tidak mengambil media Page B.
+7. Queue Page A tidak memproses job Page B secara salah.
+8. History Page A tidak menampilkan Page B.
+9. Daily slot 4/day bekerja.
+10. Sequence tidak reset.
+11. Hari pertama hanya 3 video → video berikutnya masuk slot hari berikutnya.
+12. Video ke-5 setelah 4 video → masuk hari berikutnya.
+13. Manual schedule override tidak ditimpa auto scheduler.
+14. Failed job tidak membuat sequence reuse.
+15. Retry temporary error.
+16. Permanent error tidak retry infinite.
+17. Idempotency protection.
+18. Publish status transition.
+19. Destination authorization.
+20. Token tidak muncul di response/log.
+21. Existing regression suite tetap PASS.
+
+Jika provider Facebook tidak memiliki credential live di environment:
+
+LIVE FACEBOOK VERIFICATION:
+NOT RUN / NEEDS CONFIGURATION
+
+Tetapi provider unit/integration logic tetap harus PASS.
+
+==================================================
+FACEBOOK LIVE TEST
+==================================================
+
+Jika environment memiliki:
+
+META_APP_ID
+META_APP_SECRET
+dan credential OAuth/Page yang valid,
+
+gunakan untuk verification nyata.
+
+Jangan print secret.
+
+Jangan print access token.
+
+Jika belum ada:
+
+jangan fake.
+
+Tampilkan:
+
+FACEBOOK LIVE VERIFICATION:
+NOT RUN (credentials/provider configuration unavailable)
+
+Ini bukan alasan untuk menghentikan implementasi internal.
+
+==================================================
+ENVIRONMENT
+==================================================
+
+Pastikan project membaca secret dari environment.
+
+Contoh:
+
+META_APP_ID=...
+META_APP_SECRET=...
+
+Jangan hardcode.
+
+Jangan commit .env.
+
+Periksa .gitignore.
+
+Pastikan:
+
+.env
+.env.*
+secret files
+credential files
+
+tidak masuk Git, tetapi jangan sampai meng-ignore file konfigurasi non-secret yang memang dibutuhkan repository.
+
+Jika .env.example diperlukan:
+
+gunakan placeholder.
+
+Contoh:
+
+META_APP_ID=
+META_APP_SECRET=
+
+Jangan masukkan credential nyata.
+
+==================================================
+DOCUMENTATION UPDATE
+==================================================
+
+Update documentation yang relevan setelah implementation.
+
+Minimal jika sesuai repository:
+
+docs/ARCHITECTURE.md
+docs/DATABASE.md
+docs/UI_DESIGN.md
+docs/PLATFORM_MODULES.md
+docs/ROADMAP.md
+
+Dokumentasikan:
+
+- Destination Workspace
+- destination isolation
+- Facebook provider
+- publishing flow
+- queue
+- scheduler
+- daily slots
+- sequence
+- manual override
+- retry
+- idempotency
+- environment variables
+- live verification requirements.
+
+Jangan membuat duplicate documentation jika file sudah ada.
+
+==================================================
+NO DESTRUCTIVE REFACTOR
+==================================================
+
+Jika menemukan architecture lama yang tidak cocok:
+
+jangan langsung hapus.
+
+Gunakan existing architecture jika masih kompatibel.
+
+Jika memang harus refactor:
+
+1. identifikasi
+2. implement replacement
+3. migrasikan references
+4. test
+5. hapus hanya jika aman
+6. pastikan tidak merusak feature existing.
+
+==================================================
+QUALITY GATE
+==================================================
+
+Sebelum selesai:
+
+1. typecheck
+2. lint
+3. unit tests
+4. integration tests
+5. regression tests
+6. build
+7. inspect git diff
+8. inspect git status
+9. scan perubahan untuk secret
+10. verify destination isolation
+11. verify scheduler
+12. verify queue
+13. verify provider integration
+14. verify documentation.
+
+Jangan mematikan test hanya karena test gagal.
+
+Jika ada test gagal:
+
+perbaiki root cause.
+
+==================================================
+GIT
+==================================================
+
+Setelah semua selesai:
+
+git status
+
+Pastikan hanya perubahan yang relevan.
+
+Review:
+
+git diff
+
+Pastikan tidak ada:
+
+- .env
+- token
+- API key
+- password
+- access token
+- secret
+- credential dump.
+
+Kemudian commit.
+
+Gunakan commit message yang jelas, misalnya:
+
+feat: harden facebook publishing and destination workspaces
+
+Jika scope perubahan lebih cocok, gunakan commit message yang sesuai.
+
+Jangan membuat commit kosong.
+
+Jangan force push.
+
+Push langsung ke branch project yang sedang digunakan.
+
+Setelah push:
+
+verifikasi remote.
+
+==================================================
+HASIL AKHIR WAJIB
+==================================================
+
+Di akhir laporan tampilkan:
+
+FACEBOOK PROVIDER:
+PASS / PARTIAL / NEEDS CONFIGURATION
+
+DESTINATION WORKSPACE:
+PASS
+
+DESTINATION ISOLATION:
+PASS
+
+MEDIA PIPELINE:
+PASS
+
+DOWNLOADER:
+PASS
+
+PUBLISH:
+PASS / NEEDS LIVE VERIFICATION
+
+QUEUE:
+PASS
+
+WORKER:
+PASS
+
+SCHEDULER:
+PASS
+
+DAILY SLOT:
+PASS
+
+SEQUENCE:
+PASS
+
+RETRY:
+PASS
+
+IDEMPOTENCY:
+PASS
+
+HISTORY:
+PASS
+
+REGRESSION:
+PASS
+
+TYPECHECK:
+PASS
+
+LINT:
+PASS
+
+TEST:
+PASS (<jumlah> tests)
+
+BUILD:
+PASS
+
+GIT STATUS:
+CLEAN
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS
+
+REMOTE VERIFIED:
+YES
+
+FACEBOOK LIVE VERIFICATION:
+PASS / NOT RUN (credentials unavailable)
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah:
+
+- implementation selesai
+- test selesai
+- build PASS
+- git clean
+- commit berhasil
+- push berhasil
+- remote verified
+
+STOP.
+
+Jangan melanjutkan ke YouTube, Instagram, TikTok, atau Phase berikutnya.
+
+Jangan meminta konfirmasi kredit.
+
+Jangan meminta saya mengulang prompt.
+
+Kerjakan langsung sampai batas STOP CONDITION di atas.
 ````
 # implementasi Phase 1: Core Foundation + Destination Workspace Architecture
 ```
