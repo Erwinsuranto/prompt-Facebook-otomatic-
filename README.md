@@ -110,10 +110,433 @@
 
 
 ````
-# 
+# hardening scheduler/publishing pipeline
 ```
 
+Lanjutkan project Content Pilot dari state repository TERBARU di branch yang sedang digunakan.
 
+PENTING:
+- Audit commit dan implementasi TERBARU terlebih dahulu.
+- Jangan mengulang fitur yang sudah selesai.
+- Jangan menghapus atau merombak arsitektur existing tanpa alasan.
+- Jangan membuat provider/platform baru.
+- Jangan menambahkan YouTube/Instagram/TikTok.
+- Jangan membuat fake success.
+- Jangan menganggap fitur live terverifikasi jika belum benar-benar diverifikasi.
+- Google Drive tetap menjadi storage provider utama yang sudah ada.
+- Fokus hanya pada hardening pipeline yang sudah berjalan.
+
+==================================================
+TASK: PUBLISHING & SCHEDULER HARDENING
+==================================================
+
+Tujuan:
+Membuat pipeline scheduler → publishing job → queue → worker lebih aman terhadap:
+
+1. concurrent worker
+2. duplicate processing
+3. stale lock
+4. rate limit
+5. retry
+6. crash/restart
+7. race condition
+8. observability/audit
+
+==================================================
+1. AUDIT IMPLEMENTASI TERKINI
+==================================================
+
+Periksa terlebih dahulu:
+
+- packages/core
+- packages/db
+- packages/shared
+- packages/providers/facebook
+- apps/api
+- apps/worker
+- apps/web
+- scheduler
+- queue
+- PublishingJob
+- PublishingAttempt
+- SlotAssignment/schedule
+- idempotency
+- stale-lock reaper
+- retry/backoff
+- existing rate limiter
+- audit logging
+
+Baca dokumentasi terkait:
+
+- docs/ARCHITECTURE.md
+- docs/QUEUE_SCHEDULER.md
+- docs/STORAGE.md
+- docs/facebook-publishing.md
+- docs/research/facebook-api.md
+- docs/ROADMAP.md
+
+Jangan membuat implementasi kedua jika fungsi yang sama sudah tersedia.
+
+==================================================
+2. CONCURRENCY SAFETY
+==================================================
+
+Pastikan dua worker yang berjalan bersamaan TIDAK dapat memproses PublishingJob yang sama.
+
+Audit dan perbaiki jika diperlukan:
+
+- atomic claim
+- database transaction
+- row locking / compare-and-set
+- status transition
+- attempt creation
+- idempotency key
+
+Target:
+
+Worker A → claim Job 123 → SUCCESS
+Worker B → mencoba Job 123 → TIDAK BOLEH publish ulang
+
+Tidak boleh terjadi:
+
+Job 123
+→ Facebook publish
+→ Facebook publish kedua akibat race condition
+
+Gunakan mekanisme database sebagai source of truth.
+
+Redis tidak boleh menjadi satu-satunya sumber kebenaran untuk status job.
+
+==================================================
+3. STALE LOCK / CRASH RECOVERY
+==================================================
+
+Audit stale-lock reaper yang sudah ada.
+
+Pastikan job yang worker-nya crash ketika berada pada state:
+
+- processing
+- uploading
+- publishing
+
+dapat dipulihkan secara aman.
+
+Pastikan:
+
+- job yang benar-benar masih diproses tidak direbut worker lain secara prematur
+- job yang sudah stale dapat dikembalikan ke retry/queued sesuai aturan
+- attempt history tetap tersimpan
+- tidak membuat duplicate PublishingJob
+- tidak melakukan duplicate publish ke Facebook
+
+Dokumentasikan timeout/lease yang digunakan.
+
+==================================================
+4. FACEBOOK RATE LIMIT
+==================================================
+
+Implement/hardening rate limiting Facebook Reels sesuai requirement yang SUDAH diverifikasi dalam repository.
+
+Jika repository sudah memiliki application-side limit:
+
+- audit implementasinya
+- pastikan atomic
+- destination/page scoped
+- aman terhadap concurrent worker
+- tidak mudah bypass hanya karena worker lebih dari satu
+- reset window tersimpan secara benar
+- tidak menganggap rate limit internal sebagai bukti rate limit Meta jika belum diverifikasi live
+
+Jangan mengarang limit baru.
+
+Jika limit tertentu masih NEEDS VERIFICATION berdasarkan dokumentasi resmi Meta, pertahankan status tersebut dan jangan mengklaimnya sebagai fakta API.
+
+==================================================
+5. RETRY & ERROR CLASSIFICATION
+==================================================
+
+Audit:
+
+temporary error:
+- timeout
+- network failure
+- temporary API failure
+- rate limit
+
+permanent error:
+- invalid credential
+- permission denied
+- invalid destination
+- unsupported media
+- validation failure
+
+Pastikan:
+
+temporary → retry/backoff
+permanent → failed tanpa retry otomatis yang tidak perlu
+
+Simpan:
+
+- attempt count
+- error code
+- safe error message
+- timestamp
+- next retry
+- provider metadata jika aman
+
+Jangan menyimpan access token, Authorization header, atau secret dalam log/error metadata.
+
+==================================================
+6. IDEMPOTENCY
+==================================================
+
+Audit seluruh jalur:
+
+Scheduler
+→ PublishingJob
+→ Queue
+→ Worker
+→ Provider
+
+Pastikan restart/retry/concurrent execution tidak menghasilkan duplicate job atau duplicate publish.
+
+Gunakan idempotency yang sudah ada jika memang sudah benar.
+
+Jangan membuat sistem idempotency kedua yang tumpang tindih.
+
+Tambahkan regression tests untuk:
+
+- scheduler restart
+- worker restart
+- duplicate queue delivery
+- concurrent claim
+- retry setelah crash
+- duplicate scheduler tick
+
+==================================================
+7. SCHEDULE / SLOT SAFETY
+==================================================
+
+Pastikan daily slot scheduler tetap memenuhi aturan:
+
+- sequence tidak reset setiap hari
+- sequence tidak digunakan ulang
+- slot berdasarkan timezone Destination
+- destination scoped
+- Page A tidak mengambil schedule Page B
+- manual schedule override tetap dihormati
+- slot yang sudah reserved tidak dialokasikan dua kali
+- perubahan settings tidak merusak job published
+- cancellation tidak membuat sequence lama digunakan kembali
+
+Test minimal:
+
+Page A:
+08:00 → Video 1
+11:00 → Video 2
+
+Page B:
+08:00 → Video 1
+
+Keduanya harus independent karena destination berbeda.
+
+==================================================
+8. OBSERVABILITY
+==================================================
+
+Audit logging dan worker logging.
+
+Pastikan event penting dapat ditelusuri:
+
+- job created
+- job claimed
+- job processing
+- upload started
+- publishing started
+- publishing success
+- publishing failed
+- retry scheduled
+- job cancelled
+- stale job recovered
+- rate limited
+
+Log harus aman dan tidak membocorkan secret.
+
+Gunakan correlation/job ID yang memungkinkan satu publishing trace ditelusuri.
+
+Jangan menambahkan logging berlebihan yang berisi media bytes atau token.
+
+==================================================
+9. API / UI STATUS
+==================================================
+
+Periksa apakah status backend sudah ditampilkan secara jujur pada UI.
+
+Pastikan UI dapat membedakan:
+
+- queued
+- processing
+- uploading
+- publishing
+- published
+- retrying
+- failed
+- cancelled
+
+Jangan membuat UI mengatakan Published sebelum worker benar-benar menerima hasil sukses dari provider.
+
+Jika provider belum dikonfigurasi:
+
+tampilkan:
+Needs configuration
+
+bukan:
+Published
+
+==================================================
+10. GOOGLE DRIVE
+==================================================
+
+JANGAN membuat storage provider baru.
+
+Audit implementasi Google Drive yang sudah ada:
+
+- StorageConnection
+- OAuth
+- token encryption
+- refresh
+- StorageObject
+- destination isolation
+- upload
+- retry
+- idempotency
+
+Pastikan failure tidak menghasilkan READY palsu.
+
+Jika live Google Drive verification belum dapat dilakukan karena credential tidak tersedia:
+
+- jangan membuat fake test
+- jangan mengklaim PASS
+- dokumentasikan sebagai NEEDS VERIFICATION / BLOCKED
+- tetap pastikan unit/integration boundary tests valid
+
+==================================================
+11. TESTING
+==================================================
+
+Tambahkan atau perbaiki test hanya jika diperlukan.
+
+Minimal test:
+
+1. concurrent worker claim
+2. duplicate delivery
+3. stale lock recovery
+4. retry/backoff
+5. rate limiter concurrency
+6. destination isolation
+7. sequence non-reset
+8. slot collision
+9. cancellation
+10. scheduler restart/idempotency
+11. Google Drive failure → no fake READY
+
+Gunakan mock/injected boundary untuk provider eksternal.
+
+Jangan menjalankan live Meta/Google integration test jika credential tidak tersedia.
+
+==================================================
+12. VALIDATION
+==================================================
+
+Setelah coding:
+
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+
+Jika ada test yang gagal:
+
+- cari root cause
+- perbaiki
+- jalankan ulang
+
+Jangan menonaktifkan test hanya agar suite hijau.
+
+==================================================
+13. DOCUMENTATION
+==================================================
+
+Update dokumentasi yang relevan:
+
+- docs/ARCHITECTURE.md
+- docs/QUEUE_SCHEDULER.md
+- docs/STORAGE.md
+- docs/ROADMAP.md
+
+Dokumentasikan:
+
+- concurrency model
+- job claiming
+- stale recovery
+- retry
+- rate limiting
+- idempotency
+- observability
+- Google Drive verification status
+
+Jangan membuat duplicate documentation.
+
+==================================================
+14. GIT
+==================================================
+
+Setelah semua perubahan selesai:
+
+1. git status
+2. inspect seluruh diff
+3. pastikan tidak ada secret/token/API key/password
+4. jalankan lint/typecheck/test/build
+5. commit hanya perubahan task ini
+6. gunakan commit message:
+
+fix: harden publishing scheduler concurrency and recovery
+
+7. push ke branch yang sedang digunakan
+8. verifikasi commit benar-benar berada di remote
+
+Jangan force push.
+
+Jika push gagal:
+- jangan mengklaim berhasil
+- tampilkan error sebenarnya
+- hentikan setelah perubahan lokal aman
+
+==================================================
+FINAL REPORT
+==================================================
+
+Tampilkan:
+
+AUDIT STATUS: COMPLETE
+CONCURRENCY STATUS: PASS / NEEDS FIX
+RATE LIMIT STATUS: PASS / NEEDS VERIFICATION
+RETRY STATUS: PASS / NEEDS FIX
+IDEMPOTENCY STATUS: PASS / NEEDS FIX
+SCHEDULER STATUS: PASS / NEEDS FIX
+GOOGLE DRIVE STATUS: VERIFIED / NEEDS VERIFICATION / BLOCKED
+TEST STATUS: PASS / FAIL
+BUILD STATUS: PASS / FAIL
+
+GIT STATUS: CLEAN
+COMMIT: <hash>
+BRANCH: <branch>
+PUSH STATUS: SUCCESS / FAILED
+REMOTE VERIFIED: YES / NO
+
+STOP setelah pekerjaan ini selesai.
+
+Jangan lanjut ke provider YouTube, Instagram, TikTok, atau advanced automation.
 ````
 
 # Phase 4 — Daily Slot & Auto-Publishing Scheduler
