@@ -126,10 +126,557 @@
 
 
 ````
-# 
+# Google Drive → Destination/Workspace Isolation
 ```
 
+Lanjutkan implementasi Content Pilot dari kondisi repository saat ini.
 
+FOKUS PHASE INI:
+Google Drive Storage + Destination/Workspace Isolation.
+
+JANGAN mengubah scope menjadi provider lain.
+JANGAN implement Facebook publishing production.
+JANGAN implement YouTube/Instagram/TikTok.
+JANGAN melakukan refactor besar yang tidak diperlukan.
+
+KONDISI SAAT INI:
+- Google Drive storage provider sudah memiliki fondasi implementation.
+- GoogleDriveAuthProvider sudah terdaftar di StorageRegistry.
+- createStorageAuthRegistry() sudah tersedia.
+- API storage connection sudah tersedia.
+- UI Storage sudah memiliki Connect/Disconnect.
+- Test, typecheck, lint, dan build sebelumnya PASS.
+- Live Google Drive verification belum dilakukan karena credential Google belum tersedia.
+- META_APP_ID dan META_APP_SECRET sudah tersimpan di .env, jangan tampilkan atau log secret tersebut.
+
+TUJUAN:
+Pastikan Google Drive benar-benar terintegrasi dengan konsep Destination/Workspace, sehingga setiap Facebook Page memiliki workspace dan media storage yang terisolasi.
+
+ARSITEKTUR TARGET:
+
+User
+│
+├── Facebook Account A
+│   ├── Page A
+│   │   └── Workspace Page A
+│   │       ├── Downloader
+│   │       ├── Storage
+│   │       ├── Publish
+│   │       ├── Queue
+│   │       ├── Schedule
+│   │       └── History
+│   │
+│   └── Page B
+│       └── Workspace Page B
+│           ├── Downloader
+│           ├── Storage
+│           ├── Publish
+│           ├── Queue
+│           ├── Schedule
+│           └── History
+│
+└── Facebook Account B
+    └── Page C
+        └── Workspace Page C
+
+ATURAN ISOLASI:
+
+1. Setiap Destination memiliki workspace sendiri secara logical.
+2. Semua media harus memiliki destination_id.
+3. Semua publishing job harus memiliki destination_id.
+4. Schedule harus memiliki destination_id.
+5. Queue/job processing harus mempertahankan destination scope.
+6. History harus dapat difilter berdasarkan destination.
+7. Storage object harus mengetahui destination yang memilikinya.
+8. Downloader yang dijalankan dari Page A otomatis memasukkan media ke Page A.
+9. Downloader Page A tidak boleh memasukkan media ke Page B.
+10. Storage Page A tidak boleh menampilkan media Page B.
+11. Publish Page A tidak boleh mengambil media Page B secara tidak sengaja.
+12. Scheduler Page A tidak boleh mengambil job Page B.
+13. Queue Page A tidak boleh memproses job Page B karena kesalahan scope.
+14. Setiap API endpoint yang menerima destinationId wajib melakukan authorization/ownership check.
+15. Jangan hanya melakukan filtering di frontend. Isolation harus ditegakkan di backend/query/database layer.
+16. Jika destination tidak dimiliki user/session yang aktif, response harus 404/unauthorized sesuai pola keamanan project yang sudah ada.
+17. Jangan membocorkan keberadaan destination milik user lain melalui error response.
+
+GOOGLE DRIVE:
+
+Google Drive adalah PRIMARY STORAGE PROVIDER pertama.
+
+Gunakan abstraction yang sudah tersedia.
+
+Target:
+
+StorageProvider
+└── GoogleDriveStorage
+
+Jangan menanam logic Google Drive langsung ke:
+- Downloader
+- Scheduler
+- Queue
+- Facebook Provider
+- Publishing Worker
+
+Semua komunikasi Google Drive harus melalui storage abstraction/provider.
+
+STORAGE CONNECTION:
+
+Pertahankan konsep StorageConnection.
+
+Minimal informasi logical:
+
+StorageConnection
+- id
+- provider
+- owner/account scope
+- status
+- credential reference
+- created_at
+- updated_at
+
+Jangan menyimpan access token/refresh token plaintext jika architecture existing sudah menyediakan encrypted storage.
+
+Jangan pernah:
+- console.log token
+- return token melalui API response
+- menampilkan secret di UI
+- commit .env
+- menulis credential ke test fixture secara plaintext
+
+STORAGE OBJECT:
+
+Pastikan logical metadata dapat merepresentasikan:
+
+StorageObject
+- id
+- media_id
+- destination_id
+- storage_connection_id
+- provider_object_id
+- path/folder reference
+- status
+- created_at
+- updated_at
+
+media_id adalah identifier utama Content Pilot.
+
+provider_object_id adalah ID object dari Google Drive.
+
+Jangan menggunakan:
+- filename
+- Google Drive filename
+- folder name
+
+sebagai primary identifier.
+
+GOOGLE DRIVE FOLDER SCOPE:
+
+Gunakan struktur logical seperti:
+
+Content Pilot/
+├── Page A/
+│   ├── Incoming/
+│   ├── Ready/
+│   ├── Published/
+│   └── Failed/
+│
+└── Page B/
+    ├── Incoming/
+    ├── Ready/
+    ├── Published/
+    └── Failed/
+
+Folder naming boleh mengikuti implementation yang sudah ada, tetapi jangan merusak data existing.
+
+Jika Google Drive folder structure belum dibuat, implementasikan secara aman melalui provider.
+
+Setiap destination harus memiliki folder scope yang stabil.
+
+Jangan membuat folder baru setiap kali aplikasi restart.
+
+Gunakan metadata/database provider_object_id atau mekanisme idempotent yang sesuai.
+
+FOLDER CREATION HARUS IDEMPOTENT.
+
+Jika folder Page A sudah ada:
+→ gunakan folder tersebut.
+
+Jika belum ada:
+→ buat.
+
+Jika request diulang:
+→ jangan membuat duplicate folder.
+
+MEDIA FLOW:
+
+Downloader / Manual Upload
+        ↓
+Media
+        ↓
+Google Drive Storage
+        ↓
+StorageObject
+        ↓
+Media READY
+        ↓
+Scheduler
+        ↓
+PublishingJob
+        ↓
+Queue
+        ↓
+Worker
+
+Semua tahap harus mempertahankan destination_id.
+
+CONTOH:
+
+Downloader Page A
+→ Media 001
+→ destination_id = PAGE_A
+→ Google Drive Page A/Incoming
+→ READY
+
+Downloader Page B
+→ Media 002
+→ destination_id = PAGE_B
+→ Google Drive Page B/Incoming
+→ READY
+
+Jangan sampai:
+
+Media 001 Page A
+→ terlihat di Storage Page B.
+
+API REQUIREMENTS:
+
+Audit endpoint storage yang sudah ada.
+
+Periksa:
+- connect
+- disconnect
+- status
+- folders
+- upload
+- list
+- delete/move jika sudah tersedia
+
+Pastikan setiap endpoint yang terkait destination menggunakan ownership check.
+
+Jika endpoint existing belum destination-scoped tetapi seharusnya scoped, perbaiki dengan perubahan minimum yang konsisten dengan architecture existing.
+
+Jangan membuat endpoint duplicate.
+
+Gunakan naming convention project yang sudah ada.
+
+UI REQUIREMENTS:
+
+UI harus mengikuti workspace yang sedang aktif.
+
+Contoh:
+
+User sedang berada di:
+
+Facebook → Page A
+
+Maka halaman Storage harus menampilkan:
+
+Storage — Page A
+
+dan hanya media/storage object milik Page A.
+
+Jika user pindah:
+
+Facebook → Page B
+
+maka:
+
+Storage — Page B
+
+dan hanya media Page B yang tampil.
+
+Workspace switcher harus mempertahankan context.
+
+Jangan mengandalkan query frontend saja.
+
+Backend tetap wajib melakukan isolation.
+
+UI Storage minimal harus dapat menunjukkan:
+- connected/disconnected
+- provider Google Drive
+- destination/workspace aktif
+- storage status
+- media/file list jika endpoint tersebut sudah tersedia
+- loading state
+- empty state
+- error state
+
+Jangan membuat fake connected status.
+
+Jika Google credential belum tersedia:
+tampilkan status yang jujur seperti:
+NOT CONFIGURED
+
+Jangan mengatakan:
+CONNECTED
+
+hanya karena provider class tersedia.
+
+TESTING:
+
+Tambahkan atau perbaiki test untuk memastikan:
+
+1. User dapat melihat storage destination miliknya.
+2. User tidak dapat melihat storage destination milik user/destination lain.
+3. Media Page A tidak muncul di Page B.
+4. Upload Page A menggunakan destination_id Page A.
+5. Upload Page B menggunakan destination_id Page B.
+6. Storage object menyimpan destination_id yang benar.
+7. Folder creation Google Drive bersifat idempotent.
+8. Disconnect tidak membocorkan credential.
+9. Invalid destination menghasilkan response keamanan yang sesuai.
+10. Missing destination menghasilkan error yang konsisten.
+11. API tidak menerima destination milik user lain.
+12. Existing tests tetap PASS.
+
+TEST TANPA CREDENTIAL GOOGLE:
+
+Jika credential Google Drive belum tersedia di environment:
+- jangan membuat fake live success
+- jangan mengarang hasil Google API
+- gunakan mock/unit test untuk provider
+- tandai live verification sebagai NOT RUN / NEEDS CONFIGURATION
+
+LIVE VERIFICATION:
+
+Jangan mengklaim Google Drive live integration PASS jika:
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+atau credential lain yang memang diperlukan belum tersedia.
+
+Jika environment sudah memiliki credential:
+lakukan verification secara aman.
+
+Jika belum:
+laporkan:
+
+GOOGLE DRIVE LIVE VERIFICATION: NOT RUN
+REASON: Google OAuth credentials not configured
+
+SECURITY:
+
+Periksa:
+- authorization
+- ownership check
+- destination isolation
+- token encryption
+- CSRF jika relevan
+- SSRF jika ada URL-based import
+- file validation
+- file size limits
+- path traversal
+- secret logging
+
+Jangan menampilkan secret dalam output.
+
+DATABASE:
+
+Sebelum migration:
+- audit schema existing
+- jangan membuat tabel duplicate
+- gunakan model existing jika sudah tersedia
+- tambahkan kolom/index/constraint hanya jika memang diperlukan
+
+Jika destination_id sudah tersedia:
+gunakan yang sudah ada.
+
+Jika belum:
+buat migration minimal yang sesuai architecture.
+
+Pastikan index/query untuk:
+destination_id
+media_id
+storage_connection_id
+
+sesuai kebutuhan.
+
+UNIQUE / IDEMPOTENCY:
+
+Pastikan duplicate media/storage object dapat dicegah dengan mechanism yang sudah digunakan project.
+
+Jangan menghapus duplicate-index protection yang sudah ada.
+
+Jika sudah ada UNIQUE(media_id) atau constraint terkait:
+pertahankan dan sesuaikan dengan destination scope hanya jika architecture memang mengharuskannya.
+
+Jangan melakukan migration destruktif.
+
+DOCUMENTATION:
+
+Update dokumentasi yang relevan:
+
+- docs/ARCHITECTURE.md
+- docs/STORAGE.md jika sudah ada
+- docs/DATABASE.md
+- docs/ROADMAP.md
+- docs/UI_DESIGN.md jika perubahan UI perlu didokumentasikan
+
+Jangan membuat duplicate documentation jika file dengan tujuan sama sudah ada.
+
+Dokumentasikan:
+
+1. Google Drive sebagai primary storage provider pertama.
+2. Storage abstraction.
+3. Destination-scoped storage.
+4. Workspace isolation.
+5. Google Drive folder structure.
+6. StorageConnection.
+7. StorageObject.
+8. Media lifecycle.
+9. Security/ownership checks.
+10. Future storage providers.
+
+Jangan menambahkan provider lain sekarang.
+
+CODE QUALITY:
+
+Ikuti architecture existing.
+
+Jangan:
+- membuat giant file
+- membuat duplicate service
+- membuat duplicate API
+- membuat duplicate provider
+- menghapus test existing
+- menghapus documentation existing tanpa alasan
+- melakukan massive refactor
+- mengganti framework
+- mengganti database
+- mengganti queue
+
+Gunakan module/file yang sudah ada jika memang sesuai.
+
+HASIL YANG DIHARAPKAN:
+
+Setelah implementasi:
+
+User
+→ Destination Page A
+→ Workspace Page A
+→ Downloader
+→ Media
+→ Google Drive Storage A
+
+dan:
+
+User
+→ Destination Page B
+→ Workspace Page B
+→ Downloader
+→ Media
+→ Google Drive Storage B
+
+harus benar-benar terisolasi.
+
+Satu user dapat memiliki banyak Page.
+
+Satu Facebook Account dapat memiliki banyak Page.
+
+Satu Page memiliki workspace sendiri.
+
+Storage harus mengikuti workspace tersebut.
+
+Jangan menganggap satu Facebook Account = satu Page.
+
+Jangan menganggap satu Google Drive connection = satu Page.
+
+Google Drive connection dapat menjadi credential/provider connection, sedangkan logical storage scope tetap ditentukan oleh destination/workspace.
+
+SEBELUM CODING:
+
+1. Audit repository actual.
+2. Audit implementation Google Drive yang sudah ada.
+3. Audit Destination model.
+4. Audit Media model.
+5. Audit Storage model.
+6. Audit API routes.
+7. Audit UI Storage.
+8. Audit authorization/ownership checks.
+9. Tentukan perubahan minimum yang diperlukan.
+
+Jangan mengubah sesuatu yang sebenarnya sudah benar.
+
+IMPLEMENTASI:
+
+Kerjakan hanya perubahan yang diperlukan untuk:
+
+Google Drive
++
+Destination/Workspace Isolation.
+
+Setelah selesai:
+
+1. Typecheck.
+2. Lint.
+3. Test seluruh suite.
+4. Build.
+5. Periksa git diff.
+6. Pastikan tidak ada secret.
+7. Pastikan tidak ada perubahan unrelated.
+8. Verifikasi migration jika ada.
+9. Verifikasi API isolation.
+10. Verifikasi UI workspace context.
+11. Verifikasi Google Drive provider secara mock jika credential belum tersedia.
+
+GIT:
+
+Jika project menggunakan Git workflow yang sudah ada:
+
+- jangan force push
+- jangan commit secret
+- jangan commit .env
+- jangan membuat commit kosong
+- commit hanya perubahan phase ini
+- push hanya jika workflow project memang mengharuskan push
+
+Jangan mengklaim remote verified jika belum benar-benar diverifikasi.
+
+FINAL REPORT:
+
+Tampilkan:
+
+GOOGLE DRIVE PROVIDER: PASS / PARTIAL
+DESTINATION ISOLATION: PASS / PARTIAL
+WORKSPACE ISOLATION: PASS / PARTIAL
+STORAGE API: PASS / PARTIAL
+DATABASE: PASS / NO CHANGES
+UI: PASS / PARTIAL
+AUTHORIZATION: PASS / PARTIAL
+TEST: PASS (jumlah test)
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+BUILD: PASS/FAIL
+
+GOOGLE DRIVE LIVE VERIFICATION:
+PASS / NOT RUN
+Reason jika NOT RUN.
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash jika ada>
+
+PUSH STATUS:
+SUCCESS / NOT NEEDED / FAILED
+
+OPEN ISSUES:
+<jika ada>
+
+NEXT RECOMMENDED STEP:
+Lanjutkan ke integrasi Media Pipeline + Downloader → Google Drive → READY dengan destination scope yang sama.
+
+STOP setelah laporan.
 ````
 # 
 ```
