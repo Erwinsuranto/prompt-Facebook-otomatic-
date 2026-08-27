@@ -121,9 +121,475 @@
 
 
 ````
-# 
+# hubungkan Downloader → Media → Google Drive
 ```
+Lanjutkan Content Pilot dari kondisi repository saat ini.
 
+FOCUS PHASE:
+Media Pipeline + Downloader → Google Drive → READY
+
+Kondisi:
+- Google Drive provider sudah tersedia.
+- Storage auth/connection sudah tersedia.
+- Test existing harus tetap dipertahankan.
+- Destination/Workspace isolation sudah menjadi aturan utama.
+- Google Drive adalah primary storage provider pertama.
+- Jangan implement provider storage lain.
+- Jangan implement Facebook publishing production pada phase ini.
+- Jangan membuat fake Google Drive success jika credential live belum tersedia.
+
+TUJUAN UTAMA:
+
+Bangun alur nyata:
+
+Downloader / Manual Upload
+        ↓
+Media
+        ↓
+Google Drive
+        ↓
+StorageObject
+        ↓
+Media READY
+        ↓
+siap digunakan Scheduler / Publishing Queue
+
+SEMUA DATA HARUS destination-scoped.
+
+ATURAN DESTINATION:
+
+Setiap Page/Channel memiliki workspace sendiri.
+
+Contoh:
+
+Page A
+→ Downloader A
+→ Media A
+→ Google Drive scope A
+→ Storage A
+
+Page B
+→ Downloader B
+→ Media B
+→ Google Drive scope B
+→ Storage B
+
+Media Page A tidak boleh muncul di Page B.
+
+Jangan hanya melakukan filtering di frontend.
+Backend/database harus melakukan ownership + destination isolation.
+
+MEDIA MODEL:
+
+Audit Media model existing terlebih dahulu.
+
+Pastikan media memiliki identifier stabil.
+
+Minimal konsep:
+
+Media
+- id
+- destination_id
+- source_type
+- source_id/source_url jika tersedia
+- filename
+- mime_type
+- size
+- duration jika tersedia
+- status
+- created_at
+- updated_at
+
+Jangan membuat model FacebookVideo atau GoogleDriveVideo.
+
+Media harus platform-independent.
+
+SOURCE TYPE:
+
+Gunakan konsep seperti:
+
+manual
+downloader
+import
+
+Jangan menghapus source metadata.
+
+Jika downloader mengambil video dari Facebook, simpan informasi source secara aman tetapi Media tetap generik.
+
+STORAGE OBJECT:
+
+Pastikan hubungan:
+
+Media
+→ StorageObject
+→ StorageConnection
+→ Google Drive provider
+
+Minimal:
+
+StorageObject
+- id
+- media_id
+- destination_id
+- storage_connection_id
+- provider_object_id
+- path/folder reference
+- status
+- created_at
+- updated_at
+
+provider_object_id adalah ID object Google Drive.
+
+Jangan menggunakan filename sebagai identifier utama.
+
+GOOGLE DRIVE FOLDER:
+
+Gunakan destination-aware structure.
+
+Contoh:
+
+Content Pilot/
+├── Page A/
+│   ├── Incoming/
+│   ├── Ready/
+│   ├── Published/
+│   └── Failed/
+└── Page B/
+    ├── Incoming/
+    ├── Ready/
+    ├── Published/
+    └── Failed/
+
+Jika struktur folder provider existing sudah berbeda, gunakan struktur existing dan jangan melakukan migration destruktif.
+
+Folder creation harus idempotent.
+
+Jika folder sudah ada:
+→ gunakan folder tersebut.
+
+Jika belum:
+→ buat.
+
+Jangan membuat folder duplicate setiap restart/request.
+
+MANUAL UPLOAD:
+
+Audit endpoint manual upload existing.
+
+Jika user berada pada Workspace/Page A:
+
+upload
+→ destination_id = Page A
+→ Media Page A
+→ Google Drive Page A/Incoming
+→ StorageObject
+→ READY
+
+Jika upload dilakukan pada Page B:
+→ seluruh flow menggunakan Page B.
+
+Jangan mengambil destination dari filename atau frontend saja.
+
+DOWNLOADER:
+
+Audit downloader existing.
+
+Downloader harus menerima destination context.
+
+Contoh:
+
+Downloader Page A
+→ download video
+→ create Media(destination_id=A)
+→ upload Google Drive scope A
+→ create StorageObject
+→ Media READY
+
+Jika downloader belum benar-benar mengambil media dari source tertentu, jangan membuat fake download.
+
+Gunakan abstraction downloader existing.
+
+Jangan mengikat downloader secara permanen ke Facebook jika architecture downloader memang dirancang generic.
+
+DUPLICATE HANDLING:
+
+Audit duplicate detection existing.
+
+Pertahankan constraint/index yang sudah ada.
+
+Jika source media yang sama didownload dua kali:
+- jangan membuat duplicate secara tidak sengaja
+- gunakan mechanism idempotency existing
+- jika duplicate memang harus diizinkan, dokumentasikan alasannya
+
+Jangan menghapus unique constraint existing tanpa alasan.
+
+MEDIA STATUS:
+
+Gunakan status existing jika sudah tersedia.
+
+Jika perlu, pastikan flow minimal dapat membedakan:
+
+UPLOADING
+READY
+FAILED
+
+Jangan membuat status baru jika enum existing sudah mencukupi.
+
+Jika upload ke Google Drive gagal:
+
+Media
+→ FAILED
+
+dan simpan error secara aman.
+
+Jangan menandai READY jika file belum benar-benar tersimpan.
+
+TRANSACTION / FAILURE:
+
+Perhatikan kasus:
+
+1. Media database berhasil dibuat tetapi upload Drive gagal.
+2. Upload Drive berhasil tetapi database gagal menyimpan StorageObject.
+3. Request terputus di tengah upload.
+4. User melakukan retry.
+5. Worker/restart terjadi.
+
+Flow harus idempotent dan recovery-safe.
+
+Jangan meninggalkan record seolah-olah READY jika storage object belum valid.
+
+API:
+
+Audit endpoint:
+
+- manual upload
+- downloader
+- media list
+- media detail
+- media status
+- storage object
+
+Pastikan semua endpoint melakukan:
+
+user ownership
++
+destination ownership
++
+workspace scope
+
+Media list Page A hanya mengembalikan Page A.
+
+Media detail Page A tidak boleh membuka media Page B.
+
+Jika destination tidak dimiliki user:
+gunakan pola error existing, jangan membocorkan keberadaan destination tersebut.
+
+UI:
+
+Audit UI existing.
+
+Jangan membuat halaman baru jika sudah tersedia.
+
+Storage/Media UI harus mengikuti workspace aktif.
+
+Contoh:
+
+Workspace: Page A
+
+Media Library:
+- Video 1
+- Video 2
+- Video 3
+
+Pindah ke Page B:
+
+Media Library:
+- hanya media Page B
+
+UI harus memiliki state:
+
+- loading
+- empty
+- uploading
+- ready
+- failed
+- retry jika sudah didukung
+
+Jangan membuat status CONNECTED/READY palsu.
+
+TESTING:
+
+Tambahkan test untuk:
+
+1. Manual upload Page A menghasilkan media destination A.
+2. Manual upload Page B menghasilkan media destination B.
+3. Media A tidak muncul pada list Page B.
+4. Media detail melakukan destination ownership check.
+5. Downloader Page A menghasilkan media destination A.
+6. Downloader Page B menghasilkan media destination B.
+7. StorageObject menyimpan destination_id yang benar.
+8. Google Drive folder scope mengikuti destination.
+9. Folder creation idempotent.
+10. Duplicate request tidak menghasilkan duplicate object secara tidak sengaja.
+11. Google Drive upload failure menghasilkan status FAILED.
+12. Retry tidak membuat duplicate folder/object.
+13. User tidak dapat mengakses destination user lain.
+14. Existing tests tetap PASS.
+
+LIVE GOOGLE DRIVE:
+
+Jika credential Google belum tersedia:
+
+GOOGLE DRIVE LIVE VERIFICATION: NOT RUN
+
+Jangan fake success.
+
+Jika credential sudah tersedia, lakukan verification nyata dengan aman.
+
+Jangan pernah mencetak:
+- client secret
+- access token
+- refresh token
+
+SECURITY:
+
+Periksa:
+- authentication
+- authorization
+- destination isolation
+- file type validation
+- file size limit
+- filename/path safety
+- SSRF jika downloader menerima URL
+- token security
+- secret logging
+
+Jangan commit .env atau credential.
+
+DATABASE:
+
+Sebelum migration:
+
+1. Audit schema existing.
+2. Gunakan model/field existing jika sudah tersedia.
+3. Tambahkan migration hanya jika benar-benar diperlukan.
+4. Jangan destructive migration.
+5. Pastikan index destination_id/media_id sesuai kebutuhan.
+6. Pastikan migration dapat dijalankan ulang dengan aman sesuai tooling project.
+
+JANGAN:
+- mengganti database
+- mengganti framework
+- membuat storage provider kedua
+- membuat Facebook publisher production
+- membuat scheduler baru
+- membuat queue baru jika fondasinya sudah tersedia
+- melakukan massive refactor
+- menghapus test
+- menghapus documentation
+
+INTEGRATION:
+
+Setelah Media + Storage selesai, pastikan interface siap untuk:
+
+Media READY
+→ Daily Slot Scheduler
+→ PublishingJob
+
+Tetapi JANGAN implementasikan scheduler phase berikutnya sekarang.
+
+Dokumentasikan integration point saja.
+
+DOCUMENTATION:
+
+Update documentation existing yang relevan:
+
+- STORAGE
+- ARCHITECTURE
+- DATABASE
+- ROADMAP
+- UI_DESIGN jika UI berubah
+
+Dokumentasikan:
+
+Downloader
+→ Media
+→ Google Drive
+→ StorageObject
+→ READY
+
+dan destination isolation.
+
+VERIFICATION:
+
+Setelah implementation:
+
+1. pnpm typecheck
+2. pnpm lint
+3. pnpm test
+4. pnpm build
+
+Gunakan command yang benar berdasarkan package.json/repository actual.
+
+Jangan mengarang hasil test.
+
+Periksa git diff.
+
+Pastikan tidak ada secret.
+
+GIT:
+
+Jika semua PASS:
+
+- git status
+- inspect diff
+- commit perubahan phase ini
+- push ke branch aktif sesuai workflow existing
+- verify remote
+
+Jangan force push.
+Jangan commit .env.
+Jangan membuat empty commit.
+
+FINAL REPORT:
+
+Tampilkan:
+
+MEDIA PIPELINE: PASS/PARTIAL
+MANUAL UPLOAD: PASS/PARTIAL
+DOWNLOADER: PASS/PARTIAL
+GOOGLE DRIVE STORAGE: PASS/PARTIAL
+DESTINATION ISOLATION: PASS/PARTIAL
+STORAGE OBJECT: PASS/PARTIAL
+DUPLICATE HANDLING: PASS/PARTIAL
+ERROR RECOVERY: PASS/PARTIAL
+UI: PASS/PARTIAL
+
+TYPECHECK: PASS/FAIL
+LINT: PASS/FAIL
+TEST: PASS/FAIL (jumlah)
+BUILD: PASS/FAIL
+
+GOOGLE DRIVE LIVE VERIFICATION:
+PASS / NOT RUN
+
+GIT STATUS:
+CLEAN / DIRTY
+
+COMMIT:
+<hash>
+
+PUSH STATUS:
+SUCCESS / NOT NEEDED / FAILED
+
+OPEN ISSUES:
+<jika ada>
+
+NEXT RECOMMENDED PHASE:
+Phase 4 — Daily Slot & Auto-Publishing Scheduler.
+
+STOP setelah laporan.
 
 ````
 # Google Drive → Destination/Workspace Isolation
