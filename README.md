@@ -92,7 +92,814 @@
 ````
 # 
 ```
+LANJUT KE IMPLEMENTASI GOOGLE DRIVE STORAGE — REAL INTEGRATION
 
+Repository saat ini adalah Content Pilot di /root/content-pilot.
+
+Dari audit sebelumnya:
+- Core/destination architecture sudah tersedia.
+- Destination isolation sudah diterapkan.
+- Storage abstraction sudah tersedia.
+- Google Drive provider/foundation sudah tersedia.
+- Google Drive live verification sebelumnya belum dijalankan karena credential belum tersedia.
+- Jangan membuat commit kosong.
+- Jangan mengubah architecture yang sudah benar hanya demi menghasilkan diff.
+
+Sekarang fokus HANYA pada Google Drive sebagai PRIMARY STORAGE PROVIDER.
+
+JANGAN mengerjakan:
+- Facebook publishing
+- Facebook OAuth
+- YouTube
+- Instagram
+- TikTok
+- provider storage lain
+- S3/R2/MinIO
+- production auto-publishing
+- queue hardening di luar kebutuhan storage
+- perubahan besar core architecture
+
+==================================================
+TUJUAN
+==================================================
+
+Pastikan Content Pilot benar-benar memiliki fondasi Google Drive Storage yang production-ready secara architecture.
+
+Target:
+
+Content Pilot
+    ↓
+StorageProvider
+    ↓
+GoogleDriveStorage
+    ↓
+Google Drive API
+
+Google Drive harus menjadi storage provider pertama yang benar-benar digunakan oleh media pipeline.
+
+Database Content Pilot tetap menjadi source of truth.
+
+Google Drive hanya menjadi storage backend.
+
+==================================================
+1. AUDIT IMPLEMENTASI GOOGLE DRIVE YANG SUDAH ADA
+==================================================
+
+Sebelum coding:
+
+Baca implementation aktual repository.
+
+Periksa minimal:
+
+packages/providers/gdrive/
+apps/api/
+apps/web/
+packages/db/
+storage connection model
+storage registry
+media model
+API routes
+UI settings/storage
+environment configuration
+tests
+documentation
+
+Identifikasi:
+
+- apa yang sudah benar-benar implemented
+- apa yang masih abstraction
+- apa yang masih mock
+- apa yang masih TODO
+- apa yang belum terhubung
+- apakah Google Drive SDK/client sudah digunakan
+- bagaimana token/credential disimpan
+- bagaimana storage connection dikaitkan ke user/destination
+
+JANGAN membuat ulang sesuatu yang sudah ada.
+
+==================================================
+2. GOOGLE OAUTH
+==================================================
+
+Jika OAuth Google Drive belum benar-benar selesai:
+
+implementasikan connection flow menggunakan OAuth resmi Google.
+
+Gunakan dokumentasi resmi Google sebagai sumber utama.
+
+Jangan mengarang scope.
+
+Gunakan scope minimum yang memang diperlukan untuk operasi storage yang direncanakan.
+
+Perhatikan:
+
+- authorization code flow
+- redirect URI
+- state/CSRF protection
+- access token
+- refresh token
+- token expiry
+- reconnect
+- disconnect
+- revoked access
+- invalid_grant
+- credential encryption
+- secret handling
+
+Access token dan refresh token:
+
+JANGAN:
+- ditampilkan di UI
+- ditulis ke log
+- disimpan plaintext jika architecture secure storage/encryption tersedia
+- dimasukkan ke error response
+- di-commit ke Git
+
+Jika environment belum memiliki Google OAuth credentials:
+
+jangan membuat fake credentials.
+
+Implementasikan integration dengan konfigurasi environment yang jelas dan biarkan live verification tetap NEEDS CREDENTIAL jika memang credential belum tersedia.
+
+==================================================
+3. STORAGE CONNECTION
+==================================================
+
+Pastikan model storage connection dapat membedakan:
+
+User
+→ Google Drive Connection
+
+dan destination/workspace.
+
+Jika architecture saat ini memiliki storage connection global per user, jangan mengubahnya menjadi destination-specific secara paksa.
+
+Namun storage object/media HARUS tetap dapat dikaitkan secara jelas dengan destination/workspace jika requirement isolation mengharuskannya.
+
+Gunakan model existing sebagai source of truth.
+
+Status minimal:
+
+connected
+disconnected
+expired
+error
+
+API jangan pernah mengembalikan credential/token.
+
+==================================================
+4. GOOGLE DRIVE ROOT
+==================================================
+
+Google Drive harus memiliki root folder khusus untuk Content Pilot.
+
+Contoh logical structure:
+
+Content Pilot/
+    Page A/
+        Incoming/
+        Ready/
+        Published/
+        Failed/
+
+    Page B/
+        Incoming/
+        Ready/
+        Published/
+        Failed/
+
+Jangan membuat folder global yang menyebabkan Page A dan Page B tercampur tanpa metadata.
+
+Folder ID harus disimpan sebagai provider-specific reference.
+
+Jangan menggunakan nama folder sebagai identifier utama.
+
+Gunakan Google Drive file/folder ID.
+
+Jika root/folder sudah pernah dibuat:
+
+gunakan kembali.
+
+Jangan membuat duplicate folder setiap kali user reconnect atau request ulang.
+
+==================================================
+5. DESTINATION ISOLATION
+==================================================
+
+WAJIB.
+
+Media dari Destination A tidak boleh masuk ke logical storage scope Destination B.
+
+Contoh:
+
+Destination A
+→ Google Drive Folder A
+
+Destination B
+→ Google Drive Folder B
+
+Jika satu media digunakan untuk beberapa destination:
+
+jangan memindahkan ownership media secara diam-diam.
+
+Gunakan model media + storage object/reference yang sudah ditentukan architecture.
+
+PublishingJob tetap destination-specific.
+
+==================================================
+6. GOOGLE DRIVE OPERATIONS
+==================================================
+
+StorageProvider harus mendukung operasi yang memang diperlukan.
+
+Minimal:
+
+connect
+disconnect
+getConnectionStatus
+
+createFolder
+getFolder
+upload
+getMetadata
+download/stream jika dibutuhkan
+exists
+move
+delete/archive sesuai architecture
+
+Jangan membuat method yang tidak diperlukan hanya untuk memperbesar interface.
+
+GoogleDriveStorage harus mengimplementasikan StorageProvider.
+
+Core tidak boleh import Google Drive SDK secara langsung.
+
+Google Drive SDK hanya boleh berada di provider/module Google Drive.
+
+==================================================
+7. UPLOAD
+==================================================
+
+Implementasikan upload media ke Google Drive.
+
+Perhatikan:
+
+- MIME type
+- filename sanitization
+- file size
+- stream handling
+- timeout
+- error handling
+- resumable upload jika diperlukan untuk file besar
+- duplicate handling
+- provider object ID
+- upload status
+
+Jangan membaca seluruh video ke memory jika architecture dapat menggunakan stream.
+
+Storage object harus menyimpan:
+
+media_id
+destination_id
+storage_connection_id
+provider
+provider_object_id
+status
+metadata
+created_at
+updated_at
+
+Jika field yang setara sudah ada, gunakan field existing.
+
+Jangan membuat duplicate model tanpa alasan.
+
+==================================================
+8. DOWNLOAD / STREAM
+==================================================
+
+Pastikan media dapat diambil kembali dari Google Drive menggunakan provider object ID.
+
+Jangan mengandalkan:
+
+filename
+folder name
+path
+
+sebagai identifier utama.
+
+Jika publishing pipeline nantinya membutuhkan stream:
+
+buat API/provider abstraction yang dapat memberikan stream atau temporary access sesuai architecture.
+
+Jangan membuat public Google Drive URL sebagai permanent secret.
+
+==================================================
+9. DELETE / ARCHIVE
+==================================================
+
+Implementasikan behavior yang aman.
+
+Jangan langsung permanently delete jika architecture belum menetapkan policy tersebut.
+
+Bedakan:
+
+database delete
+storage delete
+archive
+
+Jangan menghapus Google Drive object hanya karena database record dihapus kecuali memang policy mengharuskannya.
+
+Jika belum ada retention policy:
+
+gunakan behavior konservatif dan dokumentasikan.
+
+==================================================
+10. DUPLICATE DETECTION
+==================================================
+
+Periksa apakah project sudah memiliki duplicate detection.
+
+Jika belum:
+
+buat abstraction yang aman.
+
+Jangan hanya membandingkan filename.
+
+Pertimbangkan:
+
+- provider object ID
+- file size
+- checksum/hash jika tersedia
+- source reference
+- media identity
+
+Jangan menghitung hash video besar dengan cara yang membuat memory usage tidak masuk akal.
+
+Jika duplicate detection belum perlu untuk tahap ini:
+
+jangan over-engineer.
+
+Dokumentasikan sebagai follow-up.
+
+==================================================
+11. API
+==================================================
+
+Pastikan API storage tersedia secara aman.
+
+Minimal konsep:
+
+GET /api/settings/storage
+GET /api/settings/storage/google-drive/connect
+GET /api/settings/storage/google-drive/callback
+POST /api/settings/storage/google-drive/disconnect
+
+dan endpoint media/storage sesuai architecture existing.
+
+Jangan membuat duplicate endpoint jika route existing sudah memiliki fungsi yang sama.
+
+Semua endpoint:
+
+- authenticated
+- authorized
+- no secret leakage
+- CSRF/state protected untuk OAuth
+- destination scoped jika berkaitan dengan destination data
+
+==================================================
+12. UI STORAGE
+==================================================
+
+Audit UI existing terlebih dahulu.
+
+Gunakan UI storage yang sudah ada jika sesuai.
+
+Target:
+
+Storage
+
+Google Drive
+
+Status:
+● Connected
+
+Account:
+example@gmail.com
+
+Storage:
+Google Drive
+
+Actions:
+[Open]
+[Disconnect]
+
+Jika belum connected:
+
+Google Drive
+Not connected
+
+[Connect Google Drive]
+
+Jangan menampilkan:
+- access token
+- refresh token
+- client secret
+
+Jika credential belum dikonfigurasi:
+
+tampilkan status yang jelas:
+
+Google Drive
+Configuration required
+
+Jangan fake menjadi Connected.
+
+==================================================
+13. MEDIA FLOW
+==================================================
+
+Pastikan flow architecture menjadi:
+
+Manual Upload
+       │
+       ▼
+Media Service
+       │
+       ▼
+GoogleDriveStorage
+       │
+       ▼
+Google Drive
+       │
+       ▼
+StorageObject
+       │
+       ▼
+Media READY
+
+Downloader nantinya harus dapat menggunakan pipeline yang sama.
+
+Jangan membuat uploader terpisah yang bypass StorageProvider.
+
+==================================================
+14. TEST
+==================================================
+
+WAJIB.
+
+Pertahankan semua test existing.
+
+Tambahkan/update test untuk:
+
+1. provider registry menemukan Google Drive provider
+2. Google Drive provider mengimplementasikan StorageProvider
+3. provider tidak terkonfigurasi menghasilkan status yang benar
+4. credential tidak pernah masuk response
+5. credential tidak pernah masuk log
+6. storage connection terisolasi per user sesuai architecture
+7. destination A tidak dapat membaca storage object destination B
+8. upload menghasilkan provider object ID
+9. metadata dapat dibaca kembali
+10. reconnect tidak membuat duplicate root folder
+11. disconnect mengubah status dengan benar
+12. invalid/revoked credential menghasilkan error yang aman
+13. OAuth state/CSRF validation
+14. duplicate folder creation dicegah
+15. filename tidak digunakan sebagai primary identifier
+
+Gunakan mock HTTP/client untuk unit test.
+
+Jangan mengklaim live Google Drive berhasil jika credential nyata belum tersedia.
+
+==================================================
+15. LIVE VERIFICATION
+==================================================
+
+Jika environment memiliki:
+
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI
+
+dan credential tersebut benar-benar valid:
+
+jalankan live verification yang aman.
+
+Test minimal:
+
+1. OAuth connection
+2. account identification
+3. root folder discovery/creation
+4. destination folder discovery/creation
+5. upload test file
+6. metadata retrieval
+7. download/stream verification jika implementasinya tersedia
+8. cleanup test object jika aman
+9. disconnect/reconnect behavior
+
+Jangan upload file user secara sembarangan.
+
+Gunakan test object yang jelas.
+
+Jika credential TIDAK tersedia:
+
+tulis:
+
+GOOGLE DRIVE LIVE VERIFICATION: NOT RUN
+REASON: GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI unavailable
+
+Jangan membuat fake PASS.
+
+==================================================
+16. SECURITY AUDIT
+==================================================
+
+Periksa seluruh Google Drive flow untuk:
+
+- token exposure
+- secret exposure
+- OAuth CSRF
+- authorization
+- IDOR
+- cross-user storage access
+- cross-destination access
+- path traversal
+- malicious filename
+- MIME spoofing
+- oversized upload
+- SSRF jika URL source digunakan
+- log leakage
+
+Periksa juga:
+
+git diff
+
+untuk memastikan tidak ada:
+
+.env
+credentials.json
+service-account JSON
+OAuth token
+refresh token
+client secret
+API key
+
+yang masuk commit.
+
+==================================================
+17. DOCUMENTATION
+==================================================
+
+Update dokumentasi existing.
+
+Jangan membuat duplicate docs.
+
+Dokumentasikan:
+
+Google Drive Storage Architecture
+
+Authentication
+
+OAuth scopes yang benar-benar digunakan
+
+Storage connection
+
+Folder structure
+
+Destination isolation
+
+Upload flow
+
+Media lifecycle
+
+Error handling
+
+Reconnect
+
+Disconnect
+
+Credential handling
+
+Live verification status
+
+Configuration environment variables
+
+Jika scope/permission masih perlu verifikasi:
+
+tulis UNKNOWN / NEEDS VERIFICATION.
+
+==================================================
+18. ENVIRONMENT CONFIG
+==================================================
+
+Jika environment variables belum tersedia, dokumentasikan nama variable yang benar-benar digunakan implementation.
+
+Jangan menaruh nilai credential nyata ke repository.
+
+Contoh bentuk dokumentasi:
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=
+
+Gunakan nama yang konsisten dengan implementation.
+
+Jangan membuat nama environment variable baru jika repository sudah memiliki convention yang benar.
+
+==================================================
+19. NO FAKE SUCCESS
+==================================================
+
+ATURAN KERAS:
+
+Jangan menulis:
+
+Google Drive connected
+
+jika credential belum benar-benar terhubung.
+
+Jangan menulis:
+
+Upload success
+
+jika request tidak benar-benar berhasil.
+
+Jangan menulis:
+
+Live verification PASS
+
+jika belum dijalankan.
+
+Gunakan:
+
+NOT CONFIGURED
+NOT RUN
+NEEDS VERIFICATION
+FAILED
+
+sesuai kondisi sebenarnya.
+
+==================================================
+20. REGRESSION
+==================================================
+
+Setelah implementation:
+
+jalankan command project yang benar berdasarkan package.json.
+
+Minimal jika tersedia:
+
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+
+Periksa seluruh test.
+
+Jangan skip test hanya supaya hijau.
+
+Jika ada test yang memang harus di-skip karena membutuhkan credential live:
+
+jelaskan secara eksplisit.
+
+==================================================
+21. GIT
+==================================================
+
+Setelah implementation selesai:
+
+git status
+
+git diff
+
+review semua perubahan.
+
+Jika tidak ada perubahan yang diperlukan:
+
+JANGAN membuat commit.
+
+Jika ada perubahan valid:
+
+commit:
+
+feat: implement google drive storage integration
+
+Kemudian push ke branch aktif.
+
+Jangan force push.
+
+Jangan commit secret.
+
+Setelah push:
+
+verifikasi remote.
+
+==================================================
+22. FINAL REPORT
+==================================================
+
+Tampilkan:
+
+GOOGLE DRIVE STORAGE STATUS
+
+AUDIT:
+PASS/FAIL
+
+PROVIDER:
+PASS/FAIL
+
+OAUTH:
+PASS/FAIL/NOT CONFIGURED
+
+CONNECTION:
+PASS/FAIL
+
+ROOT FOLDER:
+PASS/FAIL/NOT VERIFIED
+
+DESTINATION ISOLATION:
+PASS/FAIL
+
+UPLOAD:
+PASS/FAIL/NOT LIVE VERIFIED
+
+DOWNLOAD/STREAM:
+PASS/FAIL/NOT IMPLEMENTED
+
+METADATA:
+PASS/FAIL
+
+DUPLICATE HANDLING:
+PASS/FAIL/DEFERRED
+
+SECURITY:
+PASS/FAIL
+
+API:
+PASS/FAIL
+
+UI:
+PASS/FAIL
+
+TEST:
+PASS/FAIL
+
+TYPECHECK:
+PASS/FAIL
+
+LINT:
+PASS/FAIL
+
+BUILD:
+PASS/FAIL
+
+LIVE GOOGLE DRIVE:
+PASS/FAIL/NOT RUN
+
+GIT STATUS:
+CLEAN/NOT CLEAN
+
+COMMIT:
+<hash atau NONE>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS/FAILED/N/A
+
+REMOTE VERIFIED:
+YES/NO/N/A
+
+FILES CHANGED:
+<summary>
+
+OPEN ISSUES:
+<only real issues>
+
+NEXT RECOMMENDED PHASE:
+<one phase only>
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Google Drive storage work selesai dan, jika ada perubahan valid, berhasil di-push:
+
+STOP.
+
+Jangan lanjut ke Facebook.
+
+Jangan lanjut ke YouTube.
+
+Jangan lanjut ke Instagram.
+
+Jangan lanjut ke TikTok.
+
+Jangan implementasikan storage provider lain.
+
+Jangan implementasikan auto-publishing baru.
+
+Tunggu instruksi berikutnya.
 
 ````
 # 
