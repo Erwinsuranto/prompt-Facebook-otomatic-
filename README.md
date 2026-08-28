@@ -97,7 +97,1000 @@
 ````
 # 
 ```
+LANJUT KE PHASE 1 — CORE FOUNDATION & DESTINATION WORKSPACE ARCHITECTURE
 
+Gunakan repository Content Pilot yang sedang aktif sebagai source of truth.
+
+Hasil Phase 0 sudah selesai.
+Jangan mengulang audit Phase 0 kecuali diperlukan untuk memastikan struktur aktual.
+
+Sekarang mulai IMPLEMENTASI PHASE 1.
+
+==================================================
+TUJUAN PHASE 1
+==================================================
+
+Bangun fondasi core Content Pilot yang benar-benar platform-independent.
+
+Fokus utama:
+
+1. User
+2. Platform
+3. PlatformConnection
+4. Destination
+5. Destination Workspace
+6. Media foundation
+7. PublishingJob foundation
+8. Provider Registry
+9. Storage abstraction
+10. Queue abstraction/foundation
+11. Scheduler abstraction/foundation
+12. Destination-scoped data access
+13. Destination isolation
+14. API foundation
+15. UI foundation untuk workspace/destination
+
+JANGAN implementasikan Facebook publishing pada phase ini.
+
+JANGAN implementasikan Facebook OAuth pada phase ini.
+
+JANGAN implementasikan YouTube/Instagram/TikTok publishing.
+
+JANGAN membuat fake provider.
+
+JANGAN membuat fake OAuth.
+
+JANGAN membuat fake publishing success.
+
+==================================================
+ATURAN ARSITEKTUR
+==================================================
+
+Core tidak boleh mengetahui detail API Facebook.
+
+Core hanya mengetahui konsep generik.
+
+Target:
+
+Core
+│
+├── Platform Registry
+│
+├── Account / Connection
+│
+├── Destination
+│
+├── Workspace
+│
+├── Media
+│
+├── Publishing Job
+│
+├── Storage
+│
+├── Queue
+│
+├── Scheduler
+│
+└── History / Audit
+
+Provider/platform-specific implementation harus tetap terisolasi.
+
+Konsep:
+
+Core
+   ↓
+Provider Registry
+   ↓
+Platform Provider
+   ↓
+Platform-specific implementation
+
+Contoh future:
+
+FacebookProvider
+YouTubeProvider
+InstagramProvider
+TikTokProvider
+
+Tetapi pada Phase 1 jangan implementasikan publishing provider tersebut.
+
+==================================================
+1. PLATFORM MODEL
+==================================================
+
+Buat model platform generik.
+
+Contoh:
+
+Platform
+- id
+- key
+- name
+- status
+- capabilities
+- created_at
+- updated_at
+
+Platform key contoh:
+
+facebook
+youtube
+instagram
+tiktok
+
+Tetapi jangan menganggap semuanya aktif.
+
+Platform dapat memiliki status:
+
+available
+coming_soon
+disabled
+
+Jangan membuat platform yang belum diimplementasikan terlihat aktif di UI.
+
+==================================================
+2. PLATFORM CONNECTION
+==================================================
+
+Buat abstraction untuk koneksi account platform.
+
+Contoh konsep:
+
+PlatformConnection
+- id
+- user_id
+- platform_id
+- provider_account_id
+- account_name
+- status
+- credential_reference
+- metadata
+- created_at
+- updated_at
+- last_connected_at
+- last_error_at
+- last_error_code
+
+Credential/token jangan disimpan plaintext jika architecture existing menyediakan secure storage.
+
+Jangan menyimpan access token di frontend.
+
+Jangan commit token.
+
+Jangan membuat OAuth implementation pada Phase 1.
+
+Status connection harus dapat mewakili:
+
+connected
+disconnected
+expired
+error
+pending
+
+==================================================
+3. DESTINATION
+==================================================
+
+Buat entity Destination generik.
+
+Contoh:
+
+Destination
+- id
+- user_id
+- platform_connection_id
+- platform_id
+- external_id
+- name
+- type
+- status
+- metadata
+- created_at
+- updated_at
+
+Contoh:
+
+Facebook:
+Page A
+Page B
+
+YouTube:
+Channel A
+
+Instagram:
+Account A
+
+TikTok:
+Account A
+
+Core tidak boleh menggunakan field khusus Facebook seperti:
+
+facebook_page_id
+
+sebagai identifier utama.
+
+Gunakan:
+
+external_id
+
+dan platform/provider metadata.
+
+==================================================
+4. DESTINATION WORKSPACE
+==================================================
+
+Ini adalah bagian PALING PENTING Phase 1.
+
+Setiap Destination harus memiliki workspace sendiri secara logical.
+
+Contoh:
+
+User
+│
+├── Facebook Account
+│   ├── Page A
+│   │   └── Workspace A
+│   └── Page B
+│       └── Workspace B
+│
+└── YouTube Account
+    └── Channel A
+        └── Workspace C
+
+Workspace tidak harus menjadi microservice.
+
+Workspace adalah logical context/scoping layer.
+
+Setiap workspace harus memiliki:
+
+- destination context
+- dashboard
+- downloader context
+- storage context
+- publish context
+- queue context
+- scheduler context
+- history context
+
+Semua data operasional harus dapat ditrace ke destination.
+
+==================================================
+5. DESTINATION ISOLATION
+==================================================
+
+WAJIB.
+
+Destination A tidak boleh membaca data Destination B.
+
+Semua query repository/service yang berkaitan dengan:
+
+- media
+- publishing jobs
+- schedules
+- queue
+- history
+- settings
+
+harus menggunakan destination scope jika entity tersebut memang destination-scoped.
+
+Contoh:
+
+getMedia(destinationId)
+
+getPublishingJobs(destinationId)
+
+getSchedules(destinationId)
+
+getHistory(destinationId)
+
+Jangan membuat endpoint global yang mengembalikan seluruh data destination tanpa authorization/scoping.
+
+Authorization harus memeriksa:
+
+user → destination ownership/access
+
+Bukan hanya:
+
+user authenticated = boleh akses semua destination.
+
+==================================================
+6. MEDIA FOUNDATION
+==================================================
+
+Buat media model generik.
+
+Contoh:
+
+Media
+- id
+- owner_user_id
+- destination_id
+- filename
+- mime_type
+- size
+- duration
+- width
+- height
+- storage_provider
+- storage_object_id
+- source_type
+- source_reference
+- status
+- metadata
+- created_at
+- updated_at
+
+Source type minimal:
+
+manual
+downloader
+import
+
+Jangan membuat:
+
+FacebookVideo
+YouTubeVideo
+InstagramVideo
+
+sebagai model utama.
+
+Media harus dapat digunakan oleh beberapa publishing job.
+
+Perhatikan:
+
+Satu media dapat dipublish ke:
+
+Page A
+Page B
+YouTube Channel A
+
+Jadi jangan membuat media terkunci secara permanen ke satu publishing job.
+
+Namun jika media memiliki destination scope karena aturan workspace, desain harus jelas dan konsisten.
+
+Jika architecture Phase 0 menetapkan destination-scoped media, pertahankan aturan tersebut.
+
+Jika satu media perlu digunakan untuk beberapa destination, gunakan relationship/reference yang aman tanpa merusak isolation.
+
+Jangan mengubah keputusan architecture tanpa alasan.
+
+==================================================
+7. PUBLISHING JOB FOUNDATION
+==================================================
+
+Buat PublishingJob generik.
+
+Contoh:
+
+PublishingJob
+- id
+- user_id
+- media_id
+- destination_id
+- platform_id
+- status
+- schedule_source
+- scheduled_at
+- sequence_number
+- attempt_count
+- last_error_code
+- last_error_message
+- next_retry_at
+- created_at
+- updated_at
+
+Status minimal:
+
+draft
+queued
+scheduled
+processing
+uploading
+publishing
+published
+failed
+cancelled
+retrying
+
+Jangan membuat publishing API nyata pada Phase 1.
+
+Job hanya foundation.
+
+==================================================
+8. ONE DESTINATION = ONE JOB
+==================================================
+
+Jika satu media dipilih untuk banyak destination:
+
+Media A
+
+→ Page A = Job A
+→ Page B = Job B
+→ YouTube A = Job C
+
+Setiap job berdiri sendiri.
+
+Jangan membuat satu job global yang memiliki array destination dan kemudian kehilangan status per destination.
+
+==================================================
+9. PROVIDER REGISTRY
+==================================================
+
+Buat provider registry abstraction.
+
+Registry harus dapat mendaftarkan provider berdasarkan platform key.
+
+Contoh konsep:
+
+registerProvider("facebook", provider)
+
+getProvider("facebook")
+
+hasProvider("facebook")
+
+listProviders()
+
+Tetapi provider interface harus generic.
+
+Jangan memasukkan Facebook-specific code ke core registry.
+
+Provider harus dapat memiliki capability.
+
+Contoh:
+
+capabilities:
+- video
+- reels
+- photo
+- text_post
+- scheduling
+- analytics
+
+Jangan mengaktifkan capability hanya karena ditulis di interface.
+
+Capability harus berasal dari implementation/provider.
+
+==================================================
+10. PROVIDER INTERFACE
+==================================================
+
+Buat interface abstraction secukupnya.
+
+Jangan membuat interface raksasa hanya untuk memenuhi roadmap.
+
+Pisahkan concern jika diperlukan:
+
+Authentication capability
+
+Account discovery capability
+
+Destination discovery capability
+
+Media validation capability
+
+Publishing capability
+
+Status capability
+
+Scheduling capability
+
+Contoh konsep:
+
+Provider
+- key
+- metadata
+- capabilities
+
+Provider services dapat berkembang kemudian.
+
+Tujuannya:
+
+Facebook provider nantinya dapat diimplementasikan tanpa mengubah database/core architecture.
+
+==================================================
+11. STORAGE ABSTRACTION
+==================================================
+
+Google Drive adalah storage provider pertama.
+
+Namun Phase 1 hanya membuat abstraction/foundation jika belum ada implementation yang stabil.
+
+Konsep:
+
+StorageProvider
+
+- upload
+- download
+- delete
+- getMetadata
+- exists
+- createFolder
+- move/update jika diperlukan
+
+Jangan memasukkan Google Drive SDK langsung ke core.
+
+Target:
+
+Core
+ ↓
+StorageProvider
+ ↓
+GoogleDriveStorage
+
+Provider masa depan:
+
+S3
+R2
+MinIO
+VPS/local
+
+belum perlu dibuat.
+
+Jika Google Drive implementation dari pekerjaan sebelumnya sudah benar-benar ada, JANGAN menghapusnya.
+
+Integrasikan hanya jika sesuai architecture.
+
+Jangan melakukan live Google OAuth verification tanpa credential.
+
+==================================================
+12. QUEUE FOUNDATION
+==================================================
+
+Buat abstraction untuk publishing queue.
+
+Core harus dapat:
+
+enqueue(job)
+
+claim(job)
+
+complete(job)
+
+fail(job)
+
+retry(job)
+
+cancel(job)
+
+Namun jangan membuat production worker kompleks jika belum diperlukan pada Phase 1.
+
+Pastikan queue tidak menghilangkan destination_id.
+
+Worker nantinya harus selalu mengetahui:
+
+job.id
+media.id
+destination.id
+platform.id
+
+==================================================
+13. SCHEDULER FOUNDATION
+==================================================
+
+Buat scheduler abstraction.
+
+Scheduler harus menerima:
+
+destination
+media
+schedule settings
+timezone
+
+dan menghasilkan PublishingJob dengan:
+
+scheduled_at
+
+Jangan implementasikan seluruh daily-slot automation jika itu sudah direncanakan untuk Phase 4.
+
+Pada Phase 1 cukup buat foundation/model/service boundary yang benar.
+
+Jangan membuat scheduler global yang tidak mengetahui destination.
+
+==================================================
+14. SETTINGS FOUNDATION
+==================================================
+
+Jika settings model diperlukan, buat struktur yang memungkinkan configuration per destination.
+
+Contoh:
+
+DestinationSettings
+- destination_id
+- timezone
+- auto_publish_enabled
+- max_videos_per_day
+- configuration
+
+Daily slots dapat menjadi child/configuration entity sesuai architecture.
+
+Jangan membuat setting global jika requirement sebenarnya destination-specific.
+
+==================================================
+15. API
+==================================================
+
+Buat API foundation untuk destination/workspace.
+
+Minimal konsep endpoint:
+
+GET /api/destinations
+
+GET /api/destinations/:id
+
+GET /api/destinations/:id/settings
+
+GET /api/destinations/:id/media
+
+GET /api/destinations/:id/jobs
+
+GET /api/destinations/:id/schedules
+
+Semua endpoint:
+
+- authenticated
+- authorization checked
+- destination ownership/access checked
+- tidak boleh cross-destination
+
+Jangan membuat endpoint yang mengembalikan secret/token.
+
+==================================================
+16. UI WORKSPACE
+==================================================
+
+Buat atau sesuaikan UI berdasarkan UI existing.
+
+Jangan membuat dashboard kedua jika dashboard sudah ada.
+
+Tambahkan konsep:
+
+Destination / Workspace Switcher
+
+Contoh:
+
+[ Facebook Page A ▼ ]
+
+Workspace:
+
+Dashboard
+Downloader
+Storage
+Publish
+Queue
+Schedule
+History
+
+Ketika user memilih:
+
+Facebook Page B
+
+semua context berpindah ke:
+
+Page B
+
+Tidak boleh tetap menampilkan data Page A.
+
+UI harus selalu memiliki destination context yang jelas.
+
+Contoh header:
+
+Facebook
+Page A
+● Connected
+
+atau:
+
+YouTube
+Channel A
+● Connected
+
+Jika provider belum aktif:
+
+Coming Soon
+
+==================================================
+17. UI ISOLATION
+==================================================
+
+Frontend tidak boleh hanya melakukan filter lokal seperti:
+
+allMedia.filter(destinationId)
+
+sebagai satu-satunya security mechanism.
+
+Backend harus sudah destination-scoped.
+
+Frontend filter hanya untuk presentation.
+
+==================================================
+18. DATABASE
+==================================================
+
+Gunakan database architecture yang ditemukan pada Phase 0.
+
+Jangan mengganti database hanya karena preferensi pribadi.
+
+Buat migration secara aman.
+
+Sebelum migration:
+
+- inspect schema existing
+- hindari destructive migration
+- jangan drop table sembarangan
+- jangan menghapus data existing tanpa instruksi
+
+Jika project baru memang belum memiliki production data, tetap gunakan migration yang bersih dan reversible jika memungkinkan.
+
+Tambahkan index untuk query penting:
+
+user_id
+destination_id
+platform_id
+status
+scheduled_at
+
+Gunakan foreign key yang sesuai.
+
+==================================================
+19. TEST
+==================================================
+
+WAJIB menambahkan test untuk destination isolation.
+
+Minimal test cases:
+
+1. User A dapat mengakses Destination A.
+2. User A tidak dapat mengakses Destination milik User B.
+3. Destination A tidak dapat membaca media Destination B.
+4. Destination A tidak dapat membaca jobs Destination B.
+5. Destination A tidak dapat membaca schedule Destination B.
+6. Destination A tidak dapat mengubah settings Destination B.
+7. Multi-destination media menghasilkan job terpisah.
+8. Job memiliki destination_id yang benar.
+9. Provider registry dapat mendaftarkan provider generik.
+10. Storage abstraction tidak bergantung langsung pada Google Drive implementation.
+11. API mengembalikan unauthorized/forbidden/not-found sesuai security model.
+12. Workspace switch tidak menyebabkan data destination sebelumnya bocor.
+
+Jangan hanya test happy path.
+
+==================================================
+20. SECURITY
+==================================================
+
+Periksa:
+
+- authorization
+- destination ownership
+- IDOR prevention
+- token exposure
+- secret logging
+- API response
+- database query scoping
+- file access
+- metadata leakage
+
+Jangan log:
+
+access token
+refresh token
+client secret
+API key
+password
+
+Jika error provider memiliki secret di response, sanitize sebelum disimpan/log.
+
+==================================================
+21. DOCUMENTATION
+==================================================
+
+Update:
+
+docs/ARCHITECTURE.md
+
+docs/DATABASE.md
+
+docs/PLATFORM_MODULES.md
+
+docs/STORAGE.md jika tersedia
+
+docs/ROADMAP.md
+
+docs/UI_DESIGN.md
+
+Dokumentasikan keputusan Phase 1.
+
+Khusus:
+
+Destination Workspace Architecture
+
+dan
+
+Destination Isolation Rules
+
+harus ditulis secara eksplisit.
+
+==================================================
+22. JANGAN OVER-ENGINEER
+==================================================
+
+Jangan membuat:
+
+microservices
+Kubernetes
+event bus kompleks
+distributed transaction system
+multi-region infrastructure
+
+jika repository belum membutuhkannya.
+
+Prioritaskan architecture yang sederhana tetapi benar.
+
+==================================================
+23. VERIFICATION
+==================================================
+
+Setelah implementation:
+
+jalankan seluruh command yang tersedia dan relevan.
+
+Minimal:
+
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+
+Jika command berbeda berdasarkan repository aktual, gunakan command yang benar dari package.json.
+
+Jangan mematikan test.
+
+Jangan mengurangi coverage hanya agar hijau.
+
+Periksa:
+
+git diff
+git status
+
+Pastikan tidak ada:
+
+- secret
+- token
+- API key
+- password
+- credential
+- file sensitif
+
+==================================================
+24. GIT
+==================================================
+
+Jika semua verification PASS:
+
+buat commit:
+
+feat: implement content pilot core foundation
+
+Kemudian push ke branch aktif.
+
+Jangan force push.
+
+Jangan membuat commit kosong.
+
+Jangan commit perubahan yang tidak berkaitan dengan Phase 1.
+
+Setelah push:
+
+verifikasi remote.
+
+==================================================
+25. FINAL REPORT
+==================================================
+
+Tampilkan laporan:
+
+PHASE 1 STATUS:
+
+CORE FOUNDATION:
+PASS/FAIL
+
+PLATFORM MODEL:
+PASS/FAIL
+
+PLATFORM CONNECTION:
+PASS/FAIL
+
+DESTINATION:
+PASS/FAIL
+
+DESTINATION WORKSPACE:
+PASS/FAIL
+
+DESTINATION ISOLATION:
+PASS/FAIL
+
+MEDIA FOUNDATION:
+PASS/FAIL
+
+PUBLISHING JOB:
+PASS/FAIL
+
+PROVIDER REGISTRY:
+PASS/FAIL
+
+STORAGE ABSTRACTION:
+PASS/FAIL
+
+QUEUE FOUNDATION:
+PASS/FAIL
+
+SCHEDULER FOUNDATION:
+PASS/FAIL
+
+API:
+PASS/FAIL
+
+UI:
+PASS/FAIL
+
+SECURITY:
+PASS/FAIL
+
+TEST:
+PASS/FAIL
+
+TYPECHECK:
+PASS/FAIL
+
+LINT:
+PASS/FAIL
+
+BUILD:
+PASS/FAIL
+
+GIT STATUS:
+CLEAN/NOT CLEAN
+
+COMMIT:
+<hash>
+
+BRANCH:
+<branch>
+
+PUSH STATUS:
+SUCCESS/FAILED
+
+REMOTE VERIFIED:
+YES/NO
+
+FILES CHANGED:
+<summary>
+
+IMPORTANT:
+Jelaskan jika ada bagian yang sengaja TIDAK diimplementasikan karena memang masuk Phase berikutnya.
+
+==================================================
+STOP CONDITION
+==================================================
+
+Setelah Phase 1 selesai dan push berhasil:
+
+STOP.
+
+Jangan lanjut ke Phase 2.
+
+Jangan implementasikan Facebook OAuth.
+
+Jangan implementasikan Facebook publishing.
+
+Jangan implementasikan YouTube.
+
+Jangan implementasikan Instagram.
+
+Jangan implementasikan TikTok.
+
+Tunggu instruksi berikutnya.
 
 ````
 # 
