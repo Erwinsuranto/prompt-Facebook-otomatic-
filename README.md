@@ -105,9 +105,68 @@
 
 
 ````
-# 
+# prompt audit/verifikasi berikut ke AI coding sekarang:
 ```
+Sekarang jangan menambahkan fitur baru dan jangan mengubah arsitektur yang sudah PASS.
 
+Lakukan VERIFIKASI KHUSUS terhadap requirement provider yang baru saja kita minta.
+
+Pastikan secara nyata di code bahwa:
+
+1. Setiap model memiliki provider yang tetap/terkunci.
+2. Jika satu key gagal, sistem hanya berpindah ke key lain dari provider yang SAMA.
+3. Tidak ada fallback otomatis dari Provider A ke Provider B.
+4. Jika semua key provider tersebut gagal, request benar-benar mengembalikan error dan berhenti.
+5. Cooldown/restart/retry provider atau key yang bermasalah menggunakan sekitar 180 detik (3 menit), bukan beberapa detik.
+6. Selama cooldown, key/provider tersebut tidak digunakan.
+7. Cooldown satu provider/key tidak menyebabkan request berpindah ke provider lain.
+8. Audit seluruh provider yang sudah ada, bukan hanya NVIDIA atau Empero.
+9. Cari semua provider/model list yang masih hardcoded di frontend.
+10. Pastikan provider yang ditambahkan ke provider registry/code otomatis dapat terdeteksi backend dan muncul di UI tanpa harus mengedit daftar provider frontend secara manual.
+11. Pastikan model baru dari provider tersebut juga otomatis tersedia di UI.
+12. Pastikan backend dan frontend menggunakan single source of truth untuk provider/model sejauh memungkinkan dari arsitektur project.
+13. Jangan membuat fitur COMBO sekarang.
+
+WAJIB lakukan code inspection terlebih dahulu sebelum menyimpulkan PASS.
+
+Buat test/mock yang membuktikan skenario berikut:
+
+Provider Empero:
+Key 1 → FAIL
+Key 2 → FAIL
+Key 3 → SUCCESS
+
+Pastikan request GLM berhasil menggunakan Key 3.
+
+Kemudian test:
+
+Empero Key 1 → FAIL
+Empero Key 2 → FAIL
+Empero Key 3 → FAIL
+
+Pastikan request GLM gagal dan TIDAK pernah mencoba provider lain.
+
+Tambahkan provider dummy/test beserta model dummy/test ke registry dan pastikan provider serta model tersebut dapat terdeteksi oleh backend dan UI tanpa menambahkan entry manual baru di frontend.
+
+Verifikasi juga cooldown dengan test bahwa key/provider yang gagal tidak dicoba kembali sebelum sekitar 180 detik.
+
+Jangan menggunakan credential production.
+
+Jangan menjalankan atau mengaktifkan test Gorouter.app. Jika test suite otomatis memuat Gorouter.app, skip/exclude test tersebut. NVIDIA dan TokenHarbor.ai boleh diverifikasi sesuai kebutuhan.
+
+Setelah selesai, jangan hanya mengatakan PASS. Tampilkan bukti konkret:
+- file/komponen routing yang menentukan provider;
+- file/komponen multi-key rotation;
+- lokasi cooldown 180 detik;
+- lokasi yang mencegah fallback antar-provider;
+- sumber data provider/model yang digunakan UI;
+- test yang ditambahkan/dijalankan;
+- hasil seluruh test;
+- apakah provider/model dummy berhasil auto-discovery.
+
+Jika ditemukan implementasi yang belum sesuai, PERBAIKI terlebih dahulu lalu jalankan test ulang.
+
+Jangan lanjut ke fitur COMBO sampai seluruh verifikasi ini benar-benar PASS.
 
 ````
 # hardening scheduler/publishing pipeline
