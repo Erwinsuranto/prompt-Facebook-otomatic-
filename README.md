@@ -102,7 +102,196 @@
 ````
 # 
 ```
+KOREKSI KONTEKS — STOP PEKERJAAN LLM PROVIDER
 
+Respons sebelumnya keluar dari scope Content Pilot.
+
+JANGAN mencari, membuat, atau memverifikasi:
+- LLM provider
+- ProviderRegistry untuk routing model AI
+- multi-key rotation
+- cooldown provider
+- fallback LLM
+- Empero-key
+- AI routing layer
+- subsystem LLM apa pun
+
+Itu BUKAN bagian dari task Content Pilot.
+
+KEMBALI KE PROJECT CONTENT PILOT.
+
+Gunakan repository dan branch Content Pilot yang sedang aktif sebagai satu-satunya source of truth.
+
+Konteks arsitektur yang harus dipertahankan:
+
+1. Core harus platform-independent.
+2. Facebook adalah provider pertama.
+3. Sistem harus mendukung multiple Facebook account.
+4. Satu Facebook account dapat memiliki banyak Page.
+5. Setiap Page adalah Destination.
+6. Setiap Destination/Page memiliki workspace sendiri.
+7. Workspace Page memiliki konteks sendiri untuk:
+   - Dashboard
+   - Downloader
+   - Storage
+   - Publish
+   - Queue
+   - Schedule
+   - History
+8. Semua operasi harus destination-scoped.
+9. Page A tidak boleh melihat atau memproses queue/media/schedule milik Page B kecuali melalui fitur multi-destination yang secara eksplisit membuat job terpisah.
+10. Google Drive adalah storage provider pertama yang menjadi fokus.
+11. Media tetap generik/platform-independent.
+12. PublishingJob harus terpisah per destination.
+13. Scheduler harus destination-scoped.
+14. Sequence publishing tidak reset setiap hari.
+15. Jangan menambahkan YouTube/Instagram/TikTok sekarang.
+16. Jangan membuat fake success.
+17. Jangan mengarang API atau credential.
+18. Jangan melakukan destructive migration.
+19. Jangan mengubah arsitektur yang sudah selesai tanpa audit terlebih dahulu.
+
+SEBELUM CODING:
+
+Audit state repository TERKINI.
+
+Baca:
+- docs/ROADMAP.md
+- docs/ARCHITECTURE.md
+- docs/DATABASE.md
+- docs/STORAGE.md
+- docs/QUEUE_SCHEDULER.md
+- docs/PLATFORM_MODULES.md
+- dokumentasi Facebook yang tersedia
+- implementasi Google Drive yang sudah ada
+- implementasi Destination/Workspace yang sudah ada
+- scheduler
+- queue
+- worker
+- publishing pipeline
+
+Kemudian cocokkan implementasi aktual dengan roadmap.
+
+JANGAN mengulang fitur yang sudah selesai.
+
+JANGAN membuat fitur baru hanya karena tidak menemukan file tertentu sebelum memastikan struktur repository aktual.
+
+Jika menemukan pekerjaan yang sudah selesai:
+→ tandai COMPLETE
+→ jangan implementasikan ulang.
+
+Jika menemukan gap:
+→ jelaskan gap tersebut
+→ implementasikan hanya gap yang memang termasuk phase aktif.
+
+FOKUS SAAT INI:
+
+Hardening Content Pilot setelah Phase 4 yang sudah selesai.
+
+Prioritas:
+1. destination isolation
+2. scheduler correctness
+3. queue/job idempotency
+4. concurrent worker safety
+5. stale job recovery
+6. retry/backoff
+7. rate-limit handling
+8. audit/observability
+9. Google Drive integration boundary
+10. UI status yang jujur
+
+Pastikan terutama:
+
+Page A:
+- media Page A
+- queue Page A
+- schedule Page A
+- publishing history Page A
+
+tidak tercampur dengan Page B.
+
+Untuk multi-destination publishing:
+
+1 media dapat digunakan untuk beberapa destination,
+tetapi harus dibuat:
+
+Job A → Page A
+Job B → Page B
+
+dengan status dan history masing-masing.
+
+Untuk Google Drive:
+
+- jangan membuat provider storage baru
+- gunakan abstraction yang sudah ada
+- jangan membuat fake OAuth
+- jangan mengklaim live verification jika credential belum tersedia
+- pertahankan status NEEDS VERIFICATION/BLOCKED jika memang belum bisa live test
+
+Untuk scheduler:
+
+- sequence tidak reset setiap hari
+- daily slots destination-scoped
+- timezone destination-scoped
+- manual schedule override tetap dihormati
+- slot tidak boleh dialokasikan dua kali
+- scheduler restart tidak membuat duplicate job
+
+Untuk worker:
+
+- dua worker tidak boleh memproses PublishingJob yang sama secara bersamaan
+- gunakan database sebagai source of truth
+- Redis bukan satu-satunya sumber status
+- crash/restart harus dapat dipulihkan
+- retry tidak boleh menghasilkan duplicate publish
+
+Setelah implementasi:
+
+- pnpm lint
+- pnpm typecheck
+- pnpm test
+- pnpm build
+
+Jangan mematikan test untuk membuat suite hijau.
+
+Periksa git diff.
+
+Pastikan tidak ada:
+- secret
+- token
+- API key
+- password
+
+Kemudian commit perubahan yang benar-benar berkaitan dengan task ini dan push ke branch aktif.
+
+JANGAN force push.
+
+FINAL REPORT:
+
+AUDIT STATUS:
+IMPLEMENTATION STATUS:
+DESTINATION ISOLATION:
+SCHEDULER:
+QUEUE:
+CONCURRENCY:
+IDEMPOTENCY:
+RETRY:
+RATE LIMIT:
+GOOGLE DRIVE:
+TEST:
+BUILD:
+
+GIT STATUS:
+COMMIT:
+BRANCH:
+PUSH STATUS:
+REMOTE VERIFIED:
+
+Jika tidak ada gap yang perlu dikerjakan, JANGAN membuat perubahan palsu hanya untuk menghasilkan commit.
+
+STOP setelah task Content Pilot selesai.
+
+Jangan pernah kembali ke subsystem LLM provider.
 
 ````
 # prompt audit/verifikasi berikut ke AI coding sekarang:
