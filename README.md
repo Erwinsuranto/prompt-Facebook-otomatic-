@@ -87,7 +87,41 @@
 ````
 # 
 ```
+Lanjutkan setup Google Drive untuk project ini.
 
+KONTEKS:
+- Google Auth Platform / OAuth configuration sudah berhasil dibuat di Google Cloud.
+- Jangan membuat perubahan kode dulu.
+- Jangan membuat credential palsu.
+- Fokus hanya pada persiapan Google Drive OAuth.
+
+TUGAS:
+1. Audit repository saat ini untuk menemukan implementasi Google Drive OAuth yang sudah ada.
+2. Temukan endpoint/callback OAuth yang benar-benar digunakan backend.
+3. Tentukan secara pasti:
+   - OAuth Application type yang harus dibuat di Google Cloud
+   - Authorized JavaScript origins jika diperlukan
+   - Authorized redirect URIs yang harus dimasukkan
+4. Cocokkan dengan kode di:
+   - packages/providers/gdrive/
+   - apps/api/src/
+   - apps/web/src/
+   - konfigurasi environment yang relevan
+5. Jangan mengubah source code.
+6. Jangan membuat commit.
+7. Jangan push.
+8. Jangan menjalankan live Google Drive verification.
+9. Jangan meminta saya memasukkan atau menampilkan GOOGLE_CLIENT_SECRET.
+
+OUTPUT HANYA:
+- Status implementasi Google Drive OAuth saat ini
+- OAuth Client type yang harus dipilih
+- Exact Authorized redirect URI yang harus saya masukkan ke Google Cloud
+- Exact Authorized JavaScript origin jika memang diperlukan
+- Nama environment variable yang nanti harus diisi
+- Langkah berikutnya setelah OAuth Client dibuat
+
+Jika ada lebih dari satu kemungkinan URI, jelaskan mana yang benar untuk production dan mana yang untuk local/development.
 
 ````
 # 
