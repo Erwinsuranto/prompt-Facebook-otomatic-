@@ -52,7 +52,22 @@
 ````
 # 
 ```
+Lanjutkan dari kondisi saat ini.
 
+Saya sudah mengisi GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET menggunakan /root/set-google-creds.py.
+
+Sekarang:
+1. Validasi bahwa kedua credential tersimpan dengan benar tanpa menampilkan nilai secret.
+2. Restart API content-pilot agar konfigurasi terbaca.
+3. Pastikan /health merespons 200.
+4. Generate ulang Authorization URL Google Drive menggunakan client_id asli dan redirect_uri:
+   https://api.contentpilot.biz.id/api/storage/google_drive/callback
+5. Jangan ubah provider lain.
+6. Jangan menjalankan test GoRouter.app.
+7. Jangan melakukan commit/push.
+8. Jangan mengubah file yang tidak diperlukan.
+
+Setelah selesai, tampilkan status setiap langkah dan Authorization URL yang siap saya buka di browser untuk login Google Drive. Jika ada error, berhenti dan tampilkan error sebenarnya tanpa menebak.
 
 ````
 # 
