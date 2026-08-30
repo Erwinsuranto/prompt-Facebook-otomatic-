@@ -83,7 +83,37 @@
 # 
 ```
 
+Lanjutkan setup Google Drive OAuth untuk project ini.
 
+Kondisi Google Cloud saat ini:
+- Project: utility-canto-507016-h9
+- Google Drive API: sudah ENABLED
+- OAuth configuration: sudah dibuat
+- Data Access sudah berisi scope:
+  - drive.file
+  - userinfo.email
+  - openid
+- Publishing status masih Testing
+- Test user sudah ditambahkan
+- OAuth Client ID sudah dibuat dengan nama: content pilot google drive
+- Tipe: Web application
+- Saat ini Authorized JavaScript origins dan Authorized redirect URIs masih kosong.
+
+Jangan mengubah kode/project dulu.
+
+Tugas kamu:
+1. Periksa source code project untuk menemukan endpoint/callback OAuth Google Drive yang sebenarnya digunakan aplikasi.
+2. Tentukan secara pasti nilai yang harus saya masukkan ke:
+   - Authorized JavaScript origins
+   - Authorized redirect URIs
+3. Jangan menebak URL. Ambil berdasarkan konfigurasi/source code yang ada.
+4. Jika server menggunakan localhost, IP VPS, domain, atau port tertentu, jelaskan URL lengkapnya.
+5. Berikan instruksi langkah demi langkah untuk saya setting di Google Cloud Console dari posisi saya sekarang.
+6. Setelah saya selesai memasukkan URI di Google Cloud, baru lanjutkan ke pengujian OAuth/Connect Google Drive.
+7. Jangan commit perubahan dan jangan menjalankan test provider lain.
+8. Fokus hanya pada integrasi Google Drive OAuth pada project ini.
+
+Untuk sekarang, berhenti setelah memberikan URI yang harus saya masukkan dan menunggu saya mengirim screenshot hasilnya.
 ````
 # 
 ```
