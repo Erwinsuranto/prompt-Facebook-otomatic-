@@ -67,7 +67,44 @@
 ````
 # 
 ```
+Lanjutkan project /root/content-pilot.
 
+Jangan mengubah provider lain dan jangan menjalankan atau mengubah Gorouter.app.
+
+Kondisi terakhir:
+- GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET sudah dimasukkan ke /root/content-pilot/.env
+- OAuth Client Google Drive sudah dibuat
+- Authorized redirect URI sudah diset:
+  https://api.contentpilot.biz.id/api/storage/google_drive/callback
+- Cloudflare sudah diarahkan ke origin VPS
+- Caddy/reverse proxy sudah dikonfigurasi untuk api.contentpilot.biz.id -> 127.0.0.1:4000
+- Endpoint publik /health sudah diuji
+- Redis/Postgres/MinIO sudah berjalan
+- Jangan menebak konfigurasi yang belum diketahui.
+
+Sekarang lakukan VERIFIKASI END-TO-END Google Drive saja.
+
+Tujuan:
+1. Periksa konfigurasi .env yang diperlukan untuk Google Drive OAuth, tetapi JANGAN menampilkan nilai secret/client secret lengkap.
+2. Pastikan callback route benar-benar terdaftar di aplikasi.
+3. Pastikan aplikasi berjalan dengan konfigurasi terbaru.
+4. Jika perlu restart service, lakukan hanya untuk content-pilot.
+5. Buat/ambil authorization URL Google Drive dari implementasi aplikasi yang sudah ada.
+6. Verifikasi bahwa redirect URI yang digunakan aplikasi PERSIS:
+   https://api.contentpilot.biz.id/api/storage/google_drive/callback
+7. Jangan membuat route baru jika route yang benar sudah ada.
+8. Jangan mengubah arsitektur atau provider lain.
+9. Jangan melakukan commit.
+10. Jangan menghapus data/storage yang sudah ada.
+
+Setelah pemeriksaan selesai, BERHENTI dan tampilkan:
+- status setiap pemeriksaan
+- file yang diperiksa/diubah
+- command yang dijalankan
+- authorization URL jika memang sudah tersedia
+- langkah manual berikutnya yang harus saya lakukan di browser.
+
+Jangan melakukan perubahan tambahan sebelum saya mengirim hasil login/authorization Google Drive.
 
 ````
 # 
