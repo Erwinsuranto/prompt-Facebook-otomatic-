@@ -63,7 +63,42 @@
 # 
 ```
 
+Lanjutkan project /root/content-pilot dari kondisi terakhir.
 
+Jangan mengubah provider lain dan jangan menjalankan atau mengaktifkan test Gorouter.app.
+
+Konteks saat ini:
+- OAuth Google Drive sudah dibuat di Google Cloud.
+- OAuth Client: "content pilot google drive"
+- Authorized redirect URI:
+  https://api.contentpilot.biz.id/api/storage/google_drive/callback
+- API publik: https://api.contentpilot.biz.id
+- API internal berjalan di port 4000.
+- Google OAuth masih dalam status Testing.
+- Test user Google sudah ditambahkan.
+
+Tugas sekarang:
+1. Periksa /root/content-pilot/.env dan source code yang terkait Google Drive OAuth.
+2. Jangan pernah menampilkan GOOGLE_CLIENT_SECRET atau credential sensitif ke terminal/chat/output.
+3. Pastikan konfigurasi OAuth menggunakan:
+   GOOGLE_CLIENT_ID
+   GOOGLE_CLIENT_SECRET
+   GOOGLE_DRIVE_REDIRECT_URI=https://api.contentpilot.biz.id/api/storage/google_drive/callback
+4. Jika GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET belum ada atau masih placeholder, BERHENTI dan minta saya memasukkan nilainya. Jangan menebak.
+5. Jika sudah tersedia, validasi konfigurasi tanpa membocorkan secret.
+6. Restart API dengan cara yang sesuai dengan project.
+7. Verifikasi endpoint health dan endpoint OAuth Google Drive.
+8. Buat/gunakan authorization URL Google Drive yang benar dengan redirect URI persis:
+   https://api.contentpilot.biz.id/api/storage/google_drive/callback
+9. Jangan melakukan perubahan pada provider lain.
+10. Jangan commit atau push perubahan apa pun.
+11. Setelah selesai, laporkan hanya:
+   - status konfigurasi
+   - status API
+   - URL authorization yang aman untuk dibuka di browser (tanpa client secret)
+   - langkah berikutnya yang harus saya lakukan.
+
+Jangan meminta saya mengirim client secret ke chat jika sebenarnya sudah tersedia di .env.
 ````
 # 
 ```
