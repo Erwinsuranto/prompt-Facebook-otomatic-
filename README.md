@@ -48,7 +48,24 @@
 # 
 ```
 
+Lanjutkan dari kondisi sekarang.
 
+Saya sudah mengisi GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET di /root/content-pilot/.env dengan kredensial OAuth Google yang asli.
+
+Tolong:
+1. Jangan mengubah GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, atau GOOGLE_DRIVE_REDIRECT_URI.
+2. Baca dan validasi nilai dari /root/content-pilot/.env tanpa menampilkan secret ke output.
+3. Restart API content-pilot agar konfigurasi .env terbaca.
+4. Pastikan redirect URI yang digunakan adalah:
+   https://api.contentpilot.biz.id/api/storage/google_drive/callback
+5. Pastikan endpoint health berjalan normal.
+6. Generate ulang Authorization URL menggunakan client_id yang sekarang sudah asli, bukan placeholder.
+7. Jangan mengubah provider lain.
+8. Jangan menjalankan atau mengubah test Gorouter.app.
+9. Jangan commit/push perubahan apa pun.
+10. Setelah Authorization URL berhasil dibuat, tampilkan URL tersebut agar saya bisa membukanya di browser dan melakukan login Google.
+
+Jangan meminta saya mengisi Client ID/Secret lagi karena sudah saya isi di .env.
 ````
 # 
 ```
