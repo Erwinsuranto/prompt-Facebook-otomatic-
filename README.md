@@ -72,7 +72,52 @@
 ````
 # 
 ```
+Lanjutkan implementasi Google Drive OAuth sekarang. Jangan bertanya lagi soal URL—gunakan konfigurasi produksi yang sudah saya tetapkan:
 
+- Production base URL: https://api.contentpilot.biz.id
+- OAuth redirect URI: https://api.contentpilot.biz.id/api/storage/google_drive/callback
+- API internal tetap berjalan di localhost:4000
+- Caddy reverse proxy: api.contentpilot.biz.id -> localhost:4000
+- Google Drive OAuth Client: "content pilot google drive"
+- Google Cloud project: utility-canto-507016-h9
+- Scope yang sudah diizinkan:
+  https://www.googleapis.com/auth/drive.file
+  https://www.googleapis.com/auth/userinfo.email
+  openid
+
+Konteks:
+Google Drive API sudah ENABLED, OAuth consent screen sudah Testing, test user sudah ditambahkan, OAuth Web Client sudah dibuat, dan Authorized redirect URI sudah diset ke URL produksi di atas.
+
+Kerjakan SEKARANG langkah berikut secara berurutan:
+
+1. Periksa .env/server/worker dan pastikan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_DRIVE_REDIRECT_URI, serta konfigurasi cookie/session yang diperlukan sudah benar. Jangan menampilkan secret ke output.
+2. Pastikan Postgres dan Redis sesuai docker-compose yang ada sudah berjalan.
+3. Pastikan Caddy memiliki reverse proxy untuk:
+   api.contentpilot.biz.id {
+     reverse_proxy localhost:4000
+   }
+   lalu reload Caddy.
+4. Restart API + worker setelah konfigurasi selesai agar config/cache terbaca ulang.
+5. Verifikasi:
+   - API health
+   - worker health/status
+   - endpoint Google Drive storage
+   - konfigurasi provider Google Drive terbaca sebagai configured=true jika memang sudah sesuai.
+6. Jangan hanya mengecek file konfigurasi. Lakukan smoke test OAuth Google Drive end-to-end sampai tahap yang bisa diverifikasi dari server.
+7. Jangan mengubah provider lain.
+8. Jangan menjalankan atau mengubah test/integration test Gorouter.app. Jika test suite otomatis memuat Gorouter.app, skip/exclude test tersebut.
+9. NVIDIA dan TokenHarbor.ai jangan disentuh kecuali benar-benar diperlukan oleh perubahan ini.
+10. Jangan commit dan jangan push ke GitHub.
+11. Jika ada error, diagnosis dan perbaiki langsung. Jangan berhenti hanya untuk meminta saya memilih opsi yang URL-nya sudah jelas.
+12. Setelah selesai, tampilkan ringkasan:
+   - file yang diubah
+   - service yang direstart
+   - hasil health check
+   - hasil verifikasi Google Drive
+   - apakah OAuth callback production sudah siap
+   - jika masih ada langkah manual di browser, jelaskan tepat langkah berikutnya.
+
+Penting: gunakan https://api.contentpilot.biz.id/api/storage/google_drive/callback sebagai redirect URI final. Jangan gunakan localhost atau IP publik sebagai redirect URI.
 
 ````
 # 
