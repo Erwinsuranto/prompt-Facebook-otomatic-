@@ -77,7 +77,43 @@
 ````
 # 
 ```
+Lanjutkan konfigurasi Google Drive OAuth sesuai instruksi sebelumnya.
 
+Saya sudah membuat OAuth Client:
+- Name: content pilot google drive
+- Type: Web application
+- Google Drive API: Enabled
+- Data Access scopes sudah diset:
+  - https://www.googleapis.com/auth/drive.file
+  - https://www.googleapis.com/auth/userinfo.email
+  - openid
+- Test user sudah ditambahkan.
+- OAuth Client sudah dibuat.
+
+Untuk OAuth Client tersebut, saya akan menggunakan konfigurasi produksi berikut:
+
+Authorized redirect URI:
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+Authorized JavaScript origins:
+kosongkan, karena flow yang digunakan adalah server-side OAuth.
+
+Sekarang lanjutkan dari sisi project /root/content-pilot.
+
+Tugas Anda:
+1. Pastikan konfigurasi Google Drive OAuth membaca GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan GOOGLE_REDIRECT_URI dari environment.
+2. Pastikan GOOGLE_REDIRECT_URI menggunakan persis:
+   https://api.contentpilot.biz.id/api/storage/google_drive/callback
+3. Jangan mengubah provider lain.
+4. Jangan melakukan commit.
+5. Jangan menjalankan atau mengubah test Gorouter.app.
+6. Setelah konfigurasi siap, restart API + worker sesuai arsitektur project.
+7. Verifikasi endpoint callback dan flow OAuth Google Drive.
+8. Lanjutkan sampai tahap pengujian Connect Google Drive.
+9. Jika ada konfigurasi yang masih kurang di Google Cloud, berhenti dan beri saya instruksi klik yang tepat. Jangan menebak nilai URL.
+10. Jangan meminta saya memasukkan secret ke chat. Jika secret sudah ada di VPS/.env, gunakan konfigurasi yang tersedia di server.
+
+Sebelum melakukan perubahan besar, periksa konfigurasi existing dan struktur kode terlebih dahulu agar tidak merusak implementasi yang sudah berjalan.
 
 ````
 # 
