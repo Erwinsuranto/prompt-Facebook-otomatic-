@@ -18,7 +18,73 @@
 # 
 ```
 
+LANJUTKAN PEKERJAAN DARI HASIL PROMPT SEBELUMNYA.
 
+Jangan minta saya mengirim foto/screenshot terminal lagi.
+
+Sumber kebenaran utama sekarang adalah REPOSITORY dan folder hasil kerja/audit yang sudah dibuat oleh prompt sebelumnya. Baca langsung file-file tersebut untuk memahami status pekerjaan terakhir.
+
+TUGAS:
+
+1. Audit kondisi repository saat ini.
+2. Baca seluruh artefak hasil kerja sebelumnya, terutama:
+   - .ai-work/
+   - RESULT.md
+   - AUDIT.md
+   - COMMANDS.md
+   - folder hasil task sebelumnya
+   - README/dokumentasi terkait
+3. Tentukan dengan jelas:
+   - apa yang PASS
+   - apa yang FAILED
+   - apa yang BLOCKED
+   - apa yang belum dikerjakan
+   - perubahan kode/config apa yang memang diperlukan.
+4. Jangan hanya membuat laporan. Jika ada masalah yang bisa diperbaiki dari dalam repository, LANGSUNG PERBAIKI.
+5. Jangan mengubah hal di luar scope.
+6. Jangan menjalankan test/provider yang tidak diminta.
+7. Setelah perubahan selesai:
+   - jalankan verifikasi yang relevan dan aman;
+   - periksa git diff;
+   - pastikan tidak ada secret/token yang ikut ter-commit;
+   - pastikan .env dan credential tetap aman.
+8. Buat/UPDATE artefak hasil kerja di:
+   .ai-work/
+   
+   Gunakan struktur yang jelas, misalnya:
+   .ai-work/<nomor-task>-<nama-task>/RESULT.md
+   .ai-work/<nomor-task>-<nama-task>/AUDIT.md
+   .ai-work/<nomor-task>-<nama-task>/COMMANDS.md
+
+   Di RESULT.md tulis:
+   - status akhir PASS/FAILED/BLOCKED
+   - perubahan yang dilakukan
+   - file yang berubah
+   - hasil verifikasi
+   - masalah yang masih tersisa
+
+   Di AUDIT.md tulis temuan audit dan bukti hasil pemeriksaan.
+
+   Di COMMANDS.md tulis command penting yang benar-benar dijalankan.
+
+9. Setelah semuanya benar, COMMIT dan PUSH perubahan ke repository.
+10. Jangan berhenti hanya karena menemukan masalah. Perbaiki langsung selama masih dalam scope dan aman dilakukan.
+11. Jika ada bagian yang benar-benar membutuhkan tindakan manual di luar repository/VPS, tandai sebagai BLOCKED dan jelaskan tepat apa yang harus saya lakukan. Jangan mengarang hasil.
+
+ATURAN PENTING:
+- Repository adalah sumber informasi utama, bukan screenshot saya.
+- Selalu baca hasil task sebelumnya sebelum mulai bekerja.
+- Jangan menghapus artefak audit sebelumnya.
+- Jangan menimpa hasil audit lama; buat artefak task baru atau update secara terkontrol.
+- Setelah push selesai, tampilkan:
+  1. ringkasan perubahan,
+  2. status PASS/FAILED/BLOCKED,
+  3. commit hash,
+  4. branch yang dipush,
+  5. file artefak hasil kerja yang dibuat,
+  6. hal yang masih membutuhkan tindakan manual, jika ada.
+
+LANGSUNG MULAI DENGAN MEMBACA REPOSITORY DAN .ai-work. JANGAN MEMINTA SCREENSHOT.
 ````
 # 
 ```
