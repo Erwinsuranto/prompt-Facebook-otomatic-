@@ -27,7 +27,122 @@
 ````
 # 
 ```
+ATURAN WORKFLOW PROJECT — WAJIB DIIKUTI
 
+Mulai sekarang, setiap kali kamu melakukan audit, diagnosis, investigasi, perubahan, verifikasi, atau pekerjaan apa pun pada repository ini, JANGAN hanya menampilkan hasil di terminal/chat.
+
+Semua hasil kerja yang perlu saya review WAJIB disimpan ke repository dalam folder:
+
+.ai-work/
+
+Gunakan struktur berikut:
+
+.ai-work/
+├── README.md
+├── <nomor>-<nama-task>/
+│   ├── RESULT.md
+│   ├── AUDIT.md
+│   └── COMMANDS.md
+└── ...
+
+ATURAN:
+
+1. Setiap task baru buat folder:
+   .ai-work/<nomor>-<nama-task>/
+
+2. RESULT.md
+   Berisi ringkasan hasil akhir:
+   - status: PASS / FAIL / BLOCKED / PARTIAL
+   - apa yang ditemukan
+   - apa yang diperbaiki
+   - apa yang belum bisa diperbaiki
+   - file yang berubah
+   - verifikasi yang dilakukan
+   - risiko/catatan penting
+   - langkah berikutnya jika ada
+
+3. AUDIT.md
+   Berisi hasil audit/detail teknis:
+   - temuan
+   - evidence
+   - root cause
+   - impact
+   - rekomendasi
+   - keputusan yang diperlukan
+
+4. COMMANDS.md
+   Berisi command penting yang benar-benar dijalankan beserta hasil/ringkasannya.
+   JANGAN memasukkan secret, token, password, API key, OAuth credential, private key, atau isi .env.
+
+5. Jangan pernah commit:
+   - .env
+   - credential
+   - access token
+   - refresh token
+   - API key
+   - password
+   - private key
+   - secret lainnya
+
+6. Jika hasil audit menemukan secret yang sudah ada di file project:
+   dokumentasikan hanya nama variable, lokasi file, dan statusnya.
+   Jangan menyalin nilai secret ke artefact.
+
+7. Setelah pekerjaan selesai:
+   - pastikan artefact berada di .ai-work/
+   - jalankan git status
+   - review diff
+   - pastikan tidak ada secret yang ikut
+   - commit perubahan
+   - push ke remote repository/branch yang sedang digunakan
+
+8. JANGAN melakukan perubahan di luar scope task.
+   Jika task hanya audit, jangan memperbaiki code kecuali saya secara eksplisit meminta perbaikan.
+
+9. JANGAN menjalankan test provider/integration yang tidak diminta.
+   Ikuti aturan testing project yang sudah ada.
+
+10. Jika pekerjaan BLOCKED karena membutuhkan tindakan saya:
+    tetap buat RESULT.md, AUDIT.md, dan COMMANDS.md yang menjelaskan:
+    - alasan BLOCKED
+    - apa yang sudah diverifikasi
+    - tindakan yang harus saya lakukan
+    - command/langkah berikutnya
+
+11. Setelah push berhasil, tampilkan hanya:
+    - task
+    - status
+    - folder artefact
+    - commit hash
+    - branch
+    - push berhasil/tidak
+
+PENTING:
+
+Tujuan workflow ini adalah agar saya tidak perlu mengirim screenshot terminal lagi.
+
+Setelah kamu push, saya akan membaca hasil langsung dari repository dan bisa memberikan instruksi seperti:
+
+"cek hasil audit terakhir"
+
+"baca .ai-work task terakhir"
+
+"terapkan hasil audit terakhir"
+
+"perbaiki semua temuan dari audit terakhir lalu push"
+
+Jika repository sudah memiliki folder .ai-work, gunakan struktur yang sudah ada dan jangan menghapus artefact lama.
+
+SEBELUM PUSH:
+lakukan pemeriksaan keamanan agar tidak ada credential/secret yang masuk ke commit.
+
+SEKARANG:
+1. Periksa struktur repository.
+2. Buat/rapikan .ai-work/ jika diperlukan.
+3. Simpan hasil pekerjaan TASK INI ke artefact.
+4. Commit.
+5. Push.
+6. Laporkan commit hash dan lokasi artefact.
 
 ````
 # 
