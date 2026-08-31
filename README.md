@@ -12,7 +12,166 @@
 ````
 # 
 ```
+Lanjutkan pekerjaan dari seluruh hasil audit dan work-log sebelumnya di repo ini. Jangan mengulang audit dari nol.
 
+ATURAN UTAMA:
+1. Jadikan repo Git sebagai source of truth, bukan screenshot terminal.
+2. Baca dulu seluruh artefak kerja terbaru di `.ai-work/`, terutama task 007 dan task sebelumnya yang terkait Google Drive OAuth, Cloudflare/Caddy, env, worker, API, dan storage.
+3. Baca kondisi kode aktual dari HEAD saat ini sebelum mengubah apa pun.
+4. Jangan meminta saya mengirim screenshot.
+5. Semua hasil pekerjaan WAJIB ditulis ke repo di `.ai-work/` agar pada prompt berikutnya pekerjaan bisa dilanjutkan hanya dengan membaca repo.
+6. Setelah perubahan selesai, commit dan PUSH ke remote/default branch.
+7. Jangan commit `.env`, credential, access token, refresh token, client secret, atau secret lainnya.
+8. Jangan mengubah secret production hanya untuk membuat test lewat.
+9. Jangan melakukan perubahan di luar scope yang benar-benar diperlukan.
+
+TUGAS LANJUTAN:
+
+A. RECOVER CONTEXT
+- Temukan task/work-log terbaru di `.ai-work/`.
+- Tentukan dengan jelas:
+  - apa yang sudah PASS,
+  - apa yang BLOCKED,
+  - apa yang FAILED,
+  - apa yang masih perlu dikerjakan,
+  - perubahan apa yang sudah diterapkan pada kode.
+- Jangan menganggap langkah manual VPS/Cloudflare sudah selesai hanya karena tertulis sebagai rencana. Verifikasi dari repo/config yang memang dapat diperiksa.
+
+B. GOOGLE DRIVE OAUTH
+Audit implementasi Google Drive OAuth end-to-end:
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- GOOGLE_DRIVE_REDIRECT_URI
+- callback endpoint
+- authorization URL
+- token exchange
+- state validation
+- penyimpanan token
+- encryption
+- koneksi/account status
+- disconnect/revoke flow bila memang sudah ada.
+
+Pastikan implementasi membaca environment variable yang benar dan tidak menggunakan placeholder seperti:
+REPLACE_WITH_*
+atau nilai dummy.
+
+Jangan pernah menyalin nilai secret aktual ke file yang di-commit.
+
+C. REDIRECT URI
+Pastikan redirect URI yang digunakan kode konsisten dengan:
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+Jika ada mismatch trailing slash, host, path, atau route, perbaiki di CODE/CONFIG yang memang menjadi tanggung jawab repository.
+
+Jangan mengubah domain secara sembarangan.
+
+D. API / CADDY / CLOUDFLARE
+Periksa hasil audit sebelumnya mengenai:
+- API_HOST
+- API_PORT
+- Caddy reverse proxy
+- Cloudflare SSL/TLS
+- origin certificate
+- callback reachability
+- /health
+- public API base URL.
+
+Pisahkan dengan tegas:
+1. masalah yang bisa diperbaiki di repository,
+2. masalah yang hanya bisa diperbaiki manual di VPS/Cloudflare.
+
+Untuk bagian yang bisa diperbaiki di repository, TERAPKAN LANGSUNG.
+
+Untuk bagian manual, dokumentasikan sebagai BLOCKED/MANUAL ACTION dan jangan pura-pura mengklaim sudah selesai.
+
+E. WORKER / ENV
+Audit worker agar benar-benar menggunakan `.env` root yang sama dengan API dan tidak menjalankan konfigurasi placeholder.
+
+Periksa khusus:
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- GOOGLE_DRIVE_REDIRECT_URI
+- API_HOST
+- API_PORT
+- WEB_BASE_URL
+- storage configuration.
+
+Jika source code perlu diperbaiki agar environment loading konsisten, TERAPKAN.
+
+F. TEST
+Jalankan test/verifikasi yang relevan setelah perubahan.
+
+Minimal:
+- typecheck/build yang relevan,
+- test Google Drive OAuth yang aman,
+- route/endpoint verification yang tidak memerlukan secret production,
+- verifikasi bahwa tidak ada secret yang masuk Git,
+- verifikasi git diff dan git status.
+
+Jangan melakukan destructive test terhadap akun Google Drive production.
+
+G. WORK ARTIFACT
+Buat/update artefak berikut:
+
+.ai-work/008-google-drive-oauth-hardening/RESULT.md
+.ai-work/008-google-drive-oauth-hardening/AUDIT.md
+.ai-work/008-google-drive-oauth-hardening/COMMANDS.md
+
+RESULT.md harus berisi:
+- tujuan task,
+- kondisi sebelum perubahan,
+- perubahan yang benar-benar diterapkan,
+- file yang berubah,
+- test yang dijalankan,
+- hasil PASS/FAIL/BLOCKED,
+- commit SHA setelah push.
+
+AUDIT.md harus berisi:
+- temuan,
+- severity,
+- bukti,
+- keputusan,
+- masalah manual yang tidak bisa diselesaikan dari repo.
+
+COMMANDS.md harus berisi:
+- command yang dijalankan,
+- hasil ringkas,
+- command yang sengaja TIDAK dijalankan dan alasannya jika relevan.
+
+Tambahkan/update `.ai-work/README.md` dengan status task 008 dan pointer ke ketiga file tersebut.
+
+PENTING:
+- Jangan hanya membuat laporan. TERAPKAN perbaikan kode yang memang diperlukan.
+- Jangan menghapus audit lama.
+- Jangan mengubah hasil audit sebelumnya tanpa bukti.
+- Jika menemukan masalah baru, dokumentasikan sebagai temuan baru.
+- Pertahankan perbedaan status 521 vs 522 bila bukti menunjukkan keduanya berbeda; jangan menyamaratakan.
+- Jangan memasukkan secret aktual ke `.ai-work`.
+- Jangan commit `.env`.
+
+TERAKHIR:
+1. Jalankan git status.
+2. Pastikan tidak ada secret/untracked sensitive file.
+3. Review git diff.
+4. Commit semua perubahan repository yang memang termasuk task ini.
+5. PUSH ke remote/default branch.
+6. Setelah push, verifikasi:
+   git status
+   git log -1 --oneline
+   git rev-parse HEAD
+   git rev-parse origin/HEAD
+7. Pastikan HEAD == remote HEAD.
+8. Tulis commit SHA ke RESULT.md.
+9. Karena RESULT.md sendiri harus ikut dipush, lakukan commit/push final setelah SHA diketahui atau gunakan mekanisme yang membuat RESULT.md mencatat SHA commit final secara konsisten.
+10. Di akhir tampilkan ringkasan singkat:
+   - STATUS
+   - FILE CHANGED
+   - TEST
+   - BLOCKED/MANUAL
+   - COMMIT SHA
+   - REMOTE SHA
+
+Jangan berhenti hanya karena ada langkah manual Cloudflare/VPS. Selesaikan semua bagian yang bisa dikerjakan dari repository terlebih dahulu, dokumentasikan sisanya, lalu push.
 
 ````
 # 
