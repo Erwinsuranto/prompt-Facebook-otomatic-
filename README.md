@@ -42,7 +42,180 @@
 ````
 # 
 ```
+AUDIT HASIL PROMPT TERAKHIR — JANGAN MELAKUKAN PERUBAHAN
 
+Lakukan audit menyeluruh terhadap kondisi project /root/content-pilot berdasarkan pekerjaan yang baru saja dilakukan.
+
+TUJUAN:
+Memastikan implementasi Google Drive OAuth, API, HTTPS/Cloudflare, dan konfigurasi environment benar-benar sudah sesuai dan tidak ada pekerjaan yang hanya terlihat selesai tetapi sebenarnya belum berfungsi.
+
+ATURAN PENTING:
+1. AUDIT ONLY. Jangan mengubah file apa pun.
+2. Jangan menjalankan git commit, git push, atau menghapus data.
+3. Jangan mengubah konfigurasi Cloudflare, OpenStack, DNS, firewall, atau VPS.
+4. Jangan meminta saya memasukkan credential/secret ke chat.
+5. Jangan menampilkan nilai secret/token/client secret secara lengkap. Masking semua credential.
+6. Jangan menjalankan atau mengubah test/integration test GoRouter.app.
+7. Jangan menyentuh provider lain yang tidak diperlukan untuk audit ini.
+8. NVIDIA API dan TokenHarbor.ai boleh diverifikasi jika memang relevan dengan kondisi proxy, tetapi jangan melakukan perubahan terhadapnya.
+9. Jangan menganggap konfigurasi benar hanya karena file/env terlihat ada. Verifikasi penggunaan aktual oleh aplikasi.
+
+CHECKLIST AUDIT:
+
+A. PROJECT STATE
+- Pastikan project benar-benar /root/content-pilot.
+- Periksa git status.
+- Identifikasi file yang berubah dari pekerjaan terakhir.
+- Pastikan tidak ada perubahan tidak sengaja.
+- Periksa package/workspace yang relevan.
+- Jangan mengubah apa pun.
+
+B. ENVIRONMENT
+Audit /root/content-pilot/.env.
+Pastikan variabel Google OAuth yang dibutuhkan memang ada dan terbaca aplikasi:
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- GOOGLE_DRIVE_REDIRECT_URI
+
+Pastikan:
+- GOOGLE_CLIENT_ID bukan placeholder.
+- GOOGLE_CLIENT_SECRET bukan placeholder.
+- GOOGLE_DRIVE_REDIRECT_URI sesuai route callback aplikasi.
+- Nilai secret jangan ditampilkan penuh.
+- Pastikan aplikasi benar-benar membaca variabel tersebut, bukan hanya env memiliki variabelnya.
+
+C. GOOGLE OAUTH
+Audit implementasi OAuth Google Drive:
+- Cari source code yang membaca GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.
+- Cari endpoint authorization.
+- Cari endpoint callback.
+- Pastikan authorization URL dibangun menggunakan client ID aktual.
+- Pastikan redirect_uri yang dikirim ke Google sama persis dengan redirect URI yang dikonfigurasi aplikasi.
+- Pastikan callback dapat menukar authorization code menjadi token.
+- Pastikan state OAuth ditangani dengan benar.
+- Pastikan scope Google Drive sesuai kebutuhan aplikasi.
+- Pastikan access token/refresh token tidak ditulis ke log.
+- Pastikan penyimpanan token menggunakan mekanisme encryption/storage yang memang tersedia di project.
+
+D. API / ROUTE
+Periksa route:
+- /health
+- /api/storage/google_drive/callback
+- endpoint authorization Google Drive
+- endpoint status koneksi Google Drive
+
+Pastikan route benar-benar terdaftar pada server yang sedang dijalankan.
+
+E. SERVER
+Periksa proses/service API.
+Verifikasi:
+- API listen pada port yang benar.
+- API_HOST/API_PORT sesuai konfigurasi.
+- service tidak crash.
+- health endpoint memberikan response yang benar.
+- restart terakhir benar-benar menggunakan konfigurasi .env terbaru jika memang restart diperlukan.
+
+Jangan restart atau mengubah service kecuali saya meminta.
+
+F. HTTPS / CLOUDFLARE
+Audit secara read-only:
+- https://api.contentpilot.biz.id/health
+- status HTTP response.
+- apakah request mencapai origin.
+- apakah ada masalah Cloudflare 521.
+- apakah origin/API benar-benar listen.
+- apakah konfigurasi reverse proxy Caddy secara logika sudah sesuai.
+- pastikan tidak ada asumsi bahwa Cloudflare sudah benar hanya berdasarkan konfigurasi lokal.
+
+Jangan mengubah Cloudflare atau firewall.
+
+G. CADDY / REVERSE PROXY
+Audit konfigurasi Caddy:
+- domain api.contentpilot.biz.id
+- reverse_proxy ke localhost:4000 atau port aplikasi yang sebenarnya.
+- TLS configuration.
+- pastikan tidak ada konfigurasi yang menyebabkan loop atau salah upstream.
+- cek status/config secara read-only.
+
+H. GOOGLE DRIVE CALLBACK
+Pastikan callback URL yang digunakan aplikasi konsisten dengan:
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+Periksa apakah callback route benar-benar dapat menerima request Google OAuth.
+
+I. FRONTEND / UI
+Jika ada UI Settings → Storage → Connect Google Drive:
+- pastikan tombol/flow Connect Google Drive menggunakan authorization endpoint yang benar.
+- pastikan redirect kembali ke callback.
+- pastikan status koneksi dapat dibaca setelah OAuth.
+- jangan mengubah UI.
+
+J. SECURITY AUDIT
+Cari potensi:
+- secret Google masuk git.
+- secret masuk source code.
+- secret masuk log.
+- token OAuth masuk response yang tidak semestinya.
+- redirect URI terbuka terhadap open redirect.
+- state OAuth tidak divalidasi.
+- credential ditampilkan pada endpoint publik.
+
+Jika menemukan masalah, hanya laporkan. Jangan memperbaikinya.
+
+OUTPUT WAJIB:
+
+Berikan laporan dengan format:
+
+1. OVERALL STATUS
+PASS / PARTIAL / FAIL
+
+2. PROJECT STATE
+- apa yang ditemukan
+- apakah ada perubahan tidak diinginkan
+
+3. GOOGLE OAUTH
+- Client ID: VALID / PLACEHOLDER / TIDAK TERDETEKSI
+- Client Secret: VALID / PLACEHOLDER / TIDAK TERDETEKSI
+- Redirect URI: VALID / SALAH / TIDAK TERDETEKSI
+- Authorization flow: PASS / FAIL
+- Callback: PASS / FAIL
+- Token storage: PASS / FAIL
+
+4. API
+- Health: PASS / FAIL
+- Routes: PASS / FAIL
+- Server: PASS / FAIL
+
+5. CADDY / HTTPS / CLOUDFLARE
+- Caddy: PASS / FAIL
+- HTTPS: PASS / FAIL
+- Cloudflare/origin: PASS / FAIL
+- 521: YA / TIDAK
+
+6. SECURITY
+- temuan keamanan
+- tingkat: LOW / MEDIUM / HIGH / CRITICAL
+
+7. MASALAH YANG BENAR-BENAR TERBUKTI
+Pisahkan dari dugaan/asumsi.
+
+8. YANG SUDAH BENAR
+Daftar bagian yang benar-benar terverifikasi.
+
+9. YANG MASIH HARUS DIPERBAIKI
+Hanya daftar masalah yang terbukti.
+
+10. NEXT STEP
+Berikan langkah berikutnya secara berurutan.
+Jangan melakukan langkah tersebut sekarang.
+
+PENTING:
+Jangan mengatakan "sudah selesai" hanya karena konfigurasi terlihat benar.
+Audit harus berdasarkan bukti dari source code, konfigurasi, route, proses server, dan response aktual.
+Jika sesuatu tidak bisa diverifikasi tanpa credential atau perubahan eksternal, tandai sebagai "TIDAK DAPAT DIVERIFIKASI" dan jelaskan alasannya.
+
+SELESAI SETELAH LAPORAN AUDIT.
+Jangan melakukan coding atau perubahan apa pun.
 
 ````
 # 
