@@ -33,7 +33,126 @@
 # 
 ```
 
+AUDIT + WORK LOG REPOSITORY — WAJIB DITERAPKAN
 
+Kerjakan audit/verifikasi sesuai instruksi sebelumnya, tetapi mulai sekarang SEMUA HASIL KERJA AI WAJIB disimpan sebagai artefak di dalam repository agar dapat diaudit tanpa screenshot.
+
+Repository/project:
+ /root/content-pilot
+
+Buat folder khusus:
+
+.ai-work/
+
+Struktur:
+
+.ai-work/
+├── README.md
+├── 001-google-drive-oauth-audit/
+│   ├── RESULT.md
+│   ├── AUDIT.md
+│   └── COMMANDS.md
+├── 002-readonly-full-audit/
+│   ├── RESULT.md
+│   ├── AUDIT.md
+│   └── COMMANDS.md
+└── 003-readonly-convention/
+    ├── RESULT.md
+    ├── AUDIT.md
+    └── COMMANDS.md
+
+ATURAN PENTING:
+
+1. Setiap task/audit yang kamu kerjakan harus mempunyai folder sendiri dengan nomor berurutan.
+
+2. RESULT.md
+   Berisi hasil akhir yang mudah dibaca:
+   - status: PASS / FAILED / BLOCKED
+   - tanggal/waktu
+   - tujuan task
+   - perubahan yang dilakukan
+   - file yang diperiksa
+   - hasil verifikasi
+   - masalah yang ditemukan
+   - langkah berikutnya
+   - kesimpulan
+
+3. AUDIT.md
+   Berisi audit teknis secara detail:
+   - kondisi sebelum
+   - kondisi sesudah
+   - konfigurasi yang diperiksa
+   - command yang dijalankan
+   - output penting
+   - alasan setiap keputusan
+   - risiko/regresi yang ditemukan
+   - hal yang sengaja TIDAK diubah
+
+4. COMMANDS.md
+   Berisi command yang benar-benar dijalankan selama task.
+   Jangan menuliskan command yang hanya direncanakan tetapi tidak pernah dijalankan.
+
+5. JANGAN menyimpan secret/token/password asli di .ai-work/.
+   Jika output terminal mengandung credential, API key, OAuth token, client secret, password, cookie, atau credential lain, REDACT menjadi:
+   [REDACTED]
+
+6. Jangan memasukkan isi .env asli ke file hasil audit.
+   Boleh mencatat nama variable dan statusnya, contoh:
+   GOOGLE_CLIENT_ID=<configured>
+   GOOGLE_CLIENT_SECRET=<configured>
+   tetapi jangan tulis nilainya.
+
+7. Jika task FAILED atau BLOCKED, tetap buat RESULT.md.
+   FAILED/BLOCKED berarti objek yang diaudit gagal/belum dapat diverifikasi.
+   Jangan menghapus hasil gagal agar histori audit tetap tersedia.
+
+8. Jangan mengklaim PASS hanya karena command berhasil dijalankan.
+   PASS hanya jika kriteria keberhasilan benar-benar terbukti.
+
+9. Setiap task baru harus merujuk ke task sebelumnya jika memang berkaitan.
+
+10. Update .ai-work/README.md dengan index seluruh task:
+    - nomor
+    - nama task
+    - status
+    - tanggal
+    - ringkasan
+    - lokasi RESULT.md
+
+11. Jangan mengubah source code hanya demi membuat audit terlihat PASS.
+    Jika menemukan masalah, laporkan masalahnya terlebih dahulu dan hanya lakukan perubahan jika memang termasuk scope pekerjaan.
+
+12. Setelah selesai, jalankan git status dan pastikan artefak audit yang baru memang ada.
+
+13. Commit dan push hanya jika instruksi pekerjaan memang meminta commit/push.
+    Jika saya meminta commit/push, gunakan commit message yang jelas dan pastikan tidak ada secret ikut ter-commit.
+
+14. JANGAN menjalankan test/integration test Gorouter.app.
+    Jika test suite otomatis memasukkan Gorouter.app, skip/exclude test tersebut.
+    Provider NVIDIA dan TokenHarbor.ai boleh diverifikasi sesuai kebutuhan.
+
+15. Untuk audit Google Drive/OAuth:
+    - jangan mencetak OAuth token/refresh token
+    - jangan menyimpan credential mentah
+    - dokumentasikan hanya status/configuration yang diperlukan
+    - jika authorization URL perlu dicatat, redact client secret/token dan jangan menyimpan credential sensitif.
+
+16. Setiap kali kamu selesai mengerjakan task, SELALU tampilkan:
+    WORK RESULT:
+    Task: <nomor dan nama>
+    Status: PASS/FAILED/BLOCKED
+    Result file: .ai-work/<folder>/RESULT.md
+    Audit file: .ai-work/<folder>/AUDIT.md
+    Commands: .ai-work/<folder>/COMMANDS.md
+
+17. Jika ada perubahan file project, catat semua file yang berubah di RESULT.md dan AUDIT.md.
+
+18. Sebelum menyatakan selesai, pastikan file artefak sudah benar-benar dibuat di repository, bukan hanya dijelaskan di chat.
+
+Tujuan utama:
+Saya ingin seluruh pekerjaan, audit, command, hasil verifikasi, dan masalah terdokumentasi di repository sehingga pada percakapan berikutnya saya cukup meminta AI lain/assistant untuk membaca folder .ai-work tanpa perlu saya mengirim screenshot terminal lagi.
+
+Sekarang terapkan sistem work-log ini pada task yang sedang kamu kerjakan, buat/update .ai-work/README.md dan buat artefak hasil untuk task saat ini.
 ````
 # 
 ```
