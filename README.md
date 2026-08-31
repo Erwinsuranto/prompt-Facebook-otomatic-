@@ -37,7 +37,212 @@
 ````
 # 
 ```
+Lakukan AUDIT READ-ONLY menyeluruh terhadap project /root/content-pilot berdasarkan kondisi TERKINI server.
 
+PENTING:
+- Jangan mengubah file apa pun.
+- Jangan mengubah konfigurasi, database, environment, service, DNS, Cloudflare, OAuth, atau credential.
+- Jangan restart service.
+- Jangan melakukan git commit/push.
+- Jangan mengirim request yang mengubah state.
+- Jangan menjalankan test yang dapat membuat/menghapus/mengubah data.
+- Jangan menampilkan nilai secret/token/password/client_secret secara lengkap; MASK semua secret.
+- Audit harus benar-benar membaca konfigurasi dan source code yang relevan, bukan hanya menyimpulkan dari output sebelumnya.
+
+Tujuan audit:
+Memastikan project content-pilot siap digunakan dan integrasi Google Drive OAuth benar-benar konsisten end-to-end.
+
+Periksa minimal:
+
+1. PROJECT STRUCTURE
+- Identifikasi frontend, backend/API, worker, storage module, auth/session module, dan konfigurasi yang relevan.
+- Pastikan tidak ada konfigurasi ganda yang saling bertentangan.
+
+2. ENVIRONMENT
+- Audit /root/content-pilot/.env dan seluruh env yang benar-benar digunakan aplikasi.
+- Verifikasi GOOGLE_CLIENT_ID
+- Verifikasi GOOGLE_CLIENT_SECRET
+- Verifikasi GOOGLE_DRIVE_REDIRECT_URI
+- Verifikasi API_HOST/API_PORT
+- Verifikasi WEB_BASE_URL
+- Verifikasi bahwa runtime benar-benar membaca .env yang sama.
+- Cari placeholder seperti REPLACE_WITH_*, <client_id>, example, dummy, atau nilai kosong.
+- Jangan tampilkan secret asli.
+
+3. GOOGLE OAUTH
+- Telusuri source code yang membuat authorization URL.
+- Pastikan client_id berasal dari environment/config yang benar.
+- Pastikan redirect_uri yang digunakan code SAMA PERSIS dengan:
+  https://api.contentpilot.biz.id/api/storage/google_drive/callback
+- Pastikan scope Google Drive sesuai kebutuhan aplikasi.
+- Pastikan state OAuth dibuat dan divalidasi dengan benar.
+- Pastikan callback menukar authorization code menggunakan client credentials server-side.
+- Pastikan access/refresh token disimpan dengan aman.
+- Pastikan tidak ada client_secret yang dikirim ke browser/frontend.
+- Pastikan tidak ada hardcoded OAuth credential.
+
+4. GOOGLE DRIVE CONNECTION FLOW
+Audit endpoint:
+- authorization URL
+- callback
+- connection status
+- disconnect jika ada
+- storage connection/user mapping
+
+Pastikan alurnya:
+UI → authorization URL → Google → callback → token exchange → encrypted token storage → status=connected.
+
+Periksa kemungkinan error:
+- invalid_client
+- redirect_uri_mismatch
+- state mismatch
+- token exchange failure
+- callback 404
+- token tidak tersimpan
+- status connected palsu.
+
+5. API / PROXY / CADDY
+- Verifikasi aplikasi listen pada interface/port yang benar.
+- Verifikasi Caddy/reverse proxy.
+- Verifikasi HTTPS.
+- Verifikasi upstream localhost:4000 atau target sebenarnya.
+- Cari konfigurasi yang menyebabkan API hanya bisa diakses localhost.
+- Pastikan public endpoint:
+  https://api.contentpilot.biz.id
+  mengarah ke service yang benar.
+
+6. CLOUDFLARE
+- Audit konfigurasi yang dapat diperiksa dari server.
+- Cari potensi konflik Cloudflare ↔ Caddy ↔ HTTPS.
+- Pastikan tidak ada konfigurasi yang membuat TLS origin salah.
+- Jangan melakukan perubahan Cloudflare.
+
+7. CORS / COOKIE / SESSION
+- Audit CORS.
+- Pastikan origin production tidak menggunakan wildcard jika credential/cookie diperlukan.
+- Audit Secure, HttpOnly, SameSite cookie.
+- Pastikan WEB_BASE_URL konsisten.
+- Pastikan session tidak rusak karena domain/subdomain berbeda.
+
+8. STORAGE SECURITY
+- Audit enkripsi token.
+- Pastikan encryption key tersedia dan konsisten.
+- Pastikan token Google tidak disimpan plaintext.
+- Pastikan token tidak masuk log.
+- Pastikan endpoint status tidak membocorkan credential.
+
+9. DATABASE / MIGRATION
+- Audit schema/model yang berkaitan dengan Google Drive connection.
+- Pastikan tidak ada mismatch antara schema dan source code.
+- Jangan menjalankan migration yang mengubah database.
+
+10. SERVICE/RUNTIME
+- Identifikasi process/service yang menjalankan API dan worker.
+- Periksa apakah process menggunakan environment terbaru.
+- Periksa apakah ada process lama yang masih memakai konfigurasi lama.
+- Jangan restart apa pun.
+
+11. ROUTES
+Audit route yang berkaitan dengan:
+- /health
+- /api/storage/google_drive/*
+- authentication/session
+- callback OAuth
+
+Pastikan route benar-benar terdaftar dan tidak hanya disebut dalam dokumentasi.
+
+12. SECURITY
+Cari:
+- hardcoded secret
+- leaked credential
+- token di log
+- insecure callback
+- missing state validation
+- open CORS
+- insecure cookie
+- exposed internal endpoint
+- localhost/public URL mismatch
+- OAuth misconfiguration.
+
+13. CONSISTENCY CHECK
+Bandingkan:
+ENV → source code → route → reverse proxy → frontend configuration.
+
+Jika menemukan konfigurasi berbeda, tunjukkan:
+A. nilai/config yang ditemukan (secret wajib dimasking)
+B. lokasi file
+C. konfigurasi yang seharusnya
+D. dampaknya.
+
+14. VERIFICATION
+Hanya lakukan pemeriksaan READ-ONLY yang aman.
+Boleh menggunakan:
+- grep
+- sed/cat untuk membaca konfigurasi
+- git status
+- process/service inspection
+- route/source inspection
+- curl GET/HEAD/read-only terhadap health endpoint bila aman.
+
+Jangan melakukan POST/PUT/PATCH/DELETE ke Google atau aplikasi.
+Jangan melakukan OAuth login.
+Jangan membuat connection baru.
+Jangan mengubah state.
+
+HASIL AKHIR WAJIB dalam format:
+
+=== AUDIT RESULT ===
+
+STATUS:
+[READY / NOT READY / BLOCKED]
+
+CRITICAL ISSUES:
+1.
+2.
+3.
+
+WARNINGS:
+1.
+2.
+3.
+
+PASSED:
+1.
+2.
+3.
+
+GOOGLE OAUTH:
+- Client ID configured: YES/NO
+- Client secret configured: YES/NO
+- Redirect URI consistent: YES/NO
+- Callback route exists: YES/NO
+- State validation: YES/NO
+- Token encryption: YES/NO
+- Browser exposure risk: YES/NO
+
+PUBLIC API:
+- HTTPS: PASS/FAIL
+- Reverse proxy: PASS/FAIL
+- API health: PASS/FAIL
+- CORS: PASS/FAIL
+- Cookie/session: PASS/FAIL
+
+CONFIGURATION:
+- Placeholder found: YES/NO
+- Duplicate/conflicting env: YES/NO
+- Runtime using expected env: YES/NO
+
+FILES CHANGED:
+MUST be 0.
+
+TESTS THAT WERE RUN:
+List only read-only/safe checks.
+
+FINAL DIAGNOSIS:
+Jelaskan secara singkat apakah project benar-benar siap untuk langkah login Google Drive berikutnya.
+
+Jika ada masalah, JANGAN memperbaikinya.
+Berikan tepat langkah/perintah yang perlu saya lakukan pada tahap berikutnya setelah audit selesai.
 
 ````
 # 
