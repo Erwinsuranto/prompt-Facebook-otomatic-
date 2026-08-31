@@ -23,7 +23,49 @@
 # 
 ```
 
+Lanjutkan dari kondisi repository saat ini.
 
+ATURAN WAJIB:
+1. Baca dulu seluruh .ai-work/README.md dan task terbaru di .ai-work/.
+2. Jangan minta saya mengirim foto terminal. Semua hasil kerja wajib ditulis ke .ai-work/ agar bisa saya baca dari repository.
+3. Sebelum mengubah apa pun, audit kondisi repository dan runtime saat ini.
+4. Fokus hanya pada BLOCKER C3 dari audit sebelumnya:
+   - web app belum berjalan
+   - WEB_BASE_URL masih mengarah ke API
+   - OAuth callback setelah login harus kembali ke web app yang benar, bukan 404.
+5. Jangan mengubah C1 Google Cloud OAuth dan jangan mengubah C2 Cloudflare pada task ini.
+6. Jangan menyentuh .env secret atau menuliskan nilai secret/client secret/token ke dokumen.
+7. Jangan menjalankan test yang tidak relevan. Jika perlu verifikasi, gunakan pemeriksaan minimal yang benar-benar diperlukan.
+8. Jangan mengarang hasil. Jika sesuatu tidak bisa diverifikasi, tulis NOT VERIFIABLE beserta alasannya.
+9. Setelah selesai, buat task baru:
+   .ai-work/006-fix-web-base-and-c3/
+   dengan:
+   - RESULT.md
+   - AUDIT.md
+   - COMMANDS.md
+10. Catat file kode/config yang benar-benar berubah dan alasan setiap perubahan.
+11. Pastikan perubahan tidak merusak API yang sudah berjalan.
+12. Verifikasi endpoint web, API, OAuth callback route, dan WEB_BASE_URL secara nyata dari VPS.
+13. Jika perubahan sudah benar, commit dan PUSH langsung ke origin/main.
+14. Setelah push, verifikasi:
+   - local HEAD == origin/main
+   - working tree bersih
+   - tidak ada .env masuk Git
+   - tidak ada secret/token/client_secret di .ai-work
+   - semua artefak Task 006 sudah ada di remote.
+15. Jangan membuat commit/push jika verifikasi gagal.
+16. Jangan menghapus atau menulis ulang task .ai-work sebelumnya; tetap append-only.
+17. Di akhir jawab singkat:
+   - status C3
+   - file yang diubah
+   - commit hash
+   - push berhasil/gagal
+   - blocker yang masih tersisa.
+
+Tujuan akhir task ini:
+OAuth callback tidak lagi berakhir di API/404 karena web app belum tersedia atau WEB_BASE_URL salah. Web dan API harus memiliki routing yang konsisten dengan arsitektur repository yang sudah ada.
+
+Mulai dengan audit repository dan runtime terlebih dahulu, kemudian terapkan perbaikan C3 jika memang terbukti diperlukan.
 ````
 # 
 ```
