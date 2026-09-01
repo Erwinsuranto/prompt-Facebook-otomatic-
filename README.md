@@ -7,7 +7,46 @@
 ````
 # 
 ```
+Lanjutkan pekerjaan project content-pilot dari kondisi repo TERBARU di origin/main.
 
+Jangan melakukan audit besar atau audit berulang. Gunakan hasil task sebelumnya sebagai baseline dan jangan mengulang pekerjaan yang sudah PASS.
+
+TUJUAN TASK:
+Lanjutkan pengujian/fungsi Google Drive OAuth sampai batas yang memang bisa diverifikasi dari sisi repo dan server.
+
+Aturan:
+1. Baca .ai-work task terakhir dan kondisi kode terbaru terlebih dahulu.
+2. Identifikasi hanya 1 masalah/blocker paling relevan yang masih bisa diperbaiki dari sisi code/config repo.
+3. Jika ada masalah yang bisa diperbaiki, langsung implementasikan.
+4. Jalankan hanya test yang relevan dengan perubahan tersebut. Jangan menjalankan test/integration yang tidak diperlukan.
+5. Jangan mengubah .env atau membocorkan secret.
+6. Jangan mengulang audit yang sudah dilakukan task 008/009/010.
+7. Buat hasil singkat di:
+   .ai-work/011-<nama-task>/RESULT.md
+   .ai-work/011-<nama-task>/COMMANDS.md
+   Jika memang diperlukan, AUDIT.md boleh dibuat, tetapi jangan membuat audit panjang.
+8. RESULT.md cukup berisi:
+   - tujuan
+   - perubahan
+   - test yang dijalankan + hasil
+   - blocker jika ada
+   - status PASS/BLOCKED
+   - commit SHA
+9. Commit semua perubahan yang memang diperlukan.
+10. Push langsung ke origin/main.
+11. Setelah push, lakukan verifikasi singkat:
+    git fetch origin
+    git rev-parse HEAD
+    git rev-parse origin/main
+    git status --short --branch
+12. Pastikan HEAD == origin/main dan working tree bersih.
+13. Jangan berhenti hanya karena ada blocker eksternal. Selesaikan semua pekerjaan repo-owned yang bisa dilakukan, lalu catat blocker secara singkat.
+
+PENTING:
+Fokus utama adalah IMPLEMENTASI + TEST RELEVAN + COMMIT + PUSH.
+Jangan menghabiskan waktu membuat audit berlapis atau dokumentasi panjang.
+
+Mulai sekarang, kerjakan langsung dari repo terbaru.
 
 ````
 # 
