@@ -71,7 +71,69 @@
 ```
 # 
 ```
+Lanjut dari state repo saat ini.
 
+Kita belum punya VPS untuk deployment, jadi fokus sekarang hanya CODING + TEST LOCAL. Jangan menunggu domain, Cloudflare, Google OAuth callback publik, atau VPS.
+
+Jangan melakukan audit besar dan jangan redesign UI.
+
+TASK:
+Buat production-hardening untuk flow publishing dan queue agar lebih aman terhadap duplicate publish, crash/restart worker, dan retry.
+
+KERJAKAN:
+
+1. Periksa implementasi queue/job publishing yang sudah ada.
+2. Pastikan setiap publish job memiliki mekanisme idempotency yang benar:
+   - retry job yang sama tidak boleh membuat publish ganda
+   - worker restart tidak menyebabkan job yang sudah sukses dipublish ulang
+   - status transition harus konsisten
+   - simpan external/platform post ID ketika publishing berhasil
+3. Pastikan retry hanya dilakukan untuk error yang memang retryable.
+   - Jangan retry error authentication/permission/validation secara membabi buta.
+   - Gunakan backoff yang sudah sesuai dengan arsitektur repo.
+4. Pastikan race condition dicegah jika dua worker/thread mencoba mengambil job yang sama.
+5. Pastikan job yang sedang PROCESSING tidak hilang permanen ketika worker mati.
+   - Recovery setelah restart harus aman.
+6. Pastikan history/status menyimpan hasil final secara konsisten.
+7. Jangan mengubah API contract yang sudah dipakai frontend kecuali benar-benar diperlukan.
+8. Tambahkan/rapikan unit test untuk:
+   - duplicate execution
+   - retry setelah transient error
+   - permanent error
+   - worker restart/recovery
+   - concurrent job claim
+   - successful publish menyimpan external ID
+9. Jalankan test yang relevan dan seluruh test suite jika waktunya memungkinkan.
+10. Jika menemukan bug nyata, langsung perbaiki.
+11. Jangan memasukkan credential, .env, token, cookie, atau secret apa pun ke commit/log.
+
+WORK LOG:
+Buat:
+.ai-work/014-publish-idempotency-hardening/RESULT.md
+.ai-work/014-publish-idempotency-hardening/AUDIT.md
+.ai-work/014-publish-idempotency-hardening/COMMANDS.md
+
+Update:
+.ai-work/README.md
+
+Dokumentasikan:
+- perubahan yang dibuat
+- test yang dijalankan
+- hasil PASS/FAIL
+- bug yang ditemukan
+- file yang berubah
+- hal yang masih membutuhkan VPS/external service
+
+GIT:
+- git status
+- commit perubahan dengan message:
+  "fix: harden publish queue idempotency and recovery"
+- git push origin main
+- verifikasi HEAD == origin/main
+- working tree harus bersih
+
+Jangan berhenti hanya karena tidak ada VPS.
+Selesaikan coding dan test lokal sampai selesai, lalu berikan ringkasan singkat + commit SHA.
 ```
 
 # 
