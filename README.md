@@ -76,7 +76,65 @@
 
 # 
 ```
+Lanjutkan dari kondisi repo saat ini. Jangan melakukan audit besar atau redesign UI.
 
+TUJUAN:
+Tuntaskan verification/testing lokal untuk Content Pilot pada VPS baru, terutama API + worker + Google Drive + persistence. Domain/Cloudflare/OAuth redirect publik jangan disentuh karena domain belum diarahkan ke VPS ini.
+
+LANGKAH:
+
+1. Baca .ai-work/README.md dan hasil task terakhir yang relevan untuk memahami state saat ini.
+2. Verifikasi cepat bahwa HEAD == origin/main dan working tree bersih. Jangan reset atau menghapus perubahan valid.
+3. Jalankan test yang relevan dari repo saat ini:
+   - core
+   - gdrive
+   - api
+   - worker jika tersedia
+   Jangan menjalankan test provider yang membutuhkan credential produksi jika memang tidak tersedia.
+4. Verifikasi service API/web/worker:
+   - service aktif
+   - restart otomatis tetap bekerja
+   - API health/ready endpoint merespons
+   - tidak ada crash loop
+   - port/service yang memang dipakai repo berjalan normal
+5. Verifikasi Google Drive secara lokal sejauh yang memungkinkan tanpa OAuth callback publik:
+   - konfigurasi env terbaca oleh process yang benar
+   - tidak ada secret/token yang muncul di log
+   - OAuth state/token handling tetap aman
+   - jangan melakukan perubahan credential
+6. Verifikasi persistence:
+   - restart service
+   - pastikan data/config yang memang seharusnya persistent tetap tersedia setelah restart
+   - jangan menghapus database atau data pengguna
+7. Jika ditemukan BUG nyata di kode/config repo yang bisa diperbaiki tanpa domain publik, langsung perbaiki.
+   - Fokus hanya pada blocker/bug nyata.
+   - Jangan membuat perubahan kosmetik.
+8. Jalankan ulang test setelah perbaikan.
+9. Buat/update:
+   .ai-work/013-final-local-verification/RESULT.md
+   .ai-work/013-final-local-verification/AUDIT.md
+   .ai-work/013-final-local-verification/COMMANDS.md
+   dan update .ai-work/README.md.
+   Catat PASS/FAIL/BLOCKED secara jelas.
+   Jangan pernah menulis nilai secret asli ke artifact/log.
+10. Commit perubahan jika ada:
+   "test: complete local VPS verification"
+   Jika hanya artifact yang berubah, tetap commit artifact tersebut.
+11. Push ke origin/main.
+12. Verifikasi:
+   git rev-parse HEAD
+   git rev-parse origin/main
+   harus sama.
+13. Jangan menganggap C1 Google OAuth redirect atau C2 HTTPS/domain sebagai bug. Catat keduanya sebagai EXTERNAL/BLOCKED karena domain belum diarahkan ke VPS baru.
+
+HASIL AKHIR YANG SAYA MAU:
+- ringkasan singkat test PASS/FAIL/BLOCKED
+- bug yang diperbaiki jika ada
+- commit SHA
+- pastikan push berhasil
+- sebutkan hanya blocker yang benar-benar tersisa
+
+Jangan berhenti hanya karena domain belum aktif. Selesaikan semua verification yang bisa dilakukan sekarang.
 
 ````
 # 
