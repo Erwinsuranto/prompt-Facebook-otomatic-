@@ -63,7 +63,54 @@
 ```
 # 
 ```
+Tolong lakukan DIAGNOSIS READ-ONLY untuk project ContentPilot di VPS ini.
 
+Kondisi:
+- Domain utama: https://contentpilot.biz.id
+- API: https://api.contentpilot.biz.id
+- Keduanya saat ini mendapatkan Cloudflare HTTP 525.
+- Port 80 dan 443 sedang LISTEN oleh Caddy.
+- Caddy adalah bagian dari environment VPS Genspark.ai.
+
+ATURAN SANGAT PENTING:
+1. Jangan mengubah, menghapus, atau menulis file apa pun.
+2. Jangan restart/reload/stop service apa pun.
+3. Jangan mengubah /etc/caddy/Caddyfile.
+4. Jangan mengubah konfigurasi Caddy, firewall, SSL, DNS, Cloudflare, atau networking.
+5. Jangan mengganggu hostname/service bawaan Genspark.ai.
+6. Jangan melakukan deployment atau install package.
+7. Hanya lakukan pemeriksaan dan tampilkan hasil diagnosis.
+8. Jika menemukan masalah, JANGAN memperbaikinya. Cukup jelaskan penyebab dan file/konfigurasi yang perlu diperbaiki.
+
+Periksa:
+- struktur dan lokasi project ContentPilot
+- proses/service/container yang menjalankan ContentPilot
+- port internal yang digunakan ContentPilot
+- apakah frontend dan backend/API ContentPilot sedang berjalan
+- konfigurasi environment yang relevan, tanpa menampilkan secret/token/password
+- konfigurasi reverse proxy yang digunakan project, jika ada
+- log aplikasi ContentPilot
+- status koneksi localhost ke frontend/backend
+- apakah api.contentpilot.biz.id diarahkan ke service API yang benar
+- apakah contentpilot.biz.id diarahkan ke frontend yang benar
+- indikasi penyebab Cloudflare HTTP 525
+- apakah masalah berasal dari origin TLS, reverse proxy, service aplikasi, atau konfigurasi domain
+
+Gunakan hanya command READ-ONLY seperti:
+pwd, ls, find, ps, ss, docker ps, docker inspect (tanpa mengubah apa pun), systemctl status, journalctl --no-pager, cat/read konfigurasi, curl localhost, dan command diagnostik lain yang tidak mengubah sistem.
+
+Setelah selesai, berikan laporan dengan format:
+
+1. STATUS CONTENTPILOT
+2. FRONTEND
+3. BACKEND/API
+4. PORT
+5. REVERSE PROXY
+6. SSL/TLS
+7. PENYEBAB HTTP 525
+8. REKOMENDASI PERBAIKAN
+
+Jangan melakukan perubahan apa pun. Saya hanya ingin hasil pengecekan terlebih dahulu.
 ```
 # 
 ```
