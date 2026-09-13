@@ -23,7 +23,99 @@
 ```
 # 
 ```
+CONTENTPILOT — GOOGLE OAUTH CONFIGURATION VERIFICATION ONLY
 
+Tujuan:
+Setelah Google OAuth secrets sudah saya tambahkan ke production .env, lakukan verifikasi apakah konfigurasi Google OAuth sekarang sudah terbaca dan siap digunakan.
+
+ATURAN KETAT:
+- READ-ONLY / VERIFICATION ONLY.
+- JANGAN coding.
+- JANGAN mengubah source code.
+- JANGAN membuat commit.
+- JANGAN push.
+- JANGAN mengubah database/schema/migration.
+- JANGAN mengubah Caddy.
+- JANGAN mengubah konfigurasi service lain.
+- JANGAN restart/reload service tanpa instruksi saya.
+- JANGAN menampilkan nilai secret/token/client secret.
+- Jika perlu menampilkan env, tampilkan hanya nama variable dan status SET/EMPTY.
+- Jangan melakukan Google OAuth login dengan akun saya.
+- Jangan melakukan tindakan eksternal yang destruktif.
+
+LANGKAH:
+
+1. Pastikan repo:
+   cd /root/content-pilot
+   git status --short
+   git rev-parse --short HEAD
+
+2. Periksa environment production yang digunakan ContentPilot.
+   Verifikasi nama variable Google OAuth yang dibutuhkan oleh source code dan apakah masing-masing variable:
+   - SET
+   - EMPTY
+   - MISSING
+
+   Jangan tampilkan nilainya.
+
+3. Cocokkan variable environment dengan implementasi source code:
+   - Google client ID
+   - Google client secret
+   - Google redirect URI
+   - Google Drive scope/consent configuration jika ada
+
+4. Pastikan redirect URI yang digunakan aplikasi sesuai dengan konfigurasi production:
+   https://contentpilot.biz.id
+   dan/atau
+   https://api.contentpilot.biz.id
+   sesuai endpoint OAuth yang benar-benar didefinisikan source code.
+
+5. Periksa konfigurasi OAuth tanpa melakukan login:
+   - provider Google terdeteksi sebagai configured atau tidak
+   - endpoint authorization tersedia
+   - callback endpoint tersedia
+   - tidak ada hardcoded secret
+   - tidak ada secret yang masuk git
+   - tidak ada secret yang muncul di log
+
+6. Jalankan test yang relevan untuk authentication/OAuth jika tersedia.
+   Jangan menjalankan real external OAuth login.
+
+7. Jalankan:
+   pnpm typecheck
+   pnpm lint
+   pnpm test
+   pnpm build
+
+8. Periksa status service ContentPilot secara READ-ONLY.
+   Jangan restart service.
+
+LAPORAN AKHIR WAJIB:
+
+GOOGLE OAUTH
+- Client ID: SET/EMPTY
+- Client Secret: SET/EMPTY
+- Redirect URI: SET/EMPTY
+- Provider configured: YES/NO
+- OAuth authorization endpoint: PASS/FAIL
+- OAuth callback endpoint: PASS/FAIL
+- Secret exposure check: PASS/FAIL
+
+REGRESSION
+- typecheck: PASS/FAIL
+- lint: PASS/FAIL
+- test: PASS/FAIL
+- build: PASS/FAIL
+
+SERVICE
+- API: status
+- Worker: status
+- Web: status
+
+Untuk setiap FAIL/WARNING jelaskan penyebabnya.
+
+STOP setelah laporan.
+Jangan melakukan perbaikan apa pun.
 ```
 # 
 ```
