@@ -48,7 +48,53 @@
 ```
 # 
 ```
+File Cloudflare Origin Certificate sudah saya letakkan di folder project ContentPilot:
 
+/root/content-pilot/cert.pem
+/root/content-pilot/key.pem
+
+Lanjutkan pemasangan certificate untuk ContentPilot, tetapi WAJIB sangat aman terhadap environment Genspark.ai.
+
+ATURAN:
+1. Jangan mengubah atau merusak konfigurasi global Genspark.ai.
+2. Jangan mengubah hostname/service bawaan Genspark.
+3. Jangan mengganti Caddy secara global.
+4. Jangan menghapus konfigurasi yang sudah ada.
+5. Jangan mengubah DNS atau setting Cloudflare.
+6. Jangan install package.
+7. Jangan tampilkan isi private key di terminal, log, atau output.
+8. Private key harus dipindahkan ke lokasi yang aman dan permission-nya dibatasi.
+9. Setelah certificate/key dipindahkan, hapus atau amankan salinan credential dari folder project agar tidak terekspos oleh aplikasi/Git.
+10. Buat backup sebelum mengubah konfigurasi.
+11. Gunakan konfigurasi/site block yang hanya berlaku untuk:
+    - contentpilot.biz.id
+    - api.contentpilot.biz.id
+12. Jangan menyentuh hostname Genspark.
+13. Sebelum reload/restart Caddy, lakukan validasi konfigurasi terlebih dahulu.
+14. Jika ada risiko terhadap Genspark, STOP dan jangan lanjut.
+
+TAHAP EKSEKUSI:
+- Verifikasi cert.pem dan key.pem ada.
+- Verifikasi certificate cocok dengan private key TANPA menampilkan private key.
+- Pindahkan credential ke lokasi aman khusus ContentPilot.
+- Atur ownership/permission yang aman.
+- Buat backup konfigurasi yang akan diubah.
+- Tambahkan konfigurasi reverse proxy TLS khusus ContentPilot tanpa mengubah site block Genspark.
+- Jalankan `caddy validate` terlebih dahulu.
+- JANGAN reload Caddy jika validasi gagal.
+- Jika validasi berhasil, jelaskan persis perubahan yang akan dilakukan dan tunggu persetujuan saya SEBELUM reload Caddy.
+
+Untuk saat ini setelah caddy validate berhasil, BERHENTI dan laporkan:
+1. Certificate valid atau tidak
+2. Certificate cocok dengan private key atau tidak
+3. Lokasi certificate/key
+4. Permission
+5. File konfigurasi yang diubah
+6. Apakah konfigurasi Genspark tetap utuh
+7. Hasil caddy validate
+8. Apakah siap reload atau belum
+
+Jangan reload Caddy sebelum saya menyetujui.
 ```
 # 
 ```
