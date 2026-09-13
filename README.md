@@ -51,7 +51,35 @@
 ```
 # 
 ```
+Kita lanjut dengan pemasangan Cloudflare Origin Certificate untuk ContentPilot.
 
+SEBELUM EKSEKUSI:
+- Pastikan perubahan hanya untuk ContentPilot.
+- Jangan mengubah konfigurasi global Genspark.ai.
+- Jangan menghapus atau mengganti konfigurasi hostname Genspark.
+- Jangan mengubah service yang bukan milik ContentPilot.
+- Jangan mengubah DNS/Cloudflare.
+- Jangan install package.
+- Jangan menampilkan private key di output/log.
+
+TAHAP 1 SAJA:
+1. Buat backup konfigurasi ContentPilot yang relevan sebelum perubahan.
+2. Siapkan lokasi certificate/key khusus ContentPilot.
+3. Pasang Origin Certificate dan private key yang sudah saya berikan sebelumnya ke lokasi khusus tersebut.
+4. Atur permission yang aman.
+5. Jangan reload/restart Caddy dulu.
+6. Jangan mengubah konfigurasi Caddy dulu.
+7. Setelah selesai, berhenti dan laporkan:
+   - file yang dibuat
+   - permission/ownership
+   - backup yang dibuat
+   - pastikan private key tidak tampil
+   - pastikan tidak ada service yang direstart
+   - pastikan tidak ada konfigurasi Genspark yang berubah.
+
+Jika ada masalah atau risiko terhadap Genspark.ai, STOP dan jangan lanjut.
+
+Hanya lakukan TAHAP 1.
 ```
 # 
 ```
