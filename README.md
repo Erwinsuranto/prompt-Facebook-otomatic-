@@ -35,7 +35,40 @@
 ```
 # 
 ```
+Pilih OPSI E1.
 
+Tujuannya menghindari perubahan ownership/chown pada file log yang mungkin digunakan environment Genspark.
+
+Lakukan hanya perubahan berikut:
+
+1. Backup Caddyfile/site config ContentPilot terlebih dahulu.
+2. Hapus HANYA dua blok access log yang ada di konfigurasi ContentPilot:
+   - log untuk /var/log/caddy/api-access.log
+   - log untuk /var/log/caddy/web-access.log
+3. Jangan mengubah bagian lain dari konfigurasi ContentPilot.
+4. Jangan mengubah konfigurasi global Genspark.
+5. Jangan mengubah hostname/service Genspark.
+6. Jangan mengubah certificate/private key.
+7. Jangan mengubah DNS/Cloudflare.
+8. Jangan chmod/chown file log apa pun.
+9. Jalankan:
+   caddy validate --config /etc/caddy/Caddyfile
+10. Jika validasi gagal, STOP dan jangan reload.
+11. Jika validasi berhasil, STOP dan tunggu persetujuan saya.
+
+JANGAN menjalankan:
+systemctl reload caddy
+
+JANGAN restart/stop service apa pun.
+
+Setelah selesai laporkan:
+- backup yang dibuat
+- konfigurasi yang diubah
+- hasil caddy validate
+- apakah konfigurasi Genspark tidak berubah
+- apakah siap untuk reload
+
+Berhenti setelah validasi berhasil.
 ```
 # 
 ```
