@@ -31,7 +31,34 @@
 ```
 # 
 ```
+Saya menyetujui graceful reload Caddy.
 
+Lakukan pemeriksaan terakhir:
+1. caddy validate --config /etc/caddy/Caddyfile
+2. Pastikan hasilnya VALID / EXIT=0.
+3. Pastikan konfigurasi hostname Genspark tidak berubah.
+
+Jika validasi berhasil, jalankan HANYA:
+systemctl reload caddy
+
+Jangan restart atau stop Caddy.
+Jangan mengubah konfigurasi lain.
+Jangan mengubah Cloudflare/DNS.
+Jangan melakukan rollback otomatis.
+
+Setelah reload, verifikasi:
+- curl -sSI https://contentpilot.biz.id
+- curl -sSI https://api.contentpilot.biz.id/health/ready
+- cek status Caddy
+- cek hostname Genspark tetap HTTP 200
+- cek tidak ada error TLS/Caddy.
+
+Target:
+contentpilot.biz.id tidak lagi HTTP 525.
+api.contentpilot.biz.id/health/ready tidak lagi HTTP 525 dan idealnya HTTP 200.
+Genspark tetap normal.
+
+Jika ada kegagalan, STOP dan tampilkan hasilnya. Jangan melakukan perbaikan tambahan atau rollback otomatis.
 ```
 # 
 ```
