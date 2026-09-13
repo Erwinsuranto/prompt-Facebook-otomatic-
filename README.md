@@ -59,6 +59,58 @@
 ```
 # 
 ```
+Lanjutkan diagnosis ContentPilot dengan fokus pada SOLUSI YANG AMAN DAN TERISOLASI.
+
+PENTING:
+- VPS ini adalah environment Genspark.ai.
+- Jangan melakukan tindakan yang dapat melanggar aturan, kebijakan, atau mengganggu environment Genspark.ai.
+- Jangan mengubah konfigurasi global Genspark.
+- Jangan mengubah/menghapus konfigurasi Caddy global.
+- Jangan restart, reload, stop, atau disable service apa pun.
+- Jangan mengubah DNS atau Cloudflare.
+- Jangan install package.
+- Jangan membuat atau mengubah sertifikat.
+- Jangan menjalankan script perbaikan.
+- Jangan melakukan deployment.
+- HANYA AUDIT READ-ONLY.
+
+Tujuan:
+Menentukan solusi paling aman untuk memperbaiki Cloudflare HTTP 525 pada:
+- contentpilot.biz.id
+- api.contentpilot.biz.id
+
+Cari tahu secara read-only:
+
+1. Bagaimana Caddy saat ini dikonfigurasi dan apakah ada site block khusus ContentPilot.
+2. Apakah konfigurasi Caddy global berasal dari Genspark dan bagian mana yang tidak boleh disentuh.
+3. Apakah ContentPilot dapat dijalankan melalui reverse proxy tanpa mengubah konfigurasi global Genspark.
+4. Port internal frontend ContentPilot.
+5. Port internal backend/API ContentPilot.
+6. Apakah ada Docker/container/service khusus ContentPilot.
+7. Apakah ContentPilot sudah memiliki konfigurasi reverse proxy sendiri.
+8. Apakah sertifikat untuk contentpilot.biz.id dan api.contentpilot.biz.id sudah tersedia.
+9. Apakah Cloudflare SSL mode yang dibutuhkan dapat dipenuhi tanpa perubahan berisiko.
+10. Cari solusi yang paling minimal dan isolated untuk ContentPilot.
+
+Jangan menampilkan secret, token, password, private key, atau isi .env yang sensitif.
+
+Setelah audit, JANGAN melakukan perubahan apa pun.
+
+Berikan laporan:
+
+A. KONDISI SAAT INI
+B. KOMPONEN GENSPARK YANG HARUS DILINDUNGI
+C. KOMPONEN CONTENTPILOT
+D. PENYEBAB 525
+E. SOLUSI PALING AMAN
+F. FILE/CONFIG YANG AKAN DIUBAH JIKA SOLUSI DILAKUKAN
+G. SERVICE YANG AKAN TERDAMPAK
+H. RISIKO TERHADAP GENSPARK
+I. LANGKAH EKSEKUSI YANG DIREKOMENDASIKAN
+
+Jika solusi membutuhkan perubahan pada komponen global Genspark, NYATAKAN TIDAK AMAN dan jangan menyarankannya sebagai langkah eksekusi.
+
+Sekali lagi: AUDIT SAJA. JANGAN MENGUBAH SISTEM.
 
 ```
 # 
