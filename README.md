@@ -27,7 +27,326 @@
 ```
 # 
 ```
+Lakukan FULL AUDIT + FULL REGRESSION TEST ContentPilot yang saat ini ter-deploy di VPS.
 
+PENTING:
+- JANGAN coding.
+- JANGAN memperbaiki file.
+- JANGAN commit.
+- JANGAN push ke GitHub.
+- JANGAN mengubah database/schema/migration.
+- JANGAN mengubah .env.
+- JANGAN mengubah Cloudflare/DNS.
+- JANGAN mengubah konfigurasi Genspark.ai.
+- Jangan mengubah Caddy lagi.
+- Jangan restart/reload service kecuali benar-benar diperlukan untuk TEST dan harus meminta persetujuan terlebih dahulu.
+- Jangan menampilkan secret, token, password, OAuth credential, private key, atau isi .env.
+- Jangan melakukan destructive test.
+- Jangan melakukan test yang mengirim konten nyata ke platform sosial kecuali sudah ada test khusus yang aman dan saya setujui.
+
+TUJUAN:
+Membandingkan kondisi repo terbaru dengan roadmap dan memastikan deployment production saat ini benar-benar berfungsi.
+
+==================================================
+A. AUDIT REPOSITORY
+==================================================
+
+1. Verifikasi remote GitHub, branch, HEAD dan origin/main.
+2. Pastikan working tree clean.
+3. Catat commit HEAD terbaru:
+   - SHA
+   - message
+   - tanggal
+4. Pastikan deployment menggunakan commit yang sama dengan origin/main.
+5. Jangan melakukan git reset/checkout/pull.
+6. Jangan mengubah repository.
+
+==================================================
+B. ROADMAP GAP AUDIT
+==================================================
+
+Baca:
+- docs/ROADMAP.md
+- docs/AUDIT.md
+- docs/ARCHITECTURE.md
+- docs/PLATFORM_MODULES.md
+- docs/DATABASE.md
+- docs/research/facebook-api.md
+
+Buat tabel:
+
+FEATURE / ROADMAP STATUS / IMPLEMENTED / TESTED / LIVE VERIFIED / GAP
+
+Fokus minimal:
+- Authentication
+- User isolation
+- OAuth framework
+- Facebook connection
+- Destination
+- Workspace isolation
+- Media upload
+- Media finalize
+- Storage
+- Compose
+- Publish Now
+- Queue
+- Scheduler
+- Worker
+- Retry/idempotency
+- History
+- Facebook text/photo/video
+- Facebook Reels
+- Upload UI
+- Dashboard
+- Accounts
+- Platforms
+- Storage settings
+- Health/readiness
+
+Jangan menganggap checklist lama sebagai bukti bahwa kondisi sekarang masih sama.
+Verifikasi aktual.
+
+==================================================
+C. STATIC QUALITY AUDIT
+==================================================
+
+Jalankan read-only:
+
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+
+Catat:
+- total test
+- passed
+- failed
+- skipped
+- error
+- package/task yang gagal
+
+Jangan mengubah source code untuk membuat test hijau.
+
+Jika test gagal:
+- tampilkan penyebab
+- file/package terkait
+- apakah regression atau environment issue
+- jangan memperbaiki otomatis.
+
+==================================================
+D. DATABASE / REDIS
+==================================================
+
+Read-only verification:
+
+1. PostgreSQL aktif.
+2. Redis aktif.
+3. Database ContentPilot dapat diakses.
+4. Prisma migration status.
+5. Pastikan tidak ada migration pending.
+6. Jangan reset database.
+7. Jangan migrate.
+8. Jangan seed ulang.
+9. Jangan menghapus data.
+10. Verifikasi health/readiness API.
+
+==================================================
+E. SYSTEMD / PRODUCTION
+==================================================
+
+Periksa:
+
+content-pilot-api.service
+content-pilot-worker.service
+content-pilot-web.service
+postgresql
+redis-server
+caddy
+
+Untuk masing-masing:
+- active
+- enabled
+- PID
+- restart count jika tersedia
+- recent error jika ada
+
+Jangan restart service.
+
+==================================================
+F. LIVE LOCAL API TEST
+==================================================
+
+Gunakan endpoint lokal yang aman/read-only jika tersedia.
+
+Test minimal:
+- /health
+- /health/live
+- /ready
+- /health/ready
+
+Pastikan response jujur.
+Tidak boleh ada fake success.
+
+Test juga endpoint GET/read-only yang aman:
+- current user/session jika endpoint membutuhkan auth
+- dashboard jika bisa dengan session test yang sudah tersedia
+- destinations
+- media
+- queue
+- publishing jobs/history
+
+Jangan membuat data production baru kecuali test suite memang menggunakan isolated test database/environment.
+
+==================================================
+G. LIVE WEB TEST
+==================================================
+
+Verifikasi dari server bahwa:
+
+https://contentpilot.biz.id
+
+dan
+
+https://api.contentpilot.biz.id/health/ready
+
+dapat diakses.
+
+Pastikan:
+- bukan 525
+- bukan 526
+- bukan 502
+- bukan 503
+
+Catat HTTP status, TLS certificate hostname/SAN dan response penting tanpa menampilkan secret.
+
+==================================================
+H. CADDY / GENSPARK SAFETY
+==================================================
+
+READ-ONLY.
+
+Pastikan:
+- Caddy active.
+- ContentPilot site block ada.
+- contentpilot.biz.id dan api.contentpilot.biz.id menggunakan certificate yang benar.
+- Genspark hostname tetap ada.
+- Genspark endpoint tetap normal.
+- tidak ada perubahan pada hostname/service Genspark.
+
+Jangan reload/restart Caddy.
+
+==================================================
+I. SECURITY AUDIT
+==================================================
+
+Periksa secara read-only:
+
+- .env tidak tracked.
+- .env permission aman.
+- secret tidak muncul di git.
+- private key tidak berada di repository.
+- authorization/session cookie aman.
+- token platform tidak dikirim ke frontend.
+- ownership checks ada.
+- destination isolation ada.
+- no obvious IDOR.
+- no fake success.
+- no credential logging.
+- CORS production.
+- COOKIE_SECURE.
+- database/redis tidak exposed publik.
+
+Jangan menampilkan nilai secret.
+
+==================================================
+J. FEATURE REGRESSION
+==================================================
+
+Test business logic melalui existing test suite dan safe local integration.
+
+Fokus:
+1. Register/login/logout
+2. Protected route
+3. User isolation
+4. Destination ownership
+5. Workspace isolation
+6. Media ownership
+7. Queue isolation
+8. Scheduler
+9. Idempotency
+10. Worker
+11. Publishing job state
+12. Retry classification
+13. Storage
+14. Upload/finalize validation
+15. Facebook provider boundary
+
+Untuk Facebook/Meta:
+- gunakan mock/boundary test yang sudah tersedia.
+- JANGAN melakukan publish nyata.
+- JANGAN mengubah Page/account.
+- Jangan memakai credential production untuk test.
+
+==================================================
+K. DEPLOYMENT CONSISTENCY
+==================================================
+
+Bandingkan:
+- git HEAD
+- origin/main
+- running application
+- package lock
+- build output
+
+Pastikan deployment tidak menjalankan kode lama.
+
+==================================================
+L. FINAL REPORT
+==================================================
+
+Berikan laporan tanpa melakukan perubahan:
+
+1. REPOSITORY STATUS
+2. ROADMAP STATUS
+3. TYPECHECK
+4. LINT
+5. TEST
+6. BUILD
+7. DATABASE
+8. REDIS
+9. API
+10. WEB
+11. WORKER
+12. QUEUE/SCHEDULER
+13. FACEBOOK PROVIDER
+14. SECURITY
+15. CADDY/TLS
+16. GENSPARK SAFETY
+17. REGRESSION FINDINGS
+
+Gunakan status:
+
+PASS
+WARNING
+FAIL
+BLOCKED
+NOT TESTED
+
+Untuk setiap FAIL/WARNING jelaskan:
+- masalah
+- bukti
+- severity
+- apakah mengganggu production
+- rekomendasi perbaikan
+
+PENTING:
+JANGAN memperbaiki apa pun.
+JANGAN coding.
+JANGAN commit.
+JANGAN push.
+JANGAN restart/reload service.
+
+Setelah laporan selesai, STOP dan tunggu instruksi saya.
 ```
 # 
 ```
