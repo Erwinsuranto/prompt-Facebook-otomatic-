@@ -39,7 +39,43 @@
 ```
 # 
 ```
+Jangan melakukan perubahan apa pun.
 
+Saya melihat reload Caddy tertahan karena masalah permission pada file log root-owned.
+
+Lakukan AUDIT READ-ONLY khusus masalah ini.
+
+Periksa:
+1. Site block ContentPilot yang baru dibuat.
+2. Bagian logging/access log yang digunakan oleh ContentPilot.
+3. Path log yang menyebabkan error.
+4. Ownership dan permission file log tersebut.
+5. Apakah file log tersebut shared/digunakan oleh Genspark/OpenClaw atau hanya ContentPilot.
+6. Apakah mengubah ownership file tersebut berpotensi mengganggu Genspark.
+7. Apakah ada solusi yang benar-benar isolated untuk ContentPilot tanpa menyentuh log Genspark.
+8. Apakah access logging ContentPilot sebenarnya wajib, atau bisa menggunakan log khusus ContentPilot.
+
+ATURAN:
+- Jangan chmod/chown file apa pun.
+- Jangan membuat/menghapus file.
+- Jangan reload/restart Caddy.
+- Jangan mengubah Caddyfile.
+- Jangan mengubah konfigurasi Genspark.
+- Jangan mengubah Cloudflare.
+- Jangan melakukan rollback.
+- Jangan menampilkan secret/private key.
+
+Berikan:
+A. File/path yang menyebabkan error
+B. Ownership + permission saat ini
+C. Siapa yang menggunakan file tersebut
+D. Apakah aman disentuh
+E. Solusi paling isolated
+F. File konfigurasi yang akan berubah jika solusi diterapkan
+G. Risiko terhadap Genspark
+H. Command yang nantinya diperlukan
+
+Setelah audit, STOP dan tunggu persetujuan saya.
 ```
 # 
 ```
