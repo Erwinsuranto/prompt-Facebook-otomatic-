@@ -7,7 +7,79 @@
 ```
 # 
 ```
+CONTENTPILOT — REAL GOOGLE DRIVE OAUTH VERIFICATION
 
+Google Cloud OAuth Client sudah dikonfigurasi dengan production redirect URI:
+
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+Sekarang lakukan pengujian end-to-end Google Drive OAuth ContentPilot.
+
+ATURAN:
+- Jangan coding kecuali ditemukan bug nyata; jika bug ditemukan STOP dan laporkan dulu.
+- Jangan commit.
+- Jangan push.
+- Jangan mengubah database/schema.
+- Jangan mengubah Caddy.
+- Jangan mengubah credential/secret.
+- Jangan menampilkan client secret atau token.
+- Jangan melakukan tindakan Google Drive yang destruktif.
+- Jangan menghapus file/folder Google Drive.
+- Jangan membuat perubahan pada akun Google saya tanpa autentikasi/interaksi saya sendiri.
+
+LANGKAH:
+
+1. Verifikasi environment production:
+   - Google Client ID = SET
+   - Google Client Secret = SET
+   - GOOGLE_DRIVE_REDIRECT_URI = production
+   - provider = configured
+
+2. Verifikasi endpoint:
+   - Google OAuth connect endpoint
+   - Google OAuth callback endpoint
+   - API health/readiness
+
+3. Buat/periksa authorization URL Google OAuth yang digunakan ContentPilot.
+   Pastikan redirect_uri yang dikirim adalah tepat:
+   https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+   JANGAN tampilkan client secret atau authorization code.
+
+4. Saya akan melakukan login/consent Google secara manual jika browser membuka halaman Google.
+
+5. Jika OAuth berhasil kembali ke ContentPilot:
+   - verifikasi callback berhasil
+   - verifikasi state valid
+   - verifikasi token exchange berhasil
+   - verifikasi koneksi Google Drive tersimpan dengan benar
+   - verifikasi token/credential tidak muncul di log
+
+6. Jika aplikasi menyediakan endpoint/status untuk Google Drive connection, cek statusnya.
+
+7. Jalankan regression setelah test:
+   pnpm typecheck
+   pnpm lint
+   pnpm test
+   pnpm build
+
+LAPORAN:
+- Google provider: PASS/FAIL
+- Redirect URI: PASS/FAIL
+- Connect endpoint: PASS/FAIL
+- OAuth authorization: PASS/FAIL
+- Callback: PASS/FAIL
+- Token exchange: PASS/FAIL
+- Google Drive connection: PASS/FAIL
+- Secret exposure: PASS/FAIL
+- typecheck: PASS/FAIL
+- lint: PASS/FAIL
+- test: PASS/FAIL
+- build: PASS/FAIL
+
+Jika test berhenti karena membutuhkan interaksi login Google saya, tampilkan URL/next step yang aman untuk saya buka, tanpa menampilkan secret.
+
+STOP setelah hasil test.
 ```
 # 
 ```
