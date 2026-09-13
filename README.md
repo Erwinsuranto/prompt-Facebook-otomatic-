@@ -67,7 +67,665 @@
 ```
 # 
 ```
+TASK 015 — FULL FRESH VPS DEPLOYMENT + ORIGIN TLS
+Project: Content Pilot
+Target: fresh/new VPS, production-ready deployment
 
+KONTEKS:
+- VPS ini BARU dan belum dianggap memiliki konfigurasi deployment yang benar.
+- Jangan mengandalkan service/config lama.
+- Source of truth aplikasi adalah repository Git remote yang sedang dikonfigurasi pada VPS.
+- Production frontend: https://contentpilot.biz.id
+- Production API: https://api.contentpilot.biz.id
+- API internal berjalan di port 4000.
+- Stack aplikasi memiliki web/frontend, API, worker, PostgreSQL, Redis, dan Caddy/reverse proxy.
+- Cloudflare digunakan sebagai proxy/DNS.
+- Target akhir Cloudflare SSL mode: FULL (STRICT).
+- Google OAuth callback production:
+  https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+TUJUAN:
+Siapkan VPS baru dari nol sampai:
+1. Repository production ter-clone dengan benar.
+2. Dependencies terinstall.
+3. Environment production tersedia tanpa membocorkan secret.
+4. PostgreSQL dan Redis aktif.
+5. API aktif.
+6. Worker aktif.
+7. Web/frontend aktif.
+8. Caddy/reverse proxy aktif.
+9. HTTPS origin untuk contentpilot.biz.id dan api.contentpilot.biz.id benar.
+10. Cloudflare → VPS TLS handshake berhasil.
+11. /health/ready menghasilkan HTTP 200.
+12. Semua service otomatis restart setelah reboot/crash.
+13. Deployment aman dan tidak menjalankan development server sebagai production service.
+14. Semua hasil dicatat di .ai-work/015-fresh-vps-deployment/.
+
+ATURAN PENTING:
+- Kerjakan langsung, jangan hanya memberi instruksi.
+- Jangan membuat perubahan UI/fitur aplikasi yang tidak diperlukan untuk deployment.
+- Jangan menghapus data production jika ternyata sudah ada.
+- Sebelum destructive action terhadap database, tanyakan/STOP.
+- Jangan menjalankan reset/drop database production.
+- Jangan mengubah secrets menjadi placeholder jika secret production sudah tersedia.
+- Jangan pernah menampilkan nilai secret/token/password/private key di output, log, RESULT.md, AUDIT.md, atau COMMANDS.md.
+- Jangan commit .env atau file secret.
+- Pastikan .env masuk .gitignore.
+- Jangan menggunakan GoRouter.app untuk testing.
+- NVIDIA/TokenHarbor bukan bagian task ini.
+- Jangan menganggap konfigurasi lama benar; verifikasi semuanya.
+- Jika ada nilai yang memang wajib tetapi belum tersedia, identifikasi nama variable-nya dan STOP hanya pada bagian yang membutuhkan nilai tersebut.
+- Jangan mengarang credentials.
+- Gunakan package manager dan scripts yang benar berdasarkan repository, jangan mengasumsikan npm/yarn/pnpm sebelum memeriksa package.json/lockfile.
+- Gunakan systemd untuk service production.
+- Gunakan graceful shutdown dan Restart=on-failure.
+- Jangan menggunakan `nohup` sebagai solusi production.
+- Jangan membuka port database/Redis ke internet.
+- Firewall hanya buka port yang memang diperlukan, minimal SSH, HTTP 80, HTTPS 443.
+- Jika SSH port berbeda dari 22, jangan memutus akses SSH.
+- Jangan mengunci firewall sebelum memastikan SSH tetap aman.
+
+==================================================
+PHASE 1 — PREFLIGHT VPS
+==================================================
+
+Periksa dan catat:
+- OS/version
+- architecture
+- hostname
+- RAM
+- disk
+- CPU
+- public IP
+- listening ports
+- existing services
+- firewall status
+- Docker jika ada
+- Node.js version jika ada
+- Git version
+- PostgreSQL version
+- Redis version
+- Caddy version
+
+Periksa apakah VPS benar-benar fresh.
+
+Jika ada service lama dengan nama yang berpotensi bentrok, jangan langsung hapus.
+Identifikasi dahulu.
+
+==================================================
+PHASE 2 — SYSTEM PACKAGES
+==================================================
+
+Install/update hanya package yang diperlukan untuk production.
+
+Pastikan tersedia:
+- git
+- curl
+- ca-certificates
+- build-essential/toolchain bila dependency Node membutuhkannya
+- Node.js versi yang sesuai dengan repository
+- PostgreSQL
+- Redis
+- Caddy
+
+Gunakan versi Node yang ditentukan repository:
+- cek package.json
+- cek engines
+- cek .nvmrc
+- cek lockfile
+- gunakan versi yang kompatibel
+
+Jangan upgrade framework/application dependency tanpa alasan.
+
+==================================================
+PHASE 3 — REPOSITORY
+==================================================
+
+Periksa remote Git terlebih dahulu:
+
+git remote -v
+
+Pastikan branch production/main yang benar.
+
+Fetch remote terbaru.
+
+Checkout branch production yang digunakan repository.
+
+Pull/clone source terbaru.
+
+Catat:
+- remote repository URL tetapi REDACT credential jika ada
+- branch
+- commit SHA
+- status working tree
+
+Pastikan repository bersih sebelum deployment.
+
+JANGAN mengubah remote ke repository lain tanpa instruksi eksplisit.
+
+==================================================
+PHASE 4 — APPLICATION STRUCTURE
+==================================================
+
+Inspect repository untuk menentukan:
+- frontend/web directory
+- API directory
+- worker directory
+- package manager
+- build scripts
+- start scripts
+- migration scripts
+- test scripts
+- required environment variables
+
+Jangan mengarang command.
+
+Gunakan script yang benar-benar ada di package.json/README/project configuration.
+
+==================================================
+PHASE 5 — ENVIRONMENT
+==================================================
+
+Buat/siapkan production environment sesuai konfigurasi repository.
+
+Minimal verifikasi variable yang berkaitan dengan:
+- DATABASE_URL
+- REDIS connection
+- APP_SESSION_SECRET
+- TOKEN_ENCRYPTION_KEY
+- Google OAuth:
+  GOOGLE_CLIENT_ID
+  GOOGLE_CLIENT_SECRET
+  GOOGLE_DRIVE_REDIRECT_URI
+- frontend/public API URL
+- API host/port
+- NODE_ENV
+
+Gunakan production values yang memang sudah diberikan/tersedia di VPS.
+
+JANGAN mencetak secret.
+
+Saat melakukan verifikasi gunakan format seperti:
+DATABASE_URL=set
+GOOGLE_CLIENT_SECRET=set
+TOKEN_ENCRYPTION_KEY=set
+
+bukan nilai sebenarnya.
+
+Pastikan:
+- .env tidak tracked
+- .env masuk .gitignore
+- file secret permission aman
+- service hanya membaca env yang diperlukan
+
+==================================================
+PHASE 6 — POSTGRESQL
+==================================================
+
+Siapkan PostgreSQL untuk aplikasi.
+
+Jika database/user belum ada:
+- buat sesuai konfigurasi aplikasi.
+
+Jika database sudah ada:
+- JANGAN drop/reset.
+- gunakan database existing.
+
+Pastikan PostgreSQL:
+- listen hanya pada interface yang diperlukan
+- tidak exposed public
+- authentication benar
+- database connection berhasil
+
+Jalankan migration menggunakan migration mechanism repository.
+
+Jangan melakukan destructive migration.
+
+Verifikasi dengan query non-destructive.
+
+==================================================
+PHASE 7 — REDIS
+==================================================
+
+Pastikan Redis aktif.
+
+Pastikan:
+- hanya accessible dari VPS/internal network
+- bukan public internet
+- connection dari worker/API berhasil
+
+Jangan menghapus existing Redis data kecuali repository memang memerlukan fresh instance dan tidak ada data production; jika ragu STOP.
+
+==================================================
+PHASE 8 — INSTALL + BUILD
+==================================================
+
+Install dependencies dengan package manager repository.
+
+Gunakan lockfile.
+
+Contoh:
+- npm ci jika npm lockfile
+- pnpm install --frozen-lockfile jika pnpm
+- yarn install --frozen-lockfile jika yarn
+
+Jangan mengganti package manager.
+
+Build production:
+- web/frontend
+- API bila memang membutuhkan build
+- worker bila memang membutuhkan build
+
+Pastikan tidak ada error.
+
+Jangan menjalankan development mode sebagai production.
+
+==================================================
+PHASE 9 — APPLICATION CONFIG
+==================================================
+
+Konfigurasikan:
+A. API
+B. Worker
+C. Web/frontend
+
+Gunakan systemd service terpisah.
+
+Contoh konsep:
+contentpilot-api.service
+contentpilot-worker.service
+contentpilot-web.service
+
+Nama boleh mengikuti struktur repository, tetapi harus jelas dan modular.
+
+Setiap service:
+- WorkingDirectory benar
+- User non-root bila memungkinkan
+- EnvironmentFile menunjuk ke env yang benar
+- ExecStart menggunakan production command
+- Restart=on-failure
+- RestartSec
+- TimeoutStopSec
+- graceful SIGTERM
+- no secret di command line
+- logs masuk journald
+
+Jangan menjalankan aplikasi sebagai root jika tidak diperlukan.
+
+==================================================
+PHASE 10 — CADDY / REVERSE PROXY
+==================================================
+
+Konfigurasikan Caddy sebagai reverse proxy.
+
+Target:
+
+contentpilot.biz.id
+    → web/frontend service
+
+api.contentpilot.biz.id
+    → API :4000
+
+Google OAuth callback:
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+    → API
+
+Pastikan path callback tidak salah route.
+
+Caddy harus:
+- listen HTTP/HTTPS
+- proxy WebSocket jika aplikasi memerlukannya
+- meneruskan Host
+- meneruskan X-Forwarded-For
+- meneruskan X-Forwarded-Proto
+- meneruskan X-Real-IP jika diperlukan
+- tidak mengekspos internal port 4000 secara public
+
+Validasi Caddy configuration sebelum reload.
+
+Gunakan:
+caddy validate
+atau command ekuivalen yang sesuai instalasi.
+
+Jangan reload konfigurasi yang gagal validation.
+
+==================================================
+PHASE 11 — ORIGIN TLS
+==================================================
+
+Ini PRIORITAS karena sebelumnya Cloudflare menunjukkan ERROR 525.
+
+Diagnose dan perbaiki origin TLS secara nyata.
+
+Periksa:
+- port 443 listening
+- Caddy aktif
+- certificate tersedia
+- certificate hostname/SAN
+- certificate expiry
+- certificate chain
+- private key cocok dengan certificate
+- SNI
+- Caddy logs
+- firewall
+- Cloudflare-to-origin connectivity
+
+Hostname yang harus valid:
+- contentpilot.biz.id
+- api.contentpilot.biz.id
+
+Jika menggunakan Caddy automatic HTTPS:
+- pastikan DNS sudah mengarah ke VPS
+- pastikan port 80 dan 443 reachable
+- pastikan Caddy dapat memperoleh/renew certificate
+
+Jika menggunakan Cloudflare Origin CA:
+- install certificate/key dengan permission aman
+- konfigurasi Caddy menggunakan certificate tersebut
+- pastikan hostname cocok
+- jangan pernah menulis private key ke RESULT/AUDIT/COMMANDS
+
+Target:
+Cloudflare SSL/TLS = FULL (STRICT)
+
+Jangan menggunakan Flexible sebagai solusi permanen.
+
+Jangan mematikan TLS verification sebagai workaround.
+
+Jika masalah ternyata DNS/Cloudflare dashboard yang membutuhkan tindakan manual:
+- jangan pura-pura memperbaikinya dari VPS
+- catat EXACT manual action yang harus dilakukan.
+
+==================================================
+PHASE 12 — FIREWALL
+==================================================
+
+Konfigurasi firewall dengan aman.
+
+Public:
+- SSH port yang sedang digunakan
+- TCP 80
+- TCP 443
+
+Internal only:
+- PostgreSQL 5432
+- Redis 6379
+- API 4000
+- frontend internal port
+- worker/internal services
+
+Sebelum firewall enable:
+- pastikan current SSH session tidak akan terputus
+- pastikan SSH port diizinkan
+
+==================================================
+PHASE 13 — SYSTEMD ENABLE + REBOOT TEST
+==================================================
+
+Enable:
+- PostgreSQL
+- Redis
+- Caddy
+- contentpilot-api
+- contentpilot-worker
+- contentpilot-web
+
+Pastikan semua:
+active
+enabled
+
+Lalu lakukan controlled restart/reboot verification jika aman.
+
+Setelah reboot:
+- PostgreSQL active
+- Redis active
+- API active
+- worker active
+- web active
+- Caddy active
+
+Pastikan application services otomatis kembali.
+
+==================================================
+PHASE 14 — HEALTH CHECK
+==================================================
+
+Test dari VPS:
+
+API internal:
+http://127.0.0.1:4000/health/ready
+
+Web melalui Caddy:
+https://contentpilot.biz.id
+
+API melalui Caddy:
+https://api.contentpilot.biz.id/health/ready
+
+Expected:
+- HTTPS handshake berhasil
+- certificate hostname benar
+- HTTP 200 untuk health endpoint
+- no redirect loop
+- no 502
+- no 525
+- no 526
+
+Test juga:
+curl -I https://contentpilot.biz.id
+curl -I https://api.contentpilot.biz.id/health/ready
+
+Gunakan SNI/hostname yang benar.
+
+==================================================
+PHASE 15 — OAUTH CALLBACK
+==================================================
+
+Jangan melakukan real OAuth login jika credentials belum siap.
+
+Pastikan route:
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+benar-benar mencapai API.
+
+Test route behavior tanpa membocorkan credentials.
+
+Expected behavior bila state invalid/missing harus mengikuti aplikasi, misalnya:
+invalid_state / access denied,
+bukan 404/502/525.
+
+Pastikan Google OAuth redirect URI production sama PERSIS:
+https://api.contentpilot.biz.id/api/storage/google_drive/callback
+
+Jika Google Cloud Console belum memiliki redirect URI tersebut, catat sebagai EXTERNAL BLOCKER dan jangan menganggap deployment gagal.
+
+==================================================
+PHASE 16 — TEST SUITE
+==================================================
+
+Jalankan test suite repository yang relevan.
+
+Jangan menjalankan GoRouter.app tests.
+
+Pastikan test yang relevan untuk:
+- core
+- API
+- worker
+- Google Drive/storage jika tersedia
+
+Jalankan juga build verification.
+
+Jika ada failure:
+- perbaiki defect yang disebabkan deployment/configuration.
+- jangan mengubah application behavior tanpa alasan.
+- ulangi test setelah fix.
+
+==================================================
+PHASE 17 — 525 FINAL DIAGNOSIS
+==================================================
+
+Jika public HTTPS masih gagal:
+
+bedakan:
+- 525 = Cloudflare gagal TLS handshake ke origin
+- 526 = certificate origin invalid untuk Full Strict
+- 521 = origin refused connection
+- 522 = timeout
+
+Untuk 525:
+periksa langsung:
+- Caddy logs
+- port 443
+- TLS listener
+- certificate
+- SNI
+- firewall
+
+Jangan menyimpulkan "Cloudflare error" tanpa memeriksa origin.
+
+==================================================
+PHASE 18 — PRODUCTION SMOKE TEST
+==================================================
+
+Final smoke test:
+
+1. DNS hostname
+2. HTTPS frontend
+3. HTTPS API
+4. API health
+5. PostgreSQL connection
+6. Redis connection
+7. worker running
+8. Caddy running
+9. systemd enabled
+10. restart recovery
+11. OAuth callback route
+12. no secret leakage
+13. git working tree clean
+
+Jika semua memungkinkan, lakukan:
+- restart API
+- verify health
+- restart worker
+- verify worker
+- reload Caddy after validation
+- verify HTTPS again
+
+==================================================
+PHASE 19 — ARTIFACTS
+==================================================
+
+Buat:
+
+.ai-work/015-fresh-vps-deployment/RESULT.md
+.ai-work/015-fresh-vps-deployment/AUDIT.md
+.ai-work/015-fresh-vps-deployment/COMMANDS.md
+
+Update:
+.ai-work/README.md
+
+RESULT.md wajib berisi:
+- status PASS / PARTIAL / BLOCKED
+- VPS deployment status
+- commit SHA
+- services status
+- HTTPS status
+- health status
+- database status
+- Redis status
+- worker status
+- Caddy status
+- test results
+- remaining blockers
+- exact manual actions jika ada
+
+AUDIT.md:
+- checklist deployment
+- security checks
+- TLS checks
+- systemd checks
+- firewall checks
+- OAuth route checks
+- secret leakage check
+
+COMMANDS.md:
+- command yang dijalankan
+- hasil/ringkasan
+- REDACT semua secret/token/password/private key
+
+Jangan memasukkan full `.env`.
+
+==================================================
+PHASE 20 — GIT
+==================================================
+
+Review:
+git status
+git diff
+git diff --cached
+
+Pastikan:
+- tidak ada .env
+- tidak ada secrets
+- tidak ada private keys
+- tidak ada credential files
+- hanya perubahan deployment/artifact yang memang diperlukan
+
+Commit dengan:
+
+fix: deploy content pilot on fresh vps
+
+Push ke remote production branch.
+
+Setelah push:
+- verify HEAD == origin/main jika branch main
+- verify working tree clean
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+Setelah selesai, tampilkan ringkasan singkat:
+
+STATUS:
+PASS / PARTIAL / BLOCKED
+
+COMMIT:
+<sha>
+
+SERVICES:
+API:
+WORKER:
+WEB:
+POSTGRES:
+REDIS:
+CADDY:
+
+HTTPS:
+contentpilot.biz.id:
+api.contentpilot.biz.id:
+
+HEALTH:
+<status>
+
+TESTS:
+<summary>
+
+BLOCKERS:
+<exact blockers>
+
+MANUAL CLOUDFLARE ACTION:
+<only if required>
+
+MANUAL GOOGLE CLOUD ACTION:
+<only if required>
+
+ARTIFACTS:
+.ai-work/015-fresh-vps-deployment/RESULT.md
+.ai-work/015-fresh-vps-deployment/AUDIT.md
+.ai-work/015-fresh-vps-deployment/COMMANDS.md
+
+PENTING:
+Jika ada blocker eksternal seperti DNS Cloudflare belum mengarah ke VPS atau Google OAuth redirect URI belum didaftarkan, jangan membuat perubahan palsu/workaround. Selesaikan seluruh bagian VPS yang bisa dikerjakan dan tuliskan blocker secara tepat.
 ```
 # 
 ```
