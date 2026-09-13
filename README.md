@@ -55,7 +55,53 @@
 ```
 # 
 ```
+Saya sudah membuat Cloudflare Origin Certificate untuk ContentPilot.
 
+Hostname certificate:
+- contentpilot.biz.id
+- *.contentpilot.biz.id
+
+Saya memiliki:
+- Origin Certificate / public certificate
+- Private Key
+
+Sekarang lakukan AUDIT DAN SIAPKAN RENCANA PEMASANGAN SAJA.
+
+ATURAN WAJIB:
+1. Jangan eksekusi perubahan apa pun.
+2. Jangan membuat, menulis, atau mengubah file.
+3. Jangan restart/reload Caddy.
+4. Jangan mengubah /etc/caddy/Caddyfile.
+5. Jangan mengubah konfigurasi global Genspark.ai.
+6. Jangan mengubah service/hostname bawaan Genspark.
+7. Jangan install package.
+8. Jangan mengubah DNS atau Cloudflare.
+9. Jangan meminta saya menampilkan Private Key di chat/log.
+10. Private Key hanya boleh digunakan secara lokal di VPS jika nanti saya memberikan persetujuan eksplisit untuk pemasangan.
+
+Tentukan terlebih dahulu:
+- lokasi paling aman untuk menyimpan certificate dan private key ContentPilot
+- permission/ownership yang diperlukan
+- apakah Caddy yang sedang digunakan Genspark dapat menggunakan certificate tersebut secara isolated untuk ContentPilot
+- apakah perlu membuat site block khusus ContentPilot
+- bagaimana memastikan perubahan hanya berlaku untuk:
+  contentpilot.biz.id
+  api.contentpilot.biz.id
+- apakah ada risiko terhadap hostname/service Genspark
+- command yang akan digunakan nanti, tetapi JANGAN jalankan command tersebut.
+
+Berikan rencana dalam format:
+1. FILE YANG AKAN DIBUAT
+2. FILE YANG AKAN DIUBAH
+3. SERVICE YANG TERDAMPAK
+4. RISIKO TERHADAP GENSPARK
+5. COMMAND PEMASANGAN NANTI
+6. CARA ROLLBACK
+7. VERIFIKASI SETELAH PEMASANGAN
+
+Jika ada kemungkinan perubahan menyentuh konfigurasi global Genspark atau berisiko mengganggu service bawaan, STOP dan tandai sebagai TIDAK AMAN.
+
+Hanya audit dan rencana. Jangan melakukan perubahan.
 ```
 # 
 ```
