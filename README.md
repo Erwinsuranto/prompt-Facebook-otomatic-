@@ -44,7 +44,35 @@
 # 
 ```
 
+Saya menyetujui RELOAD CADDY secara graceful.
 
+Sebelum reload:
+1. Pastikan `caddy validate --config /etc/caddy/Caddyfile` masih berhasil.
+2. Pastikan konfigurasi hostname/service Genspark tidak berubah.
+3. Pastikan certificate dan private key ContentPilot sudah berada di lokasi yang benar.
+4. Jangan tampilkan private key.
+
+Jika semua pemeriksaan berhasil:
+5. Jalankan HANYA:
+   systemctl reload caddy
+
+Jangan restart Caddy, jangan stop Caddy, dan jangan mengubah konfigurasi lain.
+
+Setelah reload, lakukan verifikasi:
+- curl -sSI https://contentpilot.biz.id
+- curl -sSI https://api.contentpilot.biz.id/health/ready
+- cek status Caddy
+- pastikan hostname Genspark tetap aktif
+- pastikan tidak ada error Caddy
+
+Target:
+- contentpilot.biz.id → HTTP 200/redirect yang normal, bukan 525
+- api.contentpilot.biz.id/health/ready → HTTP 200
+- Genspark tetap berjalan normal.
+
+Jika reload atau verifikasi gagal, JANGAN melakukan perubahan tambahan atau rollback otomatis. Berhenti dan tampilkan hasil error.
+
+Lakukan sekarang.
 ```
 # 
 ```
