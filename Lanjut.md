@@ -47,7 +47,150 @@
 ```
 # 
 ```
+CONTENTPILOT — URGENT SECURITY / DANGEROUS SITE DIAGNOSIS AND FIX
 
+Chrome menampilkan halaman merah:
+"Dangerous site"
+
+Terjadi ketika membuka ContentPilot pada:
+domain production: contentpilot.biz.id
+path: /settings/storage?connect=success
+
+JANGAN meminta saya bypass warning Chrome.
+JANGAN menyuruh saya mematikan Safe Browsing.
+JANGAN menyuruh saya menekan "Proceed".
+Kita harus mencari dan memperbaiki penyebab sebenarnya.
+
+LAKUKAN LANGSUNG:
+
+1. AUDIT DOMAIN PRODUCTION
+Periksa:
+- DNS contentpilot.biz.id
+- DNS api.contentpilot.biz.id
+- TLS certificate dan hostname/SNI
+- certificate chain
+- HTTP → HTTPS redirect
+- HTTPS response
+- status code
+- response headers
+- Content-Security-Policy jika ada
+- HSTS jika ada
+- X-Content-Type-Options
+- Referrer-Policy
+- X-Frame-Options / frame-ancestors
+- CORS
+- apakah ada redirect ke domain/IP asing
+- apakah ada iframe/script/resource dari domain mencurigakan
+
+2. AUDIT CADDY
+Periksa konfigurasi Caddy yang melayani:
+- contentpilot.biz.id
+- api.contentpilot.biz.id
+
+Pastikan:
+- tidak ada konfigurasi asing
+- tidak ada reverse proxy ke host yang tidak dikenal
+- tidak ada redirect mencurigakan
+- certificate sesuai domain
+- konfigurasi ContentPilot tidak merusak service lain seperti Genspark/OpenClaw
+
+JANGAN mengubah Caddy dulu sampai penyebab ditemukan.
+
+3. AUDIT WEBSITE / BUILD
+Periksa source dan build ContentPilot untuk kemungkinan:
+- injected JavaScript
+- iframe mencurigakan
+- external script mencurigakan
+- redirect JavaScript
+- phishing-like page
+- malware
+- obfuscated script yang tidak dikenal
+- asset dari domain asing
+- perubahan file yang tidak berasal dari project
+
+Bandingkan working tree dengan git HEAD/origin.
+Jangan commit/push.
+
+4. AUDIT OAUTH CALLBACK
+Periksa flow:
+Google OAuth
+→ api.contentpilot.biz.id
+→ /api/storage/google_drive/callback
+→ contentpilot.biz.id/settings/storage?connect=success
+
+Pastikan callback hanya redirect ke domain ContentPilot yang benar.
+Tidak boleh ada open redirect atau user-controlled redirect URL.
+
+5. PERIKSA LOG
+Periksa Caddy/API/Web logs untuk request saat OAuth callback.
+Cari:
+- redirect abnormal
+- 3xx ke domain asing
+- 4xx/5xx
+- suspicious user-agent/request
+- injected content
+- unexpected host
+
+Jangan tampilkan OAuth code, token, cookie, secret, atau credential.
+
+6. CEK STATUS SAFE BROWSING / REPUTATION
+Jika VPS punya cara aman untuk memeriksa status Google Safe Browsing/Google Transparency Report terhadap domain production, lakukan pemeriksaan.
+Jangan bypass warning.
+
+7. JIKA DITEMUKAN MASALAH NYATA:
+Perbaiki langsung hanya jika perubahan jelas, aman, dan terbatas pada ContentPilot.
+Contoh:
+- redirect salah
+- header security salah
+- injected resource
+- konfigurasi Caddy salah
+- callback redirect salah
+- asset mencurigakan yang memang berasal dari deployment
+
+Jangan mengubah database.
+
+8. SETELAH PERBAIKAN:
+- validasi Caddy config
+- cek HTTPS
+- cek contentpilot.biz.id
+- cek api.contentpilot.biz.id
+- cek OAuth callback
+- cek API health
+- cek Web health
+- jalankan:
+  pnpm typecheck
+  pnpm lint
+  pnpm test
+  pnpm build
+
+9. JANGAN restart service kecuali memang diperlukan untuk menerapkan perbaikan.
+Jika perlu restart, restart hanya service ContentPilot yang terkait.
+Jangan restart Caddy kecuali perubahan Caddy memang diperlukan.
+
+10. JANGAN COMMIT/PUSH.
+
+HASIL AKHIR WAJIB:
+
+SECURITY STATUS
+- Dangerous-site root cause: ...
+- Domain/TLS: PASS/FAIL
+- Redirect audit: PASS/FAIL
+- Caddy audit: PASS/FAIL
+- Website/build integrity: PASS/FAIL
+- OAuth callback: PASS/FAIL
+- Suspicious resource/injection: FOUND/NOT FOUND
+- Safe Browsing status: ...
+- Fix applied: YES/NO
+
+REGRESSION
+- typecheck: PASS/FAIL
+- lint: PASS/FAIL
+- test: PASS/FAIL
+- build: PASS/FAIL
+
+Jika tidak ditemukan penyebab yang dapat diperbaiki dari VPS, STOP dan jelaskan secara spesifik apa yang menyebabkan warning kemungkinan berasal dari reputation/Safe Browsing sehingga langkah berikutnya dapat dilakukan secara aman.
+
+JANGAN meminta saya bypass Chrome.
 ```
 # 
 ```
