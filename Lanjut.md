@@ -51,7 +51,32 @@
 ```
 # 
 ```
+CONTENTPILOT — FIND EXISTING USER ACCOUNT
 
+Saya lupa email akun ContentPilot yang sudah pernah dibuat.
+
+Cari akun user yang sudah terdaftar di database production ContentPilot.
+
+ATURAN:
+- READ-ONLY.
+- Jangan mengubah database.
+- Jangan membuat user baru.
+- Jangan reset password.
+- Jangan mengubah credential.
+- Jangan commit/push.
+- Jangan restart service.
+- Jangan tampilkan password, password hash, token, session, OAuth credential, atau secret apa pun.
+
+Tampilkan hanya informasi yang aman:
+- jumlah user yang terdaftar
+- email user yang terdaftar (email boleh ditampilkan karena saya perlu mengenali akun saya)
+- user ID jika aman diperlukan
+- created_at jika tersedia
+
+Jika hanya ada satu akun, tandai sebagai kandidat akun saya.
+Jika ada beberapa akun, tampilkan daftar email agar saya bisa mengenali yang benar.
+
+STOP setelah hasil ditemukan.
 ```
 
 # 
