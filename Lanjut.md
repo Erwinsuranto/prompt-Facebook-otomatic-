@@ -43,7 +43,522 @@
 ```
 # 
 ```
+CONTENTPILOT — IMPLEMENT P1-1 CONTENT LIBRARY & POST LIFECYCLE
 
+Implementasikan fitur P1-1 berdasarkan hasil audit sebelumnya.
+
+TUJUAN:
+ContentPilot harus memiliki Content Library yang benar-benar usable untuk mengelola post yang sudah dibuat, bukan hanya membuat post lalu selesai.
+
+==================================================
+ATURAN WAJIB
+==================================================
+
+1. Kerjakan langsung, jangan bertanya balik kecuali benar-benar mustahil.
+2. Jangan membuat fitur mock/fake.
+3. Jangan mengubah database schema/migration kecuali audit implementasi benar-benar membuktikan mutlak diperlukan. Audit sebelumnya menyatakan tidak perlu migration.
+4. Jangan mengubah publish pipeline yang sudah berjalan.
+5. Jangan mengubah queue/scheduler/worker.
+6. Jangan mengubah Facebook OAuth/provider.
+7. Jangan mengubah Google Drive/OAuth.
+8. Jangan menyentuh /downloader.
+9. Jangan mengubah Caddy/DNS/TLS.
+10. Jangan mengubah service Genspark/OpenClaw.
+11. Pertahankan seluruh authorization dan ownership isolation.
+12. Jangan membuat user bisa mengakses post milik user/destination lain.
+13. Jangan menghapus fitur existing.
+14. Jangan commit/push sebelum seluruh verification selesai.
+15. Jangan restart service kecuali memang diperlukan untuk verification deployment.
+16. Gunakan pola/error taxonomy/security helper yang sudah ada di repository.
+17. Pertahankan arsitektur modular.
+18. Tidak boleh ada fake success atau status palsu.
+
+==================================================
+1. BACKEND — POSTS API
+==================================================
+
+Implementasikan/sempurnakan:
+
+GET /api/posts
+
+Fungsi:
+- list post milik authenticated user
+- ownership isolation
+- destination access validation
+- pagination jika pola API saat ini sudah mendukung
+- sorting terbaru
+- filter status
+- search jika model/data memungkinkan
+- jangan mengembalikan data user lain
+
+Query parameter yang boleh digunakan:
+
+status
+search
+page
+limit
+
+Jangan memaksakan pagination baru jika repository sudah mempunyai pola pagination yang berbeda. Ikuti convention existing.
+
+Response harus konsisten dengan API existing.
+
+--------------------------------------------------
+
+PATCH /api/posts/:id
+
+Fungsi:
+- edit post milik user
+- authorization wajib
+- validasi input
+- update hanya field yang memang editable
+- jangan izinkan user mengubah ownership
+- jangan izinkan user memanipulasi destination yang bukan miliknya
+- jangan izinkan perubahan yang merusak job publish aktif
+
+Field editable sesuaikan dengan model yang benar-benar ada, misalnya:
+- caption/text
+- media metadata bila memang didukung
+- scheduledAt bila memang aman
+
+Jangan menambahkan field database baru hanya untuk fitur ini.
+
+Jika post sudah published:
+- jangan izinkan perubahan yang secara semantik mengubah published record menjadi draft secara sembarangan
+- ikuti lifecycle yang aman berdasarkan model existing.
+
+Jika post mempunyai active scheduled/publish job:
+- jangan mengubah field yang dapat membuat queue/job menjadi inconsistent.
+
+--------------------------------------------------
+
+POST /api/posts/:id/duplicate
+
+Fungsi:
+- duplicate post milik user
+- hasil duplicate menjadi DRAFT
+- jangan ikut menjalankan publish
+- jangan ikut membuat job queue/scheduler baru
+- jangan menyalin status published/scheduled sebagai status aktif
+- jangan menyalin ownership ke user lain
+- media reference hanya boleh disalin jika memang aman dan sudah dimiliki user/destination yang sama
+- jangan membuat duplicate job
+
+Return post baru yang benar-benar tersimpan.
+
+--------------------------------------------------
+
+DELETE /api/posts/:id
+
+Fungsi:
+- hanya owner yang boleh menghapus
+- destination isolation tetap berlaku
+- jangan menghapus post user lain
+- jika ada active scheduled/publish job, jangan menyebabkan orphan job atau accidental publish
+
+Jika post memiliki job aktif:
+gunakan behaviour/error convention yang sudah ada untuk mencegah data inconsistency.
+
+Jangan melakukan cascade delete berbahaya di luar behaviour existing.
+
+==================================================
+2. POST LIFECYCLE
+==================================================
+
+Pastikan status lifecycle yang didukung model existing konsisten.
+
+Target konsep:
+
+DRAFT
+  ↓
+SCHEDULED
+  ↓
+PUBLISHED
+
+Dan jika publish gagal, gunakan status/error state yang memang sudah tersedia di repository.
+
+Jangan menambahkan status database baru tanpa alasan kuat.
+
+Pastikan:
+- duplicate → DRAFT
+- edit draft → tetap DRAFT
+- scheduled post tetap aman untuk scheduler
+- published post tidak bisa dimanipulasi secara sembarangan
+- failed state tetap dapat ditampilkan
+- existing queue idempotency tetap utuh
+
+Jangan merusak scheduler/worker.
+
+==================================================
+3. SECURITY
+==================================================
+
+Gunakan helper existing seperti:
+
+requireUser
+assertDestinationAccess
+ownership/session guards
+error taxonomy
+
+Jangan membuat authorization logic baru yang menduplikasi atau melemahkan helper existing.
+
+Test minimal:
+- authenticated user dapat melihat post miliknya
+- user tidak dapat melihat post user lain
+- user tidak dapat edit post user lain
+- user tidak dapat duplicate post user lain
+- user tidak dapat delete post user lain
+- user tidak dapat menggunakan destination milik user lain
+- unauthenticated request ditolak
+
+Pastikan tidak ada IDOR.
+
+==================================================
+4. FRONTEND — /library
+==================================================
+
+Buat halaman:
+
+/library
+
+Gunakan design system/component pattern yang sudah ada.
+
+Jangan membuat UI yang terlihat seperti template AI generik.
+
+UI harus clean, professional, SaaS-like, responsive, mobile-first.
+
+Navigasi utama harus memiliki:
+
+Library
+
+Pastikan tidak merusak navigation existing.
+
+==================================================
+5. LIBRARY UI
+==================================================
+
+Tampilkan post dalam bentuk list/table/card sesuai pola UI existing.
+
+Setiap item minimal menampilkan:
+
+- preview media jika tersedia
+- caption/title/text ringkas
+- status
+- destination/Page
+- scheduled date/time jika ada
+- created date
+- updated date
+- action menu
+
+Action:
+
+- Edit
+- Duplicate
+- Delete
+
+Untuk post sesuai status, tampilkan action yang relevan.
+
+Contoh:
+DRAFT:
+Edit / Duplicate / Delete
+
+SCHEDULED:
+Edit / Duplicate / Delete
+(tetap hormati restriction terhadap job aktif)
+
+PUBLISHED:
+View/Edit sesuai kemampuan model / Duplicate
+Delete hanya jika memang aman dan didukung behaviour backend
+
+FAILED:
+Edit / Duplicate / Delete
+dan tampilkan error bila tersedia tanpa membocorkan secret.
+
+==================================================
+6. SEARCH & FILTER
+==================================================
+
+Implementasikan:
+
+Search
+- caption/text
+
+Filter:
+- All
+- Draft
+- Scheduled
+- Published
+- Failed jika status tersebut memang ada
+
+Jangan membuat filter untuk status yang tidak ada di model.
+
+Filter harus benar-benar mempengaruhi data.
+
+Jangan membuat frontend filtering palsu jika dataset API besar; gunakan API query bila architecture existing mendukung.
+
+==================================================
+7. EDIT UI
+==================================================
+
+Buat editor yang menggunakan field existing.
+
+Minimal:
+- text/caption
+- media preview bila tersedia
+- destination bila memang editable dengan aman
+- schedule bila memang editable dengan aman
+
+Jangan izinkan perubahan yang backend tidak izinkan.
+
+Validation frontend hanya UX tambahan.
+Backend tetap menjadi source of truth.
+
+Setelah save:
+- tampilkan success hanya jika API benar-benar sukses
+- refresh data
+- tampilkan error yang jelas jika gagal
+
+==================================================
+8. DUPLICATE UI
+==================================================
+
+Saat user memilih Duplicate:
+
+- panggil POST /api/posts/:id/duplicate
+- jangan sekadar clone object di frontend
+- setelah backend sukses, tampilkan hasil duplicate
+- status harus DRAFT
+- jangan ada publish action otomatis
+- user dapat membuka/edit hasil duplicate
+
+==================================================
+9. DELETE UI
+==================================================
+
+Gunakan confirmation dialog.
+
+Pesan harus jelas bahwa post akan dihapus.
+
+Setelah DELETE sukses:
+- remove/update item dari UI
+- refresh list bila diperlukan
+
+Jika backend menolak karena active job:
+- tampilkan error yang jelas
+- jangan mengatakan berhasil.
+
+==================================================
+10. EMPTY / LOADING / ERROR STATES
+==================================================
+
+Buat state yang benar:
+
+Loading:
+- skeleton/spinner sesuai design system existing
+
+Empty:
+"Belum ada konten"
+
+Berikan CTA yang relevan seperti:
+"Create Post"
+
+Error:
+pesan yang jelas dan tidak menampilkan stack trace/secret.
+
+==================================================
+11. RESPONSIVE
+==================================================
+
+Desktop:
+- library nyaman untuk banyak post
+
+Mobile:
+- jangan membuat tabel melebar keluar layar
+- gunakan card/list atau responsive layout
+- action tetap mudah diakses
+
+Pastikan:
+- navigation existing tetap usable
+- edit form usable di mobile
+- dialog tidak overflow viewport
+
+==================================================
+12. API CLIENT
+==================================================
+
+Gunakan helper API client existing di:
+
+apps/web/src/lib/api.ts
+
+atau pattern yang memang digunakan repository.
+
+Jangan membuat fetch abstraction kedua tanpa alasan.
+
+==================================================
+13. TEST BACKEND
+==================================================
+
+Tambahkan/ubah test yang diperlukan.
+
+Minimal test:
+
+GET:
+- list own posts
+- isolation
+- filtering
+
+PATCH:
+- edit own post
+- reject other user's post
+- validation
+- active job protection
+
+DUPLICATE:
+- duplicate own post
+- result is DRAFT
+- no queue job
+- isolation
+
+DELETE:
+- delete own post
+- reject other user's post
+- active job protection
+
+Lifecycle:
+- valid status transition
+- invalid transition rejected
+
+==================================================
+14. TEST FRONTEND
+==================================================
+
+Jika repository sudah memiliki frontend test setup, tambahkan test untuk:
+
+- library renders
+- loading state
+- empty state
+- search/filter
+- edit
+- duplicate
+- delete confirmation
+- API error state
+
+Ikuti testing convention existing.
+
+==================================================
+15. REGRESSION
+==================================================
+
+Setelah implementasi:
+
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+
+Semua harus PASS.
+
+Jika test gagal:
+- perbaiki root cause
+- jalankan ulang test
+
+Jangan menonaktifkan test hanya agar PASS.
+
+==================================================
+16. GIT / DIFF REVIEW
+==================================================
+
+Sebelum selesai:
+
+git status
+git diff --stat
+git diff
+
+Pastikan perubahan hanya berkaitan dengan P1-1.
+
+Tidak boleh ada:
+- perubahan secret
+- perubahan .env
+- perubahan Caddy
+- perubahan unrelated service
+- perubahan OAuth
+- perubahan queue/scheduler
+- perubahan provider
+
+==================================================
+17. DEPLOYMENT
+==================================================
+
+Setelah verification PASS:
+
+Jika deployment production membutuhkan restart agar artifact baru aktif, restart HANYA:
+
+content-pilot-api.service
+content-pilot-worker.service
+content-pilot-web.service
+
+Jangan restart:
+- caddy
+- Genspark
+- OpenClaw
+- service lain
+
+Kemudian lakukan health check.
+
+Jika deployment tidak diperlukan pada tahap ini, jangan restart apa pun.
+
+==================================================
+18. LIVE VERIFICATION
+==================================================
+
+Verifikasi minimal:
+
+https://contentpilot.biz.id/
+https://contentpilot.biz.id/accounts
+
+dan route:
+
+/library
+
+Pastikan:
+- halaman dapat dibuka
+- auth bekerja
+- API bekerja
+- user dapat melihat library
+- existing dashboard tidak rusak
+
+Jangan bypass Google Safe Browsing.
+
+==================================================
+19. COMMIT
+==================================================
+
+JANGAN commit/push dulu.
+
+Saya akan review hasil implementasi dan test terlebih dahulu.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Laporkan:
+
+1. Fitur yang diimplementasikan
+2. Backend routes
+3. Frontend /library
+4. Lifecycle behaviour
+5. Security/ownership protection
+6. Files changed
+7. Tests added/changed
+8. pnpm typecheck
+9. pnpm lint
+10. pnpm test
+11. pnpm build
+12. Live verification
+13. Services restarted (jika ada)
+14. git diff --stat
+15. Apakah ada issue tersisa
+
+STOP setelah laporan.
 ```
 # 
 ```
