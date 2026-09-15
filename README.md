@@ -15,7 +15,451 @@
 ```
 # 
 ```
+LANJUTKAN UI REDESIGN — CONTENT PILOT
+PHASE 2–7
 
+Hasil audit/implementasi sebelumnya sudah mengubah:
+- apps/web/src/app/calendar/page.tsx
+- apps/web/src/app/globals.css
+- apps/web/src/components/app-shell.tsx
+
+Backend/API tetap tidak berubah dan Task 017 tetap untouched.
+
+Sekarang lanjutkan redesign sampai UI benar-benar terasa seperti premium SaaS, bukan berhenti pada App Shell + Calendar.
+
+==================================================
+TARGET VISUAL
+==================================================
+
+Gunakan mockup Content Pilot yang sudah diberikan sebagai referensi.
+
+Karakter utama:
+
+- Dark navy premium
+- Electric blue sebagai primary accent
+- Clean
+- Compact
+- Modern
+- Professional
+- Strong visual hierarchy
+- Tidak terlalu banyak empty space
+- Tidak terlalu banyak border
+- Tidak terlalu banyak gradient
+- Card tidak terlalu besar
+- Typography modern
+- Responsive mobile + desktop
+
+Jangan membuat desain yang terlalu berbeda-beda antar halaman.
+
+==================================================
+PHASE 2 — DASHBOARD
+==================================================
+
+Redesign halaman Dashboard secara menyeluruh.
+
+Prioritas informasi:
+
+1. Greeting
+2. Active workspace/destination
+3. Today's posting status
+4. Upcoming posts
+5. Content statistics
+6. Auto Posting summary
+7. Recent content
+
+Buat dashboard dengan layout grid modern.
+
+Contoh struktur:
+
+Header
+Good morning, Nino
+
+[Yourdreels • Facebook • Connected]
+
+[+ Create Post]
+
+Stats:
+Drafts
+Scheduled
+Published
+Total Views
+
+Main:
+Today's Schedule
+
+Side:
+Upcoming / Recent Posts
+
+Bottom:
+Auto Posting
+Content Library summary
+
+Gunakan DATA API YANG SUDAH ADA.
+
+Jangan membuat fake production data.
+
+==================================================
+PHASE 3 — AUTO POSTING
+==================================================
+
+Redesign `/settings/auto-posting`.
+
+WAJIB mempertahankan semantic model yang sekarang:
+
+DEFAULT RULE
++
+DAILY OVERRIDE
+
+JANGAN mengembalikan:
+
+Week 1
+Week 2
+Week 3
+weekly template
+
+Tampilkan:
+
+Default
+3 posts/day
+
+08:00
+13:00
+20:00
+
+Kemudian:
+
+Daily Override
+
+MON
+Default
+
+TUE
+Default
+
+WED
+5 posts
+Override
+
+THU
+Default
+
+FRI
+OFF
+Override
+
+SAT
+Default
+
+SUN
+Default
+
+Gunakan visual yang sangat mudah dibaca.
+
+Tampilkan:
+
+Effective From
+Upcoming Changes
+History
+
+History tetap read-only.
+
+==================================================
+PHASE 4 — CONTENT LIBRARY
+==================================================
+
+Redesign Content Library.
+
+Desktop:
+gunakan compact content management layout.
+
+Mobile:
+gunakan card/list yang nyaman disentuh.
+
+Toolbar:
+
+Search
+Filter
+Sort
+Select
+
+Content:
+
+Thumbnail
+Title
+Type
+Status
+Schedule
+Destination
+
+Action:
+
+Edit
+Duplicate
+Queue
+Delete
+
+Pertahankan semua functionality existing.
+
+Bulk selection tetap bekerja.
+
+==================================================
+PHASE 5 — COMPOSER
+==================================================
+
+Redesign Composer agar terasa seperti professional publishing editor.
+
+Desktop:
+
+LEFT:
+Editor
+
+RIGHT:
+Preview + Publishing settings
+
+Mobile:
+stack vertically.
+
+Section:
+
+Media
+Caption
+Destination
+Publishing Type
+Schedule
+Publish
+
+CTA utama:
+
+Publish Now
+Schedule Post
+
+Jangan mengubah publishing API/contract.
+
+==================================================
+PHASE 6 — QUEUE + CALENDAR
+==================================================
+
+Queue:
+
+Buat header lebih compact.
+
+Tampilkan:
+
+Queue name
+Destination
+Status
+Items
+Next scheduled
+
+Queue items:
+
+thumbnail
+title
+type
+scheduled time
+status
+
+Calendar:
+
+Pertahankan Month / Week / Day.
+
+Event tampil compact.
+
+Bedakan:
+
+Published
+Scheduled
+Planned Auto
+Queue
+
+Jangan menambahkan mutation yang backend belum support.
+
+==================================================
+PHASE 7 — MEDIA + ACCOUNTS + SETTINGS
+==================================================
+
+MEDIA
+
+Buat media library modern.
+
+Upload Media sebagai CTA utama.
+
+Tampilkan:
+
+thumbnail
+filename
+type
+size
+status
+
+Preview image/video tetap bekerja.
+
+ACCOUNTS
+
+Connected destination dibuat seperti premium account cards.
+
+Contoh:
+
+Facebook
+
+Yourdreels
+● Connected
+
+[Manage]
+
+SETTINGS
+
+Gunakan settings navigation yang rapi:
+
+General
+Accounts
+Storage
+Publishing
+Security
+
+Jangan mengubah backend.
+
+==================================================
+MOBILE
+==================================================
+
+WAJIB periksa:
+
+320px
+360px
+375px
+390px
+414px
+
+Tidak boleh:
+
+horizontal overflow
+card keluar layar
+button terlalu kecil
+header bertabrakan
+sidebar rusak
+modal keluar layar
+text terpotong
+
+Mobile harus terlihat seperti aplikasi SaaS modern.
+
+==================================================
+DESIGN CONSISTENCY
+==================================================
+
+Jangan membuat setiap halaman dengan style sendiri.
+
+Gunakan reusable components:
+
+PageHeader
+SectionHeader
+Card
+StatCard
+Button
+IconButton
+StatusBadge
+Input
+Select
+Tabs
+Modal
+EmptyState
+LoadingState
+ErrorState
+
+Jika component existing sudah bagus, reuse.
+
+Jika belum bagus, refactor secara aman.
+
+==================================================
+IMPORTANT SAFETY
+==================================================
+
+UI ONLY.
+
+Jangan mengubah:
+
+API contract
+database/schema
+worker
+Facebook provider
+Google Drive
+storage architecture
+authentication logic
+OAuth
+Caddy
+Cloudflare
+VPS
+Genspark
+OpenClaw
+
+Jangan membuat fake API.
+
+Jangan membuat fake statistics.
+
+Jangan menghapus functionality existing.
+
+Task 017:
+
+JANGAN TOUCH
+JANGAN STAGE
+JANGAN COMMIT
+JANGAN DELETE
+
+==================================================
+VALIDATION
+==================================================
+
+Setelah selesai:
+
+pnpm typecheck
+pnpm lint
+pnpm build
+pnpm test
+
+Kemudian UI smoke test seluruh route utama.
+
+Pastikan tidak ada regression.
+
+Sebelum commit:
+
+git status
+git diff --check
+git diff --stat
+
+Pastikan perubahan hanya UI/web.
+
+Jangan:
+
+git add .
+git add -A
+
+Stage hanya file redesign yang relevan.
+
+Jangan commit jika Task 017 ikut berubah.
+
+Commit:
+
+feat(web): complete premium content pilot redesign
+
+Push ke origin/main hanya jika seluruh validation PASS.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Laporkan:
+
+- halaman yang redesigned
+- component yang dibuat/refactor
+- responsive result
+- typecheck
+- lint
+- build
+- test
+- git diff
+- commit hash
+- konfirmasi Task 017 untouched
+- konfirmasi backend/API untouched
 ```
 # 
 ```
