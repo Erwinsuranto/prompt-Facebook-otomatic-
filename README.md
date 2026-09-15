@@ -19,7 +19,865 @@
 ```
 # 
 ```
+TASK: PREMIUM UI/UX REDESIGN — CONTENT PILOT
 
+Tujuan:
+Redesign UI/UX Content Pilot agar terlihat seperti SaaS premium modern untuk content automation, bukan seperti admin panel biasa.
+
+REFERENSI DESAIN:
+Gunakan mockup desain Content Pilot yang diberikan sebagai referensi visual utama.
+
+IDENTITAS:
+- Brand: Content Pilot
+- Pertahankan karakter dark navy + blue
+- Tampilan premium, modern, clean, profesional
+- Jangan membuat UI terlalu ramai
+- Jangan menggunakan terlalu banyak gradient
+- Jangan membuat card terlalu besar
+- Prioritaskan informasi penting di atas fold
+- Mobile-first tetapi desktop juga harus sangat bagus
+
+==================================================
+1. WAJIB AUDIT TERLEBIH DAHULU
+==================================================
+
+Sebelum mengubah kode:
+
+1. Audit struktur frontend/web saat ini.
+2. Cari semua route/page/component/layout yang berhubungan dengan UI.
+3. Identifikasi design system yang sudah digunakan:
+   - colors
+   - typography
+   - spacing
+   - buttons
+   - cards
+   - forms
+   - navigation
+   - modal
+   - table
+   - badges
+   - loading state
+   - empty state
+   - error state
+4. Pastikan redesign dapat menggunakan component yang sudah ada jika masih layak.
+5. Jangan mengubah API contract.
+6. Jangan mengubah database/schema.
+7. Jangan mengubah worker.
+8. Jangan mengubah Facebook provider.
+9. Jangan mengubah Google Drive/storage.
+10. Jangan mengubah authentication logic.
+11. Jangan mengubah Caddy/VPS/infrastructure.
+12. Jangan menyentuh Task 017:
+    - jangan stage
+    - jangan commit
+    - jangan modify
+    - jangan delete
+13. Jangan membuat backend endpoint baru hanya untuk kebutuhan visual.
+
+Setelah audit, lanjutkan implementasi UI jika tidak ada blocker.
+
+==================================================
+2. DESIGN SYSTEM
+==================================================
+
+Buat design system yang konsisten.
+
+COLOR DIRECTION:
+
+Background:
+- deep navy / near-black navy
+- gunakan beberapa level surface agar hierarchy jelas
+
+Primary:
+- blue / electric blue
+
+Text:
+- primary: hampir putih
+- secondary: muted blue-gray
+- disabled: darker muted
+
+Status:
+- success: green
+- warning: amber
+- error: red
+- info: blue
+
+Jangan menggunakan warna terlalu mencolok secara berlebihan.
+
+SURFACE:
+- rounded corners modern
+- border tipis
+- subtle shadow
+- gunakan contrast antar surface
+- hindari card putih besar di dark theme
+
+TYPOGRAPHY:
+- modern sans-serif
+- heading tegas
+- body readable
+- angka statistik lebih prominent
+- jangan menggunakan font terlalu besar
+
+SPACING:
+- compact tetapi tidak sempit
+- kurangi empty space yang tidak diperlukan
+- desktop gunakan grid yang rapi
+- mobile gunakan vertical flow
+
+==================================================
+3. GLOBAL APP SHELL
+==================================================
+
+Desktop:
+
+Sidebar kiri compact.
+
+Logo:
+Content Pilot
+
+Navigation:
+
+Dashboard
+Content Library
+Composer
+Queue
+Calendar
+Auto Posting
+Media
+Accounts
+
+Kemudian bagian bawah:
+
+Settings
+Help
+
+Sidebar tidak boleh terlalu lebar.
+
+Topbar:
+
+Search
+Notifications
+Workspace selector
+User/profile
+
+Gunakan hierarchy yang jelas.
+
+Mobile:
+
+Jangan memaksakan sidebar desktop.
+
+Gunakan:
+- compact topbar
+- hamburger menu
+- workspace selector
+- search
+- bottom navigation atau mobile navigation yang rapi
+
+Pastikan tidak ada:
+- horizontal overflow
+- menu bertabrakan
+- tombol terlalu kecil
+- card melebar keluar layar
+
+==================================================
+4. DASHBOARD
+==================================================
+
+Dashboard harus menjadi halaman paling menarik.
+
+Bagian atas:
+
+Good morning/Good afternoon/Good evening
+
+[Workspace / Connected Page]
+
+Contoh:
+
+Yourdreels
+Facebook Page
+● Connected
+
+Kemudian CTA:
+
++ Create Post
+
+==================================================
+
+TODAY OVERVIEW
+
+Buat statistik ringkas:
+
+Today's Posts
+3 / 4
+
+Published
+2
+
+Scheduled
+1
+
+Failed
+0
+
+Gunakan compact cards.
+
+Jangan membuat card terlalu tinggi.
+
+==================================================
+
+TODAY'S SCHEDULE
+==================================================
+
+Tampilkan timeline:
+
+08:00
+✓ Published
+Video
+
+13:00
+✓ Published
+Image
+
+18:00
+● Next
+Reel
+
+21:00
+○ Scheduled
+Video
+
+Gunakan status visual yang jelas.
+
+==================================================
+
+UPCOMING
+==================================================
+
+Tampilkan posting berikutnya.
+
+Contoh:
+
+Tomorrow
+
+08:00  Video
+13:00  Reel
+20:00  Image
+
+Jangan membuat list terlalu besar.
+
+==================================================
+
+CONTENT SUMMARY
+==================================================
+
+Drafts
+Scheduled
+Published
+
+Gunakan angka besar tetapi compact.
+
+==================================================
+5. AUTO POSTING
+==================================================
+
+Ini halaman penting.
+
+Pertahankan SEMANTIK YANG SUDAH ADA.
+
+Content Pilot menggunakan:
+
+1. Default Rule
+2. Daily Override
+
+BUKAN weekly template.
+
+BUKAN Week 1 / Week 2 / Week 3.
+
+==================================================
+
+DEFAULT RULE CARD
+
+Contoh:
+
+Default
+
+3 posts/day
+
+08:00
+13:00
+20:00
+
+[Edit]
+
+Tampilkan effective date jika tersedia.
+
+==================================================
+
+DAILY OVERRIDE
+
+Tampilkan 7 hari:
+
+MON
+3 posts
+
+TUE
+3 posts
+
+WED
+5 posts
+Override
+
+THU
+3 posts
+
+FRI
+OFF
+
+SAT
+3 posts
+
+SUN
+3 posts
+
+Override harus sangat mudah dibedakan dari default.
+
+Disabled override harus jelas:
+
+OFF
+
+Jangan menyembunyikan status OFF.
+
+==================================================
+
+UPCOMING CHANGES
+==================================================
+
+Tampilkan perubahan schedule yang akan datang.
+
+Contoh:
+
+16 Sep
+Default changes to
+4 posts/day
+
+History tetap read-only.
+
+==================================================
+6. CONTENT LIBRARY
+==================================================
+
+Buat seperti modern content management system.
+
+Toolbar:
+
+Search
+Filter
+Sort
+Select
+
+Content card/list harus menampilkan:
+
+thumbnail
+title
+type
+status
+created date
+scheduled date
+destination
+
+Gunakan compact rows/cards.
+
+Bulk selection tetap berfungsi.
+
+Action:
+
+Edit
+Duplicate
+Queue
+Delete
+
+Jangan mengubah API.
+
+==================================================
+7. COMPOSER
+==================================================
+
+Composer harus terasa seperti professional content editor.
+
+Layout desktop:
+
+LEFT:
+content editor
+
+RIGHT:
+preview / publishing settings
+
+Mobile:
+stack vertically.
+
+Tampilkan:
+
+Media
+Caption
+Destination
+Publishing type
+Schedule
+Publish
+
+CTA utama harus jelas.
+
+Jangan mengubah existing publishing contract.
+
+==================================================
+8. CALENDAR
+==================================================
+
+Calendar harus clean dan mudah dibaca.
+
+Gunakan:
+
+Month
+Week
+Day
+
+Event:
+
+Published
+Scheduled
+Planned Auto
+Queue
+
+Gunakan status badge kecil.
+
+Jangan menambahkan drag/drop jika backend contract belum mendukungnya.
+
+Planned Auto tetap read-only.
+
+==================================================
+9. QUEUE
+==================================================
+
+Queue overview harus compact.
+
+Tampilkan:
+
+Queue name
+Destination
+Items
+Next publish
+Status
+
+Detail queue:
+
+Queue header
+
+Items timeline/list
+
+Setiap item:
+
+thumbnail
+title
+type
+scheduled time
+status
+
+Action tetap menggunakan functionality yang sudah ada.
+
+==================================================
+10. MEDIA
+==================================================
+
+Media library:
+
+Upload button prominent.
+
+Grid/list toggle jika mudah diterapkan.
+
+Media card:
+
+thumbnail
+filename
+type
+size
+status
+
+Preview image/video tetap bekerja.
+
+Upload progress harus terlihat modern.
+
+Jangan mengubah upload architecture/API.
+
+==================================================
+11. ACCOUNTS / DESTINATIONS
+==================================================
+
+Buat connected accounts terlihat premium.
+
+Contoh:
+
+Facebook
+
+Yourdreels
+● Connected
+
+Actions:
+
+Manage
+Reconnect jika tersedia
+
+Jika belum connected:
+
+Connect Facebook
+
+Jangan mengubah OAuth implementation.
+
+==================================================
+12. SETTINGS
+==================================================
+
+Settings jangan terasa seperti halaman admin lama.
+
+Gunakan category/navigation:
+
+General
+Accounts
+Storage
+Publishing
+Security
+
+Gunakan settings cards/sections yang compact.
+
+==================================================
+13. COMPONENT CONSISTENCY
+==================================================
+
+Buat/reuse reusable components:
+
+Button
+IconButton
+Card
+StatCard
+StatusBadge
+Input
+Select
+Modal
+Dropdown
+Tabs
+Toast
+EmptyState
+LoadingState
+ErrorState
+ConfirmDialog
+PageHeader
+SectionHeader
+
+Semua harus konsisten.
+
+Jangan membuat style berbeda untuk setiap halaman.
+
+==================================================
+14. LOADING / ERROR / EMPTY STATE
+==================================================
+
+Semua halaman harus memiliki state yang bagus.
+
+Loading:
+gunakan skeleton yang subtle.
+
+Empty:
+jangan hanya menampilkan text kosong.
+
+Contoh:
+
+No content yet
+
+Create your first post and start publishing.
+
+[Create Post]
+
+Error:
+jelaskan masalah dengan jelas.
+
+Jangan menggunakan pesan generic seperti:
+
+Something went wrong
+
+jika error sebenarnya bisa dijelaskan.
+
+==================================================
+15. RESPONSIVE
+==================================================
+
+WAJIB test:
+
+320px
+360px
+375px
+390px
+414px
+768px
+1024px
+1280px
+1440px
+
+Tidak boleh ada:
+
+horizontal scroll
+text overflow
+button keluar layar
+card terlalu lebar
+sidebar menutupi content
+modal keluar viewport
+table rusak
+navigation bertabrakan
+
+Mobile harus terasa sebagai aplikasi sungguhan, bukan desktop yang diperkecil.
+
+==================================================
+16. ANIMATION
+==================================================
+
+Gunakan animation ringan:
+
+hover
+fade
+slide
+modal
+dropdown
+loading
+
+Jangan berlebihan.
+
+Jangan menggunakan refresh otomatis yang terlalu cepat.
+
+Jika ada data refresh:
+- gunakan existing behavior jika diperlukan
+- jangan membuat aggressive polling
+- lebih baik manual refresh jika realtime tidak diperlukan
+
+==================================================
+17. ACCESSIBILITY
+==================================================
+
+Pastikan:
+
+button memiliki accessible label
+keyboard navigation tetap bekerja
+focus state terlihat
+contrast cukup
+form label jelas
+icon-only button memiliki tooltip/aria-label
+
+==================================================
+18. FUNCTIONALITY PRESERVATION
+==================================================
+
+Ini WAJIB.
+
+Redesign UI tidak boleh merusak:
+
+- login/session
+- workspace
+- destinations
+- Facebook connection
+- Google Drive
+- media upload
+- media preview
+- Content Library
+- Composer
+- Queue
+- Calendar
+- Auto Posting
+- scheduling
+- publishing
+- bulk publish
+- Quick Publish
+- API calls
+- error handling
+
+Jangan menghapus feature hanya karena tidak terlihat di mockup.
+
+Jika UI lama memiliki functionality penting:
+pertahankan functionality tersebut dan pindahkan ke UI baru.
+
+==================================================
+19. DATA / API
+==================================================
+
+Jangan membuat fake/mock data untuk production UI.
+
+Gunakan API/data existing.
+
+Jangan mengubah backend hanya supaya UI terlihat bagus.
+
+Jika UI membutuhkan data yang memang belum tersedia:
+STOP dan laporkan kebutuhan tersebut sebelum membuat backend change.
+
+==================================================
+20. IMPLEMENTATION STRATEGY
+==================================================
+
+Kerjakan bertahap:
+
+PHASE 1
+Global design system
+App shell
+Sidebar
+Topbar
+Mobile navigation
+Buttons
+Cards
+Typography
+Colors
+
+PHASE 2
+Dashboard
+
+PHASE 3
+Auto Posting
+
+PHASE 4
+Content Library + Composer
+
+PHASE 5
+Calendar + Queue
+
+PHASE 6
+Media + Accounts + Settings
+
+PHASE 7
+Responsive polish
+
+PHASE 8
+Accessibility + loading/error/empty states
+
+==================================================
+21. VALIDATION
+==================================================
+
+Setelah implementasi:
+
+pnpm typecheck
+pnpm lint
+pnpm build
+pnpm test
+
+Kemudian lakukan UI smoke test.
+
+Minimal:
+
+/dashboard
+/content
+/composer
+/queues
+/calendar
+/settings/auto-posting
+/media
+/accounts
+/settings
+
+Test desktop dan mobile viewport.
+
+Pastikan:
+- login tetap bekerja
+- API session tetap bekerja
+- navigation bekerja
+- buttons bekerja
+- forms bekerja
+- existing API requests tetap berjalan
+
+==================================================
+22. GIT SAFETY
+==================================================
+
+SEBELUM COMMIT:
+
+git status
+
+Pastikan Task 017 tetap terisolasi.
+
+Jangan:
+
+git add .
+git add -A
+
+Jangan commit Task 017.
+
+Stage HANYA file yang memang bagian redesign UI.
+
+Setelah selesai:
+
+git diff --check
+git status
+git diff --stat
+
+Commit dengan message:
+
+feat(web): redesign content pilot ui
+
+Push ke origin/main hanya setelah semua validation berhasil.
+
+==================================================
+23. INFRASTRUCTURE SAFETY
+==================================================
+
+JANGAN menyentuh:
+
+Caddy
+Cloudflare
+Genspark
+OpenClaw
+PostgreSQL configuration
+Redis configuration
+MinIO configuration
+Facebook provider
+Google OAuth
+VPS firewall
+
+Tidak perlu restart VPS.
+
+Jika restart service web diperlukan, restart HANYA Content Pilot web service.
+
+Jangan restart seluruh server.
+
+==================================================
+24. FINAL REPORT
+==================================================
+
+Setelah selesai laporkan:
+
+1. Design system yang dibuat
+2. Halaman yang redesigned
+3. Component baru/reused
+4. Responsive result
+5. Typecheck result
+6. Lint result
+7. Build result
+8. Test result
+9. Git commit hash
+10. Konfirmasi Task 017 tetap untouched
+11. Konfirmasi backend/API tidak berubah
+12. Screenshot/preview hasil UI jika tersedia
+
+Jangan mengklaim sukses jika test gagal.
+
+TARGET AKHIR:
+
+Content Pilot harus terlihat seperti SaaS production-grade modern:
+
+- premium
+- clean
+- compact
+- fast
+- professional
+- mobile-first
+- dark navy + blue
+- mudah digunakan
+- tidak terasa seperti admin template
+- hierarchy informasi jelas
+- CTA jelas
+- whitespace terkontrol
+- semua functionality existing tetap berjalan.
 ```
 # 
 ```
